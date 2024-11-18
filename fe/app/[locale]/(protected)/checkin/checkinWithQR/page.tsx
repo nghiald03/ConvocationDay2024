@@ -14,6 +14,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { checkinAPI } from '@/config/axios';
 import toast from 'react-hot-toast';
 import swal from 'sweetalert';
+import Html5QrcodePlugin from './components/Html5QrcodePlugin';
 
 export default function Page() {
   const queryClient = useQueryClient();
@@ -57,6 +58,10 @@ export default function Page() {
       }
     });
   };
+
+  const onNewScanResult = (decodedText: any, decodedResult: any) => {
+    // handle decoded results here
+  };
   return (
     <>
       <Card className='animate-fade-up'>
@@ -77,7 +82,7 @@ export default function Page() {
       <Card className='mt-3'>
         <CardContent className='pt-3 flex items-center justify-center'>
           <div className=' h-[80vw] w-[80vw] md:h-[45vw] md:w-[45vw]'>
-            <Scanner
+            {/* <Scanner
               onError={(error) => {
                 console.error(error);
               }}
@@ -89,7 +94,13 @@ export default function Page() {
                 container: 'border-2 border-black h-[300px]',
                 video: 'h-full',
               }}
-            />
+            /> */}
+            {/* <Html5QrcodePlugin
+              fps={10}
+              qrbox={250}
+              disableFlip={false}
+              qrCodeSuccessCallback={onNewScanResult}
+            ></Html5QrcodePlugin> */}
           </div>
         </CardContent>
       </Card>

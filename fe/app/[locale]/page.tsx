@@ -1,11 +1,11 @@
-import { Link } from '@/i18n/routing';
+'use client';
 import LoginForm from '@/components/partials/auth/login-form';
-import Image from 'next/image';
-import Social from '@/components/partials/auth/social';
-import Copyright from '@/components/partials/auth/copyright';
-import Logo from '@/components/partials/auth/logo';
-import Typography from './(protected)/components/typography/page';
+import { isAccessTokenValid } from '@/utils/isLogin';
+import { redirect } from 'next/navigation';
 const Login = () => {
+  if (isAccessTokenValid()) {
+    redirect('/en/dashboard/analytics');
+  }
   return (
     <>
       <div

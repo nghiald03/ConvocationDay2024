@@ -128,6 +128,14 @@ export function getMenuList(pathname: string, t: any): Group[] {
           submenus: [],
         },
         {
+          id: 'checkinManagement',
+          href: '/manage/checkin-management',
+          label: 'Quản lí checkin',
+          active: pathname.includes('/manage/checkin-management'),
+          icon: 'flowbite:badge-check-outline',
+          submenus: [],
+        },
+        {
           id: 'uploadFileImage',
           href: '/manage/upload-file',
           label: 'Upload file ảnh',

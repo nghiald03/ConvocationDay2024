@@ -31,7 +31,7 @@ export default function Page() {
 
   const addBachelorFromFile = useMutation({
     mutationFn: (formData: FormData) => {
-      return axios.post('http://localhost:3214/upload', formData, {
+      return axios.post('http://fjourney.site:3214/upload', formData, {
         onUploadProgress: (progressEvent) => {
           if (progressEvent.total) {
             const percentCompleted = Math.round(
