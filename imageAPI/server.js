@@ -11,6 +11,11 @@ const port = 3214;
 // Đường dẫn tuyệt đối đến thư mục 'uploads'
 const uploadDir = path.join(__dirname, 'uploads');
 
+// Kiểm tra và tạo thư mục 'uploads' nếu chưa tồn tại
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true }); // recursive: true để đảm bảo tạo được thư mục lồng nhau
+}
+
 app.use(fileUpload());
 app.use(cors());
 
