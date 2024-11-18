@@ -69,6 +69,11 @@ export const checkinAPI = {
   checkin: async (data: any) => {
     return await axiosInstance.put('/Checkin/UpdateCheckin', data);
   },
+  getLocation: async (data: any) => {
+    return await axiosInstance.get(
+      `/Bachelor/search?keySearch=${data}&pageIndex=1&pageSize=10`
+    );
+  },
 };
 
 export const manageAPI = {

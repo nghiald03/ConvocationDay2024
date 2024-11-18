@@ -26,10 +26,12 @@ import {
 } from '@/components/ui/table';
 import TablePagination from '@/app/[locale]/(protected)/table/react-table/example2/table-pagination';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 export type TableProps = {
   data: any[];
   columns: any[];
+  isLoading?: boolean;
   title: string;
   header?: React.ReactNode;
   overflow?: boolean;
@@ -38,6 +40,7 @@ export type TableProps = {
 const TableCustom = ({
   data,
   columns,
+  isLoading,
   title,
   header,
   overflow,
@@ -113,7 +116,9 @@ const TableCustom = ({
           ))}
         </TableHeader>
         <TableBody className={cn(overflow && 'overflow-scroll')}>
-          {table.getRowModel().rows?.length ? (
+          {!isLoading &&
+          table.getRowModel() &&
+          table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
               <React.Fragment key={row.id}>
                 <TableRow
@@ -142,6 +147,13 @@ const TableCustom = ({
             <TableRow>
               <TableCell colSpan={columns.length} className='h-24 text-center'>
                 No results.
+              </TableCell>
+            </TableRow>
+          )}
+          {isLoading && (
+            <TableRow>
+              <TableCell colSpan={columns.length} className='h-32 text-center'>
+                <Image src='/LoadingAnimation.webm' alt='loading'></Image>
               </TableCell>
             </TableRow>
           )}

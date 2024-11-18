@@ -23,6 +23,7 @@ import { Icon } from '@iconify/react/dist/iconify.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import { Eye, SquarePen, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import swal from 'sweetalert';
@@ -30,7 +31,11 @@ import swal from 'sweetalert';
 export default function Page() {
   const queryClient = useQueryClient();
   const [bachelorList, setBachelorList] = useState<Bachelor[]>([]);
-  const { data: bachelorDT, error: bachelorDTEr } = useQuery({
+  const {
+    data: bachelorDT,
+    error: bachelorDTEr,
+    isLoading,
+  } = useQuery({
     queryKey: ['bachelorList'],
     queryFn: () => {
       return checkinAPI.getBachelorList();
@@ -126,6 +131,7 @@ export default function Page() {
         <p>
           <Switch
             checked={row.getValue('checkIn')}
+            color='primary'
             onClick={() => {
               handleCheckin(row.original);
             }}
@@ -135,9 +141,38 @@ export default function Page() {
     },
   ];
 
+  if (isLoading) {
+    return (
+      <>
+        <Card className='animate-fade-up'>
+          <CardContent className='p-3'>
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href='/'>Trang chủ</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Checkin thủ công</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+          </CardContent>
+        </Card>
+        <Card className='mt-3'>
+          <CardContent className='p-3 '>
+            <div className='flex flex-1 w-full p-20'>
+              <div className='loader p-10'></div>
+            </div>
+          </CardContent>
+        </Card>
+      </>
+    );
+  }
+
   return (
     <>
-      <Card>
+      <Card className='animate-fade-up'>
         <CardContent className='p-3'>
           <Breadcrumb>
             <BreadcrumbList>
@@ -153,10 +188,11 @@ export default function Page() {
         </CardContent>
       </Card>
 
-      <Card className='mt-3'>
+      <Card className='mt-3 animate-fade-up'>
         <CardContent className='p-3'>
           <TableCustom
             title='Danh sách tân cử nhân'
+            isLoading={isLoading}
             data={bachelorList}
             columns={columns}
           ></TableCustom>

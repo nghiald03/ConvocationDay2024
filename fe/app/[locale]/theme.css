@@ -1,63 +1,127 @@
 .theme-dark {
-     --sidebar: 222.2 84% 4.9%;
-     --header: 222.2 84% 4.9%;
+  --sidebar: 222.2 84% 4.9%;
+  --header: 222.2 84% 4.9%;
 }
 .theme-rose {
-     --sidebar: 341, 64%, 43%; 
-     --header: 341, 64%, 43%;
-     --secondary: 339, 60%, 51%;
-      --menu-arrow: 339, 60%, 51%;
-    --menu-arrow-active: 336, 67%, 60%;
-     
+  --sidebar: 341, 64%, 43%;
+  --header: 341, 64%, 43%;
+  --secondary: 339, 60%, 51%;
+  --menu-arrow: 339, 60%, 51%;
+  --menu-arrow-active: 336, 67%, 60%;
 }
 
 .theme-gray {
-     --sidebar:  210, 10%, 23%;
-     --header:  210, 10%, 23%;
+  --sidebar: 210, 10%, 23%;
+  --header: 210, 10%, 23%;
 
-      --secondary: 207, 14%, 31%;
-      --menu-arrow: 207, 14%, 31%;
-    --menu-arrow-active: 203, 16%, 43%;
+  --secondary: 207, 14%, 31%;
+  --menu-arrow: 207, 14%, 31%;
+  --menu-arrow-active: 203, 16%, 43%;
 }
 .theme-steel-blue {
-     --sidebar: 226, 36%, 39%; 
-     --header: 226, 36%, 39%;
-       --secondary: 224, 40%, 48%;
-      --menu-arrow: 224, 40%, 48%;
-    --menu-arrow-active: 216, 47%, 60%;
+  --sidebar: 226, 36%, 39%;
+  --header: 226, 36%, 39%;
+  --secondary: 224, 40%, 48%;
+  --menu-arrow: 224, 40%, 48%;
+  --menu-arrow-active: 216, 47%, 60%;
 }
 .theme-purple {
-     --sidebar: 299, 56%, 19%;
-     --header: 299, 56%, 19%;
-      --secondary: 299, 40%, 28%;
-      --menu-arrow: 299, 40%, 28%;
-    --menu-arrow-active: 298, 44%, 33%;
+  --sidebar: 299, 56%, 19%;
+  --header: 299, 56%, 19%;
+  --secondary: 299, 40%, 28%;
+  --menu-arrow: 299, 40%, 28%;
+  --menu-arrow-active: 298, 44%, 33%;
 }
 
 .theme-redwood {
-     --sidebar: 345, 24%, 29%; 
-     --header: 345, 24%, 29%;
-      --secondary: 346, 26%, 35%;
-      --menu-arrow: 346, 26%, 35%;
-    --menu-arrow-active: 344, 27%, 42%;
+  --sidebar: 345, 24%, 29%;
+  --header: 345, 24%, 29%;
+  --secondary: 346, 26%, 35%;
+  --menu-arrow: 346, 26%, 35%;
+  --menu-arrow-active: 344, 27%, 42%;
 }
 .theme-green {
-     --sidebar: 164, 64%, 21%;
-     --header: 164, 64%, 21%;
+  --sidebar: 164, 64%, 21%;
+  --header: 164, 64%, 21%;
 
-      --secondary: 164, 68%, 24%;
-      --menu-arrow: 164, 68%, 24%;
-    --menu-arrow-active: 163, 69%, 30%;
+  --secondary: 164, 68%, 24%;
+  --menu-arrow: 164, 68%, 24%;
+  --menu-arrow-active: 163, 69%, 30%;
 }
 .theme-ocean-blue {
-     --sidebar: 206, 92%, 35%; 
-     --header: 206, 92%, 35%;
+  --sidebar: 206, 92%, 35%;
+  --header: 206, 92%, 35%;
 
-       --secondary: 205, 94%, 39%;
-      --menu-arrow: 205, 94%, 39%;
-    --menu-arrow-active: 203, 85%, 48%;
+  --secondary: 205, 94%, 39%;
+  --menu-arrow: 205, 94%, 39%;
+  --menu-arrow-active: 203, 85%, 48%;
 }
-.theme-transparent{
-     --header: transparent;
-     box-shadow: none;
+.theme-transparent {
+  --header: transparent;
+  box-shadow: none;
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  margin: auto;
+  position: relative;
+}
+
+.loader:before {
+  content: '';
+  width: 48px;
+  height: 5px;
+  background: #f0808050;
+  position: absolute;
+  top: 60px;
+  left: 0;
+  border-radius: 50%;
+  animation: shadow324 0.5s linear infinite;
+}
+
+.loader:after {
+  content: '';
+  width: 100%;
+  height: 100%;
+  background: #f08080;
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 4px;
+  animation: jump7456 0.5s linear infinite;
+}
+
+@keyframes jump7456 {
+  15% {
+    border-bottom-right-radius: 3px;
+  }
+
+  25% {
+    transform: translateY(9px) rotate(22.5deg);
+  }
+
+  50% {
+    transform: translateY(18px) scale(1, 0.9) rotate(45deg);
+    border-bottom-right-radius: 40px;
+  }
+
+  75% {
+    transform: translateY(9px) rotate(67.5deg);
+  }
+
+  100% {
+    transform: translateY(0) rotate(90deg);
+  }
+}
+
+@keyframes shadow324 {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+
+  50% {
+    transform: scale(1.2, 1);
+  }
 }
