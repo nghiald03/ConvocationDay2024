@@ -1,0 +1,54 @@
+services:
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserverconvo
+    hostname: sqlhost
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=<YourStronggg@Passw0rd>
+    ports:
+      - '1431:1433'
+    volumes:
+      - sql_data:/var/opt/mssql
+    restart: unless-stopped
+
+  be:
+    build:
+      context: ./be
+      dockerfile: Dockerfile
+    container_name: backend
+    ports:
+      - '85:80' # Expose ASP.NET Core service
+      - '86:443' # HTTPS port (optional)
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlhost,1433;Database=ConvocationDB;User Id=sa;Password=<YourStronggg@Passw0rd>;
+    depends_on:
+      - database
+    restart: unless-stopped
+
+  fe:
+    build:
+      context: ./fe
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - '3001:3000' # Cổng frontend
+    depends_on:
+      - be
+    restart: unless-stopped
+
+  apiimageupload:
+    build:
+      context: ./imageAPI
+      dockerfile: Dockerfile
+    container_name: apiimageupload
+    ports:
+      - '3214:3214'
+    volumes:
+      - ./imageAPI/uploads:/app/uploads # Gắn thư mục 'uploads'
+    depends_on:
+      - database
+    restart: unless-stopped
+
+volumes:
+  sql_data:

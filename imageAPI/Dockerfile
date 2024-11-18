@@ -12,7 +12,7 @@ COPY server.js ./
 RUN npm install
 
 # Expose cổng mà ứng dụng Express chạy
-EXPOSE 3001
+EXPOSE 3214
 
 # Khởi chạy ứng dụng Express
 CMD ["node", "server.js"]
