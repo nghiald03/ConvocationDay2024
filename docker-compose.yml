@@ -21,7 +21,7 @@ services:
       - '85:80' # Expose ASP.NET Core service
       - '86:443' # HTTPS port (optional)
     environment:
-      - ConnectionStrings__DefaultConnection=Server=sqlhost,1433;Database=ConvocationDB;User Id=sa;Password=<YourStronggg@Passw0rd>;
+      - ConnectionStrings__Convocation2023DB=Data Source=db.fjourney.site;Initial Catalog=Convocation2023;User ID=sa;Password=<YourStrong@Passw0rda>;TrustServerCertificate=true;MultipleActiveResultSets=True;
     depends_on:
       - database
     restart: unless-stopped

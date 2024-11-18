@@ -22,7 +22,8 @@ namespace FA23_Convocation2023_API
         {
 
             var builder = WebApplication.CreateBuilder(args);
-            
+            var connectionString = builder.Configuration.GetConnectionString("Convocation2023DB");
+
             // Add services to the container.
             builder.Services.AddControllers();
             //builder.Services.AddControllers().AddJsonOptions(options =>
@@ -35,7 +36,8 @@ namespace FA23_Convocation2023_API
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             // Add DbContext
-            builder.Services.AddDbContext<Convo24Context>();
+            builder.Services.AddDbContext<Convo24Context>(options =>
+    options.UseSqlServer(connectionString));
             // Add CORS
             builder.Services.AddCors(options => {
                 options.AddPolicy("CORSPolicy", builder => 
