@@ -80,9 +80,9 @@ export default function Page() {
         </CardContent>
       </Card>
       <Card className='mt-3'>
-        <CardContent className='pt-3 flex items-center justify-center'>
+        <CardContent className='p-3 flex items-center justify-center'>
           <div className=' h-[80vw] w-[80vw] md:h-[45vw] md:w-[45vw]'>
-            {/* <Scanner
+            <Scanner
               onError={(error) => {
                 console.error(error);
               }}
@@ -94,7 +94,7 @@ export default function Page() {
                 container: 'border-2 border-black h-[300px]',
                 video: 'h-full',
               }}
-            /> */}
+            />
             {/* <Html5QrcodePlugin
               fps={10}
               qrbox={250}
