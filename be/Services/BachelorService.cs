@@ -91,91 +91,64 @@ namespace FA23_Convocation2023_API.Services
 
         }
 
-        public async Task<object> AddBachelorAsync([FromBody] List<BachelorDTO> bachelorRequest)
+       public async Task<AddBachelorResponse> AddBachelorAsync(List<BachelorDTO> bachelorRequest)
+{
+    var response = new AddBachelorResponse();
+
+    foreach (var bItem in bachelorRequest)
+    {
+        // Check for null fields
+        if (string.IsNullOrEmpty(bItem.Image) || string.IsNullOrEmpty(bItem.FullName) || 
+            string.IsNullOrEmpty(bItem.StudentCode) || string.IsNullOrEmpty(bItem.Mail) || 
+            string.IsNullOrEmpty(bItem.Major) || string.IsNullOrEmpty(bItem.HallName) || 
+            bItem.SessionNum == 0 || string.IsNullOrEmpty(bItem.Chair) || string.IsNullOrEmpty(bItem.ChairParent))
         {
-            List<string> errorList = new List<string>();
-
-            foreach (var bItem in bachelorRequest)
-            {
-                //check any field is null
-                if (string.IsNullOrEmpty(bItem.Image) || string.IsNullOrEmpty(bItem.FullName) || string.IsNullOrEmpty(bItem.StudentCode) || string.IsNullOrEmpty(bItem.Mail) || string.IsNullOrEmpty(bItem.Major) || string.IsNullOrEmpty(bItem.HallName) || bItem.SessionNum == 0 || string.IsNullOrEmpty(bItem.Chair) || string.IsNullOrEmpty(bItem.ChairParent))
-                {
-                    errorList.Add($"Bachelor {bItem.StudentCode} has null field!");
-                    continue;
-                }
-                var bachelor = await _context.Bachelors.FirstOrDefaultAsync(b => b.StudentCode.Equals(bItem.StudentCode));
-                var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bItem.HallName);
-                var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum);
-
-                if (bachelor != null)
-                {
-                    errorList.Add($"Bachelor {bItem.StudentCode} is existed!");
-                    continue;
-                }
-            }
-            //check list bachelor
-
-            if (errorList.Count() > 0)
-            {
-                return new
-                {
-                    ErrorMessages = errorList
-                };
-            }
-            else
-            {
-                //add list bachelor in database
-                foreach (var bItem in bachelorRequest)
-                {
-                    var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bItem.HallName);
-                    var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum);
-                    if (hall == null)
-                    {
-                        hall = new Hall
-                        {
-                            HallName = bItem.HallName
-                        };
-                        await _context.Halls.AddAsync(hall);
-                    }
-                    if (session == null)
-                    {
-                        session = new Session
-                        {
-                            Session1 = bItem.SessionNum
-                        };
-                        await _context.Sessions.AddAsync(session);
-                    }
-                    //check table checkin is existed
-                    var checkIn = await _context.CheckIns.FirstOrDefaultAsync(c => c.HallId == hall.HallId && c.SessionId == session.Session1);
-                    if (checkIn == null)
-                    {
-                        checkIn = new CheckIn
-                        {
-                            HallId = hall.HallId,
-                            SessionId = session.Session1,
-                            Status = null
-                        };
-                        await _context.CheckIns.AddAsync(checkIn);
-                        await _context.SaveChangesAsync();
-                        var bachelor = new Bachelor
-                        {
-                            Image = bItem.Image,
-                            FullName = bItem.FullName,
-                            StudentCode = bItem.StudentCode,
-                            Mail = bItem.Mail,
-                            Major = bItem.Major,
-                            HallId = hall.HallId,
-                            SessionId = session.SessionId,
-                            Chair = bItem.Chair,
-                            ChairParent = bItem.ChairParent
-                        };
-                        await _context.Bachelors.AddAsync(bachelor);
-                    }
-                    await _context.SaveChangesAsync();
-                }
-                return bachelorRequest;
-            }
+            response.ErrorMessages.Add($"Bachelor {bItem.StudentCode} has null field!");
+            continue;
         }
+
+        // Check if bachelor already exists
+        var bachelor = await _context.Bachelors.FirstOrDefaultAsync(b => b.StudentCode.Equals(bItem.StudentCode));
+        if (bachelor != null)
+        {
+            response.ErrorMessages.Add($"Bachelor {bItem.StudentCode} already exists!");
+            continue;
+        }
+
+        // Handle hall and session
+        var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bItem.HallName) 
+                   ?? new Hall { HallName = bItem.HallName };
+
+        var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum) 
+                      ?? new Session { Session1 = bItem.SessionNum };
+
+        if (hall.HallId == 0) await _context.Halls.AddAsync(hall);
+        if (session.SessionId == 0) await _context.Sessions.AddAsync(session);
+
+        await _context.SaveChangesAsync();
+
+        // Create a new bachelor
+        var bachelorEntity = new Bachelor
+        {
+            Image = bItem.Image,
+            FullName = bItem.FullName,
+            StudentCode = bItem.StudentCode,
+            Mail = bItem.Mail,
+            Major = bItem.Major,
+            HallId = hall.HallId,
+            SessionId = session.SessionId,
+            Chair = bItem.Chair,
+            ChairParent = bItem.ChairParent
+        };
+
+        await _context.Bachelors.AddAsync(bachelorEntity);
+        response.SuccessfulBachelors.Add(bItem);
+    }
+
+    await _context.SaveChangesAsync();
+    return response;
+}
+
 
         //update UpdateBachelorAsync
         public async Task<Bachelor?> UpdateBachelorAsync(BachelorDTO bachelorRequest)
