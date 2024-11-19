@@ -1,5 +1,6 @@
 import { Bachelor } from '@/dtos/BachelorDTO';
 import axios from 'axios';
+import { get } from 'lodash';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
   ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
@@ -38,6 +39,26 @@ export const ledAPI = {
   },
   getSessionList: async () => {
     return await axiosInstance.get('/Session/GetAll');
+  },
+  getBachelor1st: async (hall: string, session: string) => {
+    return await axiosInstance.get(
+      `/Mc/GetBachelor1st?hall=${hall}&session=${session}`
+    );
+  },
+  getBachelorNext: async (hall: string, session: string) => {
+    return await axiosInstance.get(
+      `/Mc/GetBachelorNext?hall=${hall}&session=${session}`
+    );
+  },
+  getBachelorCurrent: async (hall: string, session: string) => {
+    return await axiosInstance.get(
+      `/Mc/GetBachelorCurrent?hall=${hall}&session=${session}`
+    );
+  },
+  getBachelorBack: async (hall: string, session: string) => {
+    return await axiosInstance.get(
+      `/Mc/GetBachelorBack?hall=${hall}&session=${session}`
+    );
   },
 };
 
