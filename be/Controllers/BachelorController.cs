@@ -48,10 +48,15 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpGet("GetAll")]
-        public async Task<IActionResult> GetAllBachelorAsync()
+        public async Task<IActionResult> GetAllBachelorAsync([FromQuery] int pageIndex = 1,
+           [FromQuery] int pageSize = 10)
         {
-            var result = await _bachService.GetAllBachelorAsync();
-            if (result.Count == 0) return Ok(new
+            if (pageIndex < 1 || pageSize < 1)
+            {
+                return BadRequest("Page index and page size must be greater than zero.");
+            }
+            var result = await _bachService.GetAllBachelorAsync(pageIndex,pageSize);
+            if (result.TotalItems == 0) return Ok(new
             {
                 status = StatusCodes.Status204NoContent,
                 message = "Not any bachelors!"

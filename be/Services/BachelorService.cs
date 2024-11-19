@@ -3,6 +3,8 @@ using FA23_Convocation2023_API.Models;
 using FA23_Convocation2023_API.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace FA23_Convocation2023_API.Services
 {
@@ -47,55 +49,46 @@ namespace FA23_Convocation2023_API.Services
 
         }
 
-        public  string GetHallName(int hallId)
-        {
-            var hallExist =  _context.Halls.FirstOrDefault(h => h.HallId == hallId);
-            if (hallExist == null)
-            {
-                throw new Exception("HallId not found!");
-            }
-            return hallExist.HallName;
-        }
-        public  int GetSession(int sessionId)
-        {
-            var session =  _context.Sessions.FirstOrDefault(s => s.SessionId == sessionId);
-            if(session == null)
-            {
-                throw new Exception("SessionId not found!");
+      
 
-            }
-            return (int)session.Session1;
-        }
-
-
-            public async Task<List<ListBachelor>> GetAllBachelorAsync()
+            public async Task<PagedResult<ListBachelor>> GetAllBachelorAsync(int pageIndex, int pageSize)
         {
-            var result = await _context.Bachelors.ToListAsync();
-            var listBachelor = new List<ListBachelor>();
-            foreach (var bachelor in result)
+
+            var query = _context.Bachelors.Include(b => b.Hall).Include(b => b.Session)
+          .Select(bachelor => new ListBachelor
+          {
+              Id = bachelor.Id,
+              StudentCode = bachelor.StudentCode,
+              FullName = bachelor.FullName,
+              Mail = bachelor.Mail,
+              Faculty = bachelor.Faculty,
+              Major = bachelor.Major,
+              Image = bachelor.Image,
+              Status = bachelor.Status,
+              StatusBaChelor = bachelor.StatusBaChelor,
+              HallName = bachelor.Hall.HallName,
+              SessionNum = bachelor.Session.Session1,
+              Chair = bachelor.Chair,
+              ChairParent = bachelor.ChairParent,
+              CheckIn = bachelor.CheckIn,
+              TimeCheckIn = bachelor.TimeCheckIn
+          });
+
+            var totalItems = await query.CountAsync();
+            var items = await query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            var paginatedResult = new PaginatedList<ListBachelor>(items, totalItems, pageIndex, pageSize);
+            return new PagedResult<ListBachelor>
             {
-                var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallId == bachelor.HallId);
-                var session = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == bachelor.SessionId);
-                listBachelor.Add(new ListBachelor
-                {
-                    Id = bachelor.Id,
-                    StudentCode = bachelor.StudentCode,
-                    FullName = bachelor.FullName,
-                    Mail = bachelor.Mail,
-                    Faculty = bachelor.Faculty,
-                    Major = bachelor.Major,
-                    Image = bachelor.Image,
-                    Status = bachelor.Status,
-                    StatusBaChelor = bachelor.StatusBaChelor,
-                    HallName = hall.HallName,
-                    SessionNum = session.Session1,
-                    Chair = bachelor.Chair,
-                    ChairParent = bachelor.ChairParent,
-                    CheckIn = bachelor.CheckIn,
-                    TimeCheckIn = bachelor.TimeCheckIn
-                });
-            }
-            return listBachelor;
+                Items = paginatedResult.Items,
+                TotalItems = paginatedResult.TotalCount,
+                TotalPages = paginatedResult.TotalPages,
+                CurrentPage = paginatedResult.CurrentPage,
+                PageSize = paginatedResult.PageSize,
+                HasPreviousPage = paginatedResult.HasPreviousPage,
+                HasNextPage = paginatedResult.HasNextPage
+            };
+            
         }
 
         public async Task<object> AddBachelorAsync([FromBody] List<BachelorDTO> bachelorRequest)
