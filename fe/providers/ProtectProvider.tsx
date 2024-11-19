@@ -1,6 +1,6 @@
-// components/ClientQueryProvider.tsx
-'use client'; // Ensures the component is a client component
+'use client';
 
+import { isAccessTokenValid } from '@/utils/isLogin';
 import { redirect } from 'next/navigation';
 import React from 'react';
 
@@ -10,8 +10,7 @@ export default function ProtectProvider({
   children: React.ReactNode;
 }) {
   if (window !== undefined) {
-    const accessToken = window.localStorage.getItem('accessToken');
-    if (!accessToken) {
+    if (!isAccessTokenValid()) {
       redirect('/');
     }
   }

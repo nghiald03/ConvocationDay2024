@@ -7,14 +7,12 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import React from 'react';
-import FormSearchLocation from './components/FormSearchLocation';
 
-export default function page() {
+export default function Page() {
   return (
     <>
-      <Card className='animate-fade-up'>
+      <Card>
         <CardContent className='p-3'>
           <Breadcrumb>
             <BreadcrumbList>
@@ -23,18 +21,20 @@ export default function page() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Checkin thủ công</BreadcrumbPage>
+                <BreadcrumbPage>Quản lí </BreadcrumbPage>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Quản lí checkin</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </CardContent>
       </Card>
 
-      <Card className='mt-3 animate-fade-up'>
+      <Card className='mt-3'>
         <CardContent className='p-3'>
-          <div className='flex flex-col gap-6'>
-            <FormSearchLocation></FormSearchLocation>
-          </div>
+          <div className='flex flex-col gap-6'>aaaaaaa</div>
         </CardContent>
       </Card>
     </>
