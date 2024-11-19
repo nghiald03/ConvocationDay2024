@@ -41,9 +41,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ledAPI } from '@/config/axios';
+import { Bachelor } from '@/dtos/BachelorDTO';
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
+import { HubConnectionBuilder } from '@microsoft/signalr';
 
 export default function LedScreen() {
   const [hall, setHall] = useState('');
@@ -125,6 +127,74 @@ export default function LedScreen() {
   const handleDoubleClick = () => {
     setIsFullscreen(!isFullscreen);
   };
+
+  useEffect(() => {
+    const connection = new HubConnectionBuilder()
+      .withUrl('http://34.50.64.42:85/chat-hub')
+      .withAutomaticReconnect()
+      .build();
+
+    const parseMessage = (message: string) => {
+      const keyValuePairs: { [key: string]: any } = {};
+
+      message
+        .replace('CurrentBachelor ', '') // Loại bỏ phần không cần thiết
+        .split(', ') // Tách từng cặp key-value
+        .forEach((pair) => {
+          const [key, ...valueParts] = pair.split(':'); // Tách key và value qua dấu ':'
+          const value = valueParts.join(':').trim(); // Gộp lại phần value nếu có dấu ':'
+
+          // Xử lý kiểu dữ liệu
+          if (value === 'True') keyValuePairs[key] = true;
+          else if (value === 'False') keyValuePairs[key] = false;
+          else if (value === 'null' || value === '') keyValuePairs[key] = null;
+          else if (!isNaN(Number(value)))
+            keyValuePairs[key] = Number(value); // Chuyển số
+          else keyValuePairs[key] = value.trim(); // Chuỗi thông thường
+        });
+
+      return keyValuePairs;
+    };
+
+    async function startSignalRConnection() {
+      try {
+        await connection.start();
+        console.log('SignalR connection started.');
+
+        connection.on('SendMessage', (message: string) => {
+          try {
+            console.log('Raw message:', message);
+            const parsedData = parseMessage(message);
+            console.log('Parsed message:', parsedData);
+
+            const bachelorData: Bachelor = {
+              image: parsedData['Image'],
+              fullName: parsedData['FullName'],
+              major: parsedData['Major'],
+              studentCode: parsedData['StudentCode'],
+              mail: parsedData['Mail'],
+              hallName: parsedData['HallName'],
+              sessionNum: parsedData['SessionNum'],
+              chair: parsedData['Chair'],
+              chairParent: parsedData['ChairParent'],
+            };
+
+            console.log('Bachelor data:', bachelorData);
+          } catch (error) {
+            console.error('Error processing message:', error);
+          }
+        });
+      } catch (error) {
+        console.error('Error starting SignalR connection:', error);
+      }
+    }
+
+    startSignalRConnection();
+
+    return () => {
+      connection.stop();
+    };
+  }, []);
 
   return (
     <>

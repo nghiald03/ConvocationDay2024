@@ -28,16 +28,18 @@ namespace FA23_Convocation2023_API.Models
 
         public override string ToString()
         {
-            return $"StudentCode: {StudentCode}, " +
-                $"FullName: {FullName}, " +
-                $"Mail: {Mail}, " +
-                $"Faculty: {Faculty}, " +
-                $"Major: {Major}, " +
-                $"Image: {Image}, " +
-                $"Status: {Status}, " +
-                $"StatusBachelor: {StatusBaChelor}, " +
-                $"HallName: {HallId}, " +
-                $"SessionNum: {SessionId}, ";
+            return $"{{" +
+                   $"\"StudentCode\": \"{StudentCode}\", " +
+                   $"\"FullName\": \"{FullName}\", " +
+                   $"\"Mail\": \"{Mail}\", " +
+                   $"\"Faculty\": \"{Faculty}\", " +
+                   $"\"Major\": \"{Major}\", " +
+                   $"\"Image\": \"{Image}\", " +
+                   $"\"Status\": {Status.ToString().ToLower()}, " +
+                   $"\"StatusBachelor\": \"{StatusBaChelor}\", " +
+                   $"\"HallName\": \"{HallId}\", " +
+                   $"\"SessionNum\": {SessionId} " +
+                   $"}}";
         }
 
     }

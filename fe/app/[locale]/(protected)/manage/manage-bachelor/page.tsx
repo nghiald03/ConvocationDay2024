@@ -49,7 +49,7 @@ export default function Page() {
 
   useEffect(() => {
     if (bachelorDT?.data) {
-      setBachelorList(bachelorDT.data.data);
+      setBachelorList(bachelorDT.data.data.items);
     }
   }, [bachelorDT]);
 

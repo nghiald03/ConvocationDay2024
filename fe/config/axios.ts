@@ -1,10 +1,13 @@
 import { Bachelor } from '@/dtos/BachelorDTO';
 import axios from 'axios';
 
-const BASE_URL = 'http://fjourney.site:85/api';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
+  ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
+  : 'http://fjourney.site:852/api';
+console.log(BASE_URL);
 
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_SITE_URL + '/api',
 });
 
 axiosInstance.interceptors.request.use((config) => {
@@ -54,8 +57,9 @@ export const checkinAPI = {
     return await axiosInstance.put('/Checkin/UpdateCheckin', data);
   },
   getLocation: async (data: any) => {
+    console.log(BASE_URL + '/Checkin/GetLocation');
     return await axiosInstance.get(
-      `/Bachelor/search?keySearch=${data}&pageIndex=1&pageSize=10`
+      `/Bachelor/search?keySearch=${data}&pageIndex=1&pageSize=1000`
     );
   },
 };
