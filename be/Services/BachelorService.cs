@@ -152,7 +152,8 @@ namespace FA23_Convocation2023_API.Services
                         checkIn = new CheckIn
                         {
                             HallId = hall.HallId,
-                            SessionId = session.Session1
+                            SessionId = session.Session1,
+                            Status = null
                         };
                         await _context.CheckIns.AddAsync(checkIn);
                         await _context.SaveChangesAsync();
