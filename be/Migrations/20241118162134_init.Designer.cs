@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FA23_Convocation2023_API.Migrations
 {
     [DbContext(typeof(Convo24Context))]
-    [Migration("20241114124736_Init")]
-    partial class Init
+    [Migration("20241118162134_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -98,9 +98,9 @@ namespace FA23_Convocation2023_API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("HallId");
+                    b.HasIndex(new[] { "HallId" }, "IX_Bachelor_HallId");
 
-                    b.HasIndex("SessionId");
+                    b.HasIndex(new[] { "SessionId" }, "IX_Bachelor_SessionId");
 
                     b.ToTable("Bachelor", (string)null);
                 });
@@ -125,9 +125,9 @@ namespace FA23_Convocation2023_API.Migrations
 
                     b.HasKey("CheckinId");
 
-                    b.HasIndex("HallId");
+                    b.HasIndex(new[] { "HallId" }, "IX_CheckIn_HallId");
 
-                    b.HasIndex("SessionId");
+                    b.HasIndex(new[] { "SessionId" }, "IX_CheckIn_SessionId");
 
                     b.ToTable("CheckIn", (string)null);
                 });
@@ -135,12 +135,14 @@ namespace FA23_Convocation2023_API.Migrations
             modelBuilder.Entity("FA23_Convocation2023_API.Models.Hall", b =>
                 {
                     b.Property<int>("HallId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("HallId"));
 
                     b.Property<string>("HallName")
                         .HasMaxLength(100)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(100)");
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("HallId");
 
@@ -157,8 +159,7 @@ namespace FA23_Convocation2023_API.Migrations
 
                     b.Property<string>("RoleName")
                         .HasMaxLength(10)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(10)");
+                        .HasColumnType("nvarchar(10)");
 
                     b.HasKey("RoleId");
 
@@ -168,7 +169,10 @@ namespace FA23_Convocation2023_API.Migrations
             modelBuilder.Entity("FA23_Convocation2023_API.Models.Session", b =>
                 {
                     b.Property<int>("SessionId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SessionId"));
 
                     b.Property<int?>("Session1")
                         .HasColumnType("int")
@@ -198,8 +202,7 @@ namespace FA23_Convocation2023_API.Migrations
 
                     b.Property<string>("Password")
                         .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("RoleId")
                         .HasMaxLength(2)
@@ -209,7 +212,7 @@ namespace FA23_Convocation2023_API.Migrations
 
                     b.HasKey("UserId");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex(new[] { "RoleId" }, "IX_Users_RoleID");
 
                     b.ToTable("Users");
                 });

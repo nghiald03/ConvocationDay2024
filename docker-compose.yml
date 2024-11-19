@@ -2,7 +2,7 @@ services:
   database:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverconvo
-    hostname: sqlhost
+    hostname: database
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=<YourStronggg@Passw0rd>
@@ -21,7 +21,7 @@ services:
       - '85:80' # Expose ASP.NET Core service
       - '86:443' # HTTPS port (optional)
     environment:
-      - ConnectionStrings__Convocation2023DB=Data Source=db.fjourney.site;Initial Catalog=Convocation2023;User ID=sa;Password=<YourStrong@Passw0rda>;TrustServerCertificate=true;MultipleActiveResultSets=True;
+      - ConnectionStrings__DefaultConnection=Server=database,1433;Database=ConvocationDB;User Id=sa;Password=<YourStronggg@Passw0rd>;Encrypt=True;TrustServerCertificate=True;
     depends_on:
       - database
     restart: unless-stopped

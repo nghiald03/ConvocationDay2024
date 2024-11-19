@@ -22,7 +22,28 @@ namespace FA23_Convocation2023_API
         {
 
             var builder = WebApplication.CreateBuilder(args);
-            var connectionString = builder.Configuration.GetConnectionString("Convocation2023DB");
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+            var loggerFactory = LoggerFactory.Create(logging => logging.AddConsole());
+            var logger = loggerFactory.CreateLogger<Program>();
+
+            
+            logger.LogInformation("Connection String: {ConnectionString}", connectionString);
+
+            try
+            {
+                builder.Services.AddDbContext<Convo24Context>(options =>
+                    options.UseSqlServer(connectionString));
+
+                logger.LogInformation("Convo24Context has been configured successfully.");
+            }
+            catch (Exception ex)
+            {
+                // Log any exceptions that occur during the setup
+                logger.LogError(ex, "An error occurred while configuring the DbContext.");
+            }
+
+            //var connectionString = builder.Configuration.GetConnectionString("Convocation2023DB");
 
             // Add services to the container.
             builder.Services.AddControllers();
@@ -36,8 +57,6 @@ namespace FA23_Convocation2023_API
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             // Add DbContext
-            builder.Services.AddDbContext<Convo24Context>(options =>
-    options.UseSqlServer(connectionString));
             // Add CORS
             builder.Services.AddCors(options => {
                 options.AddPolicy("CORSPolicy", builder => 
@@ -109,8 +128,35 @@ namespace FA23_Convocation2023_API
             app.MapHub<MessageHub>("chat-hub");
 
             app.MapControllers();
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<Convo24Context>();
+
+                try
+                {
+                    // Kiểm tra nếu database không tồn tại, tạo mới
+                    if (dbContext.Database.EnsureCreated())
+                    {
+                        dbContext.Database.Migrate();
+                        logger.LogInformation("Database created successfully.");
+                    }
+                    else
+                    {
+                        logger.LogInformation("Database already exists.");
+                    }
+
+                    
+                    
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "An error occurred while ensuring database creation or applying migrations.");
+                }
+            }
 
             app.Run();
+
+
         }
     }
 }

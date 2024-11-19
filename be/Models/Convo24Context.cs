@@ -9,10 +9,11 @@ namespace FA23_Convocation2023_API.Models
 {
     public partial class Convo24Context : DbContext
     {
+
         public Convo24Context()
         {
+            
         }
-
         public Convo24Context(DbContextOptions<Convo24Context> options)
             : base(options)
         {
@@ -25,12 +26,36 @@ namespace FA23_Convocation2023_API.Models
         public virtual DbSet<Session> Sessions { get; set; }
         public virtual DbSet<User> Users { get; set; }
 
-
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-    => optionsBuilder.UseSqlServer("Data Source=db.fjourney.site;Initial Catalog=Convocation2023;User ID=sa;Password=<YourStrong@Passw0rda>;TrustServerCertificate=true;MultipleActiveResultSets=True");
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                   .SetBasePath(Directory.GetCurrentDirectory())
+                   .AddJsonFile("appsettings.json")
+                   .Build();
+                var connectionString = configuration.GetConnectionString("DefaultConnection");
+                optionsBuilder.UseSqlServer(connectionString);
+            }
+        }
+        //        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+        //    => optionsBuilder.UseSqlServer("Data Source=db.fjourney.site;Initial Catalog=Convocation2023;User ID=sa;Password=<YourStrong@Passw0rda>;TrustServerCertificate=true;MultipleActiveResultSets=True");
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+
+            modelBuilder.Entity<Role>().HasData(
+        new Role { RoleId = "1", RoleName = "MN" },
+        new Role { RoleId = "2", RoleName = "CK" },
+        new Role { RoleId = "3", RoleName = "US" }
+    );
+
+            // Thêm dữ liệu mẫu cho bảng Users
+            modelBuilder.Entity<User>().HasData(
+                new User { UserId = "1", FullName = "Mana", Email = "mana@gmail.com", Password = "123456", RoleId = "1" },
+                new User { UserId = "2", FullName = "CheckIn", Email = "checkin@gmail.com", Password = "123456", RoleId = "2" },
+                new User { UserId = "3", FullName = "User", Email = "user@gmail.com", Password = "123456", RoleId = "3" }
+            );
             modelBuilder.Entity<Bachelor>(entity =>
             {
                 entity.ToTable("Bachelor");
