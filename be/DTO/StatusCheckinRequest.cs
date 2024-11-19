@@ -2,8 +2,7 @@
 {
     public class StatusCheckinRequest
     {
-        public int HallId {  get; set; }
-        public int SessionId {  get; set; }
-        public bool Status {  get; set; }
+        public int CheckinId { get; set; }
+        public bool Status { get; set; }
     }
 }

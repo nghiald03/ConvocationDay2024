@@ -106,10 +106,10 @@ namespace FA23_Convocation2023_API.Services
         }
 
         //get status checkin
-        public async Task<CheckIn> UpdateStatusCheckinAsync(int hallId, int sessionId, bool status)
+        public async Task<CheckIn> UpdateStatusCheckinAsync(int checkinId, bool status)
         {
             var statusCheckin = await _context.CheckIns.FirstOrDefaultAsync(
-                c => c.HallId == hallId && c.SessionId == sessionId);
+                c => c.CheckinId == checkinId) ?? throw new Exception("Checkin không tồn tại!");
             statusCheckin.Status = status;
             //if status == fasle, get all bacchelor by hallName and sessionNum and find all bachelor have checkin = false and create new list bachelor by list bachelor just found which same infor but hallname and sessionnum == null
             //if (statusCheckin.Status == false)
