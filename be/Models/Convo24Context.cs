@@ -30,11 +30,24 @@ namespace FA23_Convocation2023_API.Models
         {
             if (!optionsBuilder.IsConfigured)
             {
+                var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
                 IConfigurationRoot configuration = new ConfigurationBuilder()
-                   .SetBasePath(Directory.GetCurrentDirectory())
-                   .AddJsonFile("appsettings.json")
-                   .Build();
-                var connectionString = configuration.GetConnectionString("DefaultConnection");
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json")
+                    .Build();
+
+                string connectionString;
+
+                if (environment == "Development")
+                {
+                    connectionString = configuration.GetConnectionString("DbConnection");
+                }
+                else // Production
+                {
+                    connectionString = configuration.GetConnectionString("DefaultConnection");
+                }
+
                 optionsBuilder.UseSqlServer(connectionString);
             }
         }

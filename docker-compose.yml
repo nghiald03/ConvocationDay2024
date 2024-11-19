@@ -5,7 +5,7 @@ services:
     hostname: database
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=<YourStronggg@Passw0rd>
+      - MSSQL_SA_PASSWORD=YourStronggg@Passw0rd
     ports:
       - '1431:1433'
     volumes:
@@ -21,7 +21,8 @@ services:
       - '85:80' # Expose ASP.NET Core service
       - '86:443' # HTTPS port (optional)
     environment:
-      - ConnectionStrings__DefaultConnection=Server=database,1433;Database=ConvocationDB;User Id=sa;Password=<YourStronggg@Passw0rd>;Encrypt=True;TrustServerCertificate=True;
+      - "ConnectionStrings:DefaultConnection=Server=database,1433;Database=ConvocationDB;User Id=sa;Password=YourStronggg@Passw0rd;Encrypt=True;TrustServerCertificate=True;"
+      - ASPNETCORE_ENVIRONMENT=Production
     depends_on:
       - database
     restart: unless-stopped
