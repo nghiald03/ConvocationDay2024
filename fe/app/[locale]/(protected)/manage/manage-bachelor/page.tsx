@@ -48,7 +48,7 @@ export default function Page() {
   });
 
   useEffect(() => {
-    if (bachelorDT?.data) {
+    if (bachelorDT?.data?.data?.items) {
       setBachelorList(bachelorDT.data.data.items);
     }
   }, [bachelorDT]);

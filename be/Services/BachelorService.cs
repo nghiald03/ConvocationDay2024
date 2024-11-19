@@ -15,21 +15,21 @@ namespace FA23_Convocation2023_API.Services
         public async Task<PagedResult<BachelorDTO>> SearchBachelorsAsync(string keySearch, int pageIndex, int pageSize)
         {
 
-           var query = _context.Bachelors.Include(b=>b.Hall).Include(b=>b.Session)
-          .Where(b => string.IsNullOrEmpty(keySearch) || b.FullName.Contains(keySearch) || b.StudentCode.Contains(keySearch))
-          .OrderBy(b => b.Id)
-          .Select(b => new BachelorDTO
-          {
-              Image = b.Image,
-              FullName = b.FullName,
-              Major = b.Major,
-              StudentCode = b.StudentCode,
-              Mail = b.Mail,
-              HallName = b.Hall.HallName, 
-              SessionNum = (int)b.Session.Session1, 
-              Chair = b.Chair,
-              ChairParent = b.ChairParent
-          });
+            var query = _context.Bachelors.Include(b => b.Hall).Include(b => b.Session)
+           .Where(b => string.IsNullOrEmpty(keySearch) || b.FullName.Contains(keySearch) || b.StudentCode.Contains(keySearch))
+           .OrderBy(b => b.Id)
+           .Select(b => new BachelorDTO
+           {
+               Image = b.Image,
+               FullName = b.FullName,
+               Major = b.Major,
+               StudentCode = b.StudentCode,
+               Mail = b.Mail,
+               HallName = b.Hall.HallName,
+               SessionNum = (int)b.Session.Session1,
+               Chair = b.Chair,
+               ChairParent = b.ChairParent
+           });
 
             var totalItems = await query.CountAsync();
             var items = await query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
@@ -49,9 +49,9 @@ namespace FA23_Convocation2023_API.Services
 
         }
 
-      
 
-            public async Task<PagedResult<ListBachelor>> GetAllBachelorAsync(int pageIndex, int pageSize)
+
+        public async Task<PagedResult<ListBachelor>> GetAllBachelorAsync(int pageIndex, int pageSize)
         {
 
             var query = _context.Bachelors.Include(b => b.Hall).Include(b => b.Session)
@@ -88,7 +88,7 @@ namespace FA23_Convocation2023_API.Services
                 HasPreviousPage = paginatedResult.HasPreviousPage,
                 HasNextPage = paginatedResult.HasNextPage
             };
-            
+
         }
 
         public async Task<object> AddBachelorAsync([FromBody] List<BachelorDTO> bachelorRequest)
@@ -107,7 +107,7 @@ namespace FA23_Convocation2023_API.Services
                 var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bItem.HallName);
                 var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum);
 
-                if (bachelor == null)
+                if (bachelor != null)
                 {
                     errorList.Add($"Bachelor {bItem.StudentCode} is existed!");
                     continue;

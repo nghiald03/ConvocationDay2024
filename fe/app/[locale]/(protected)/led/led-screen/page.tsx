@@ -134,52 +134,74 @@ export default function LedScreen() {
       .withAutomaticReconnect()
       .build();
 
+    // Hàm xử lý chuỗi JSON
     const parseMessage = (message: string) => {
-      const keyValuePairs: { [key: string]: any } = {};
+      try {
+        // Loại bỏ prefix "CurrentBachelor"
+        const cleanedMessage = message
+          .replace(/^CurrentBachelor\s*/, '')
+          .trim();
 
-      message
-        .replace('CurrentBachelor ', '') // Loại bỏ phần không cần thiết
-        .split(', ') // Tách từng cặp key-value
-        .forEach((pair) => {
-          const [key, ...valueParts] = pair.split(':'); // Tách key và value qua dấu ':'
-          const value = valueParts.join(':').trim(); // Gộp lại phần value nếu có dấu ':'
+        console.log('cleanedMessage', cleanedMessage);
 
-          // Xử lý kiểu dữ liệu
-          if (value === 'True') keyValuePairs[key] = true;
-          else if (value === 'False') keyValuePairs[key] = false;
-          else if (value === 'null' || value === '') keyValuePairs[key] = null;
-          else if (!isNaN(Number(value)))
-            keyValuePairs[key] = Number(value); // Chuyển số
-          else keyValuePairs[key] = value.trim(); // Chuỗi thông thường
-        });
+        const sanitizedMessage = cleanedMessage
+          .replace(/\\?"/g, '"') // Thay \" bằng "
+          .replace(/,? *\}$/, '}'); // Đảm bảo chỉ có một dấu } cuối cùng
 
-      return keyValuePairs;
+        console.log('sanitizedMessage', sanitizedMessage);
+
+        // Chuyển chuỗi JSON thành object
+        const parsedData = JSON.parse(sanitizedMessage);
+        return parsedData;
+      } catch (error) {
+        console.error('Error parsing JSON message:', error);
+        return null; // Trả về null nếu có lỗi
+      }
     };
 
+    // Hàm khởi tạo kết nối SignalR
     async function startSignalRConnection() {
       try {
         await connection.start();
         console.log('SignalR connection started.');
 
+        // Lắng nghe sự kiện 'SendMessage'
         connection.on('SendMessage', (message: string) => {
           try {
             console.log('Raw message:', message);
+
+            // Gọi hàm parseMessage để xử lý chuỗi
             const parsedData = parseMessage(message);
+            if (!parsedData) {
+              console.warn(
+                'Parsed message is null. Skipping further processing.'
+              );
+              return;
+            }
+
             console.log('Parsed message:', parsedData);
 
+            // Chuyển đổi dữ liệu thành đối tượng Bachelor
             const bachelorData: Bachelor = {
-              image: parsedData['Image'],
-              fullName: parsedData['FullName'],
-              major: parsedData['Major'],
-              studentCode: parsedData['StudentCode'],
-              mail: parsedData['Mail'],
-              hallName: parsedData['HallName'],
-              sessionNum: parsedData['SessionNum'],
-              chair: parsedData['Chair'],
-              chairParent: parsedData['ChairParent'],
+              image: parsedData.Image,
+              fullName: parsedData.FullName,
+              major: parsedData.Major,
+              studentCode: parsedData.StudentCode,
+              mail: parsedData.Mail,
+              hallName: parsedData.HallName,
+              sessionNum: parsedData.SessionNum,
+              chair: parsedData.Chair ?? null, // Tránh lỗi nếu không có dữ liệu Chair
+              chairParent: parsedData.ChairParent ?? null, // Tránh lỗi nếu không có dữ liệu ChairParent
             };
 
             console.log('Bachelor data:', bachelorData);
+            if (
+              bachelorData.hallName.toString() === hall &&
+              bachelorData.sessionNum.toString() === session
+            ) {
+              console.log('Matched hall and session:', hall, session);
+            }
+            // TODO: Thực hiện hành động với dữ liệu này (cập nhật state, gọi API, v.v.)
           } catch (error) {
             console.error('Error processing message:', error);
           }
@@ -191,8 +213,10 @@ export default function LedScreen() {
 
     startSignalRConnection();
 
+    // Cleanup khi component bị hủy
     return () => {
       connection.stop();
+      console.log('SignalR connection stopped.');
     };
   }, []);
 
