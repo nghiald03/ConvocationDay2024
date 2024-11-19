@@ -95,82 +95,85 @@ namespace FA23_Convocation2023_API.Services
         {
             List<string> errorList = new List<string>();
 
-            // Lấy danh sách mã sinh viên từ yêu cầu
-            var studentCodes = bachelorRequest.Select(b => b.StudentCode).ToList();
-            // Lấy danh sách sinh viên đã tồn tại
-            var existingStudents = await _context.Bachelors
-                .Where(b => studentCodes.Contains(b.StudentCode))
-                .Select(b => b.StudentCode)
-                .ToListAsync();
-
-            // Tạo bộ nhớ đệm cho các CheckIn đã tồn tại dựa trên HallId và SessionId
-            var existingCheckIns = await _context.CheckIns
-                .Select(c => new { c.HallId, c.SessionId })
-                .ToDictionaryAsync(c => (c.HallId, c.SessionId), c => true);
-
             foreach (var bItem in bachelorRequest)
             {
+                //check any field is null
+                if (string.IsNullOrEmpty(bItem.Image) || string.IsNullOrEmpty(bItem.FullName) || string.IsNullOrEmpty(bItem.StudentCode) || string.IsNullOrEmpty(bItem.Mail) || string.IsNullOrEmpty(bItem.Major) || string.IsNullOrEmpty(bItem.HallName) || bItem.SessionNum == 0 || string.IsNullOrEmpty(bItem.Chair) || string.IsNullOrEmpty(bItem.ChairParent))
+                {
+                    errorList.Add($"Bachelor {bItem.StudentCode} has null field!");
+                    continue;
+                }
+                var bachelor = await _context.Bachelors.FirstOrDefaultAsync(b => b.StudentCode.Equals(bItem.StudentCode));
                 var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bItem.HallName);
                 var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum);
 
-                if (existingStudents.Contains(bItem.StudentCode))
+                if (bachelor == null)
                 {
                     errorList.Add($"Bachelor {bItem.StudentCode} is existed!");
                     continue;
                 }
-                if (hall == null)
-                {
-                    errorList.Add($"Hall {bItem.HallName} not found!");
-                    continue;
-                }
-                if (session == null)
-                {
-                    errorList.Add($"Session {bItem.SessionNum} not found!");
-                    continue;
-                }
-
-                // Kiểm tra xem CheckIn có tồn tại trong bộ nhớ đệm không
-                if (!existingCheckIns.ContainsKey((hall.HallId, session.SessionId)))
-                {
-                    var checkin = new CheckIn
-                    {
-                        HallId = hall.HallId,
-                        SessionId = session.SessionId,
-                        Status = null,
-                        Hall = hall,
-                        Session = session
-                    };
-                    await _context.CheckIns.AddAsync(checkin);
-
-                    // Thêm CheckIn mới vào bộ nhớ đệm
-                    existingCheckIns[(hall.HallId, session.SessionId)] = true;
-                }
-
-                var bachelor = new Bachelor
-                {
-                    Image = bItem.Image,
-                    FullName = bItem.FullName,
-                    StudentCode = bItem.StudentCode,
-                    Major = bItem.Major,
-                    Mail = bItem.Mail,
-                    HallId = hall.HallId,
-                    SessionId = session.SessionId,
-                    Status = false,
-                    CheckIn = false,
-                    Chair = bItem.Chair,
-                    ChairParent = bItem.ChairParent,
-                };
-
-                await _context.Bachelors.AddAsync(bachelor);
             }
+            //check list bachelor
 
-            await _context.SaveChangesAsync();
-
-            return new
+            if (errorList != null)
             {
-                Data = bachelorRequest,
-                ErrorMessages = errorList
-            };
+                return new
+                {
+                    ErrorMessages = errorList
+                };
+            }
+            else
+            {
+                //add list bachelor in database
+                foreach (var bItem in bachelorRequest)
+                {
+                    var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bItem.HallName);
+                    var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum);
+                    if (hall == null)
+                    {
+                        hall = new Hall
+                        {
+                            HallName = bItem.HallName
+                        };
+                        await _context.Halls.AddAsync(hall);
+                    }
+                    if (session == null)
+                    {
+                        session = new Session
+                        {
+                            Session1 = bItem.SessionNum
+                        };
+                        await _context.Sessions.AddAsync(session);
+                    }
+                    //check table checkin is existed
+                    var checkIn = await _context.CheckIns.FirstOrDefaultAsync(c => c.HallId == hall.HallId && c.SessionId == session.Session1);
+                    if (checkIn == null)
+                    {
+                        checkIn = new CheckIn
+                        {
+                            HallId = hall.HallId,
+                            SessionId = session.Session1
+                        };
+                        await _context.CheckIns.AddAsync(checkIn);
+                        await _context.SaveChangesAsync();
+                        var bachelor = new Bachelor
+                        {
+                            Image = bItem.Image,
+                            FullName = bItem.FullName,
+                            StudentCode = bItem.StudentCode,
+                            Mail = bItem.Mail,
+                            Major = bItem.Major,
+                            HallId = hall.HallId,
+                            SessionId = session.SessionId,
+                            Chair = bItem.Chair,
+                            ChairParent = bItem.ChairParent
+                        };
+                        await _context.Bachelors.AddAsync(bachelor);
+                    }
+                    await _context.SaveChangesAsync();
+                }
+                return bachelorRequest;
+            }
         }
 
         //update UpdateBachelorAsync
