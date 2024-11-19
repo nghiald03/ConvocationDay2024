@@ -46,7 +46,9 @@ export const testing = {
 
 export const checkinAPI = {
   getBachelorList: async () => {
-    return await axiosInstance.get('/Bachelor/GetAll');
+    return await axiosInstance.get(
+      '/Bachelor/GetAll?pageIndex=1&pageSize=2000'
+    );
   },
   checkin: async (data: any) => {
     return await axiosInstance.put('/Checkin/UpdateCheckin', data);
@@ -67,5 +69,11 @@ export const manageAPI = {
   },
   uploadImage: async (data: FormData) => {
     return await axios.post('http://fjourney.site:3214/upload', data);
+  },
+  getCheckinList: async () => {
+    return await axiosInstance.get('/Checkin/GetAllStatusCheckin');
+  },
+  updateStatusCheckin: async (data: any) => {
+    return await axiosInstance.put('/Checkin/UpdateStatusCheckin', data);
   },
 };

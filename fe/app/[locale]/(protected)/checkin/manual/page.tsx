@@ -25,7 +25,8 @@ import { ColumnDef } from '@tanstack/react-table';
 import { Eye, SquarePen, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import toast from 'react-hot-toast';
+
 import swal from 'sweetalert';
 
 export default function Page() {
@@ -43,8 +44,17 @@ export default function Page() {
   });
 
   useEffect(() => {
+    if (bachelorDTEr) {
+      toast.error('Lỗi khi lấy danh sách tân cử nhân', {
+        duration: 3000,
+        position: 'top-right',
+      });
+    }
+  }, [bachelorDTEr]);
+
+  useEffect(() => {
     if (bachelorDT?.data) {
-      setBachelorList(bachelorDT.data.data);
+      setBachelorList(bachelorDT.data.data.items);
     }
   }, [bachelorDT]);
 
@@ -57,21 +67,19 @@ export default function Page() {
       console.log(nData);
       return checkinAPI.checkin(nData);
     },
-    onMutate: (data: any) => {
-      console.log('onMutate', data);
-    },
     onError: (error) => {
-      toast.error(`Checkin thất bại`, {
-        duration: 3000,
-        position: 'top-right',
-      });
+      // toast.error(`Checkin thất bại`, {
+      //   duration: 3000,
+      //   position: 'top-right',
+      //   important: true,
+      // });
     },
     onSuccess: (data, variables) => {
       console.log('onSuccess', variables);
-      toast.success(`Checkin cho ${variables.fullName} thành công`, {
-        duration: 3000,
-        position: 'top-right',
-      });
+      // toast.success(`Checkin cho ${variables.fullName} thành công`, {
+      //   duration: 3000,
+      //   position: 'top-right',
+      // });
       queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
     },
   });
@@ -85,7 +93,16 @@ export default function Page() {
       dangerMode: true,
     }).then((value) => {
       if (value) {
-        checkinAction.mutate(data);
+        // checkinAction.mutate(data);
+        toast.promise(
+          checkinAction.mutateAsync(data),
+          {
+            loading: 'Đang checkin...',
+            success: `Checkin cho ${data.fullName} thành công`,
+            error: `Checkin cho ${data.fullName} thất bại hoặc session chưa mở hoặc kết thúc!`,
+          },
+          { position: 'top-right', duration: 3000 }
+        );
       }
     });
   };
