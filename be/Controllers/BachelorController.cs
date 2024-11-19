@@ -55,7 +55,7 @@ namespace FA23_Convocation2023_API.Controllers
             {
                 return BadRequest("Page index and page size must be greater than zero.");
             }
-            var result = await _bachService.GetAllBachelorAsync(pageIndex,pageSize);
+            var result = await _bachService.GetAllBachelorAsync(pageIndex, pageSize);
             if (result.TotalItems == 0) return Ok(new
             {
                 status = StatusCodes.Status204NoContent,
@@ -78,14 +78,14 @@ namespace FA23_Convocation2023_API.Controllers
             if (((dynamic)result).ErrorMessages != null) return BadRequest(new
             {
                 status = StatusCodes.Status400BadRequest,
-                message = "Có lỗi xảy ra trong quá trình thêm Bachelor! Chi tiết trong messages",
+                message = "Có lỗi xảy ra trong quá trình thêm tân cử nhân! Chi tiết trong messages",
                 errorMessages = ((dynamic)result).ErrorMessages,
                 data = bachelorRequest
             });
             return Ok(new
             {
                 status = StatusCodes.Status200OK,
-                message = "Thêm danh sách Bachelor thành công!",
+                message = "Thêm danh sách tân cử nhân thành công!",
                 data = bachelorRequest
             });
         }

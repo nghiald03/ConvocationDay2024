@@ -115,7 +115,7 @@ namespace FA23_Convocation2023_API.Services
             }
             //check list bachelor
 
-            if (errorList != null)
+            if (errorList.Count() > 0)
             {
                 return new
                 {
