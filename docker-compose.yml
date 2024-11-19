@@ -11,6 +11,10 @@ services:
     volumes:
       - sql_data:/var/opt/mssql
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 8g
 
   be:
     build:
