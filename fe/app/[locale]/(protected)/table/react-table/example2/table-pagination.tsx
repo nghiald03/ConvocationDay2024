@@ -26,17 +26,13 @@ interface DataTablePaginationProps {
 }
 
 const TablePagination = ({
-  currentPage,
   hasNextPage,
   hasPreviousPage,
   pageIndex,
-  pageSize,
   setPageIndex,
   setPageSize,
-  totalItems,
   totalPages,
 }: DataTablePaginationProps) => {
-  const MAX_PAGES_DISPLAY = 5; // Số button tối đa sẽ hiển thị
   const PAGE_SIZES = [20, 25, 30, 50, 100];
   return (
     <div className='flex items-center justify-end py-4 px-10'>

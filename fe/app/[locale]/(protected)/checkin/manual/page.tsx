@@ -59,10 +59,32 @@ export default function Page() {
     queryKey: ['bachelorList'],
 
     queryFn: () => {
-      if (hall === '-1' || session === '-1') {
+      if (hall === '-1') {
+        if (session === '-1') {
+          return checkinAPI.getBachelorList({
+            pageIndex: pageIndex,
+            pageSize: pageSize,
+            search: searchTextQuery,
+          });
+        }
         return checkinAPI.getBachelorList({
           pageIndex: pageIndex,
           pageSize: pageSize,
+          session: session,
+          search: searchTextQuery,
+        });
+      } else if (session === '-1') {
+        if (hall === '-1') {
+          return checkinAPI.getBachelorList({
+            pageIndex: pageIndex,
+            pageSize: pageSize,
+            search: searchTextQuery,
+          });
+        }
+        return checkinAPI.getBachelorList({
+          pageIndex: pageIndex,
+          pageSize: pageSize,
+          hall: hall,
           search: searchTextQuery,
         });
       }
@@ -328,7 +350,7 @@ export default function Page() {
                   <SelectContent color='primary'>
                     <SelectGroup>
                       <SelectLabel>Hội Trường</SelectLabel>
-                      <SelectItem value='ALL' key='all'>
+                      <SelectItem value='-1' key='all'>
                         Toàn bộ hội trường
                       </SelectItem>
                       {hallList &&
@@ -348,7 +370,7 @@ export default function Page() {
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Session</SelectLabel>
-                      <SelectItem value='ALL' key='all'>
+                      <SelectItem value='-1' key='all'>
                         Toàn bộ session
                       </SelectItem>
                       {sessionList &&
