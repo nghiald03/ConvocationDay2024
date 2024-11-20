@@ -7,7 +7,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
 console.log(BASE_URL);
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_SITE_URL + '/api',
+  baseURL: 'http://fjourney.site:85' + '/api',
 });
 
 axiosInstance.interceptors.request.use((config) => {
