@@ -9,12 +9,12 @@ const ReactTablePage = () => {
       <SiteBreadcrumb />
       <div className='space-y-6'>
         <Card>
-          <CardContent className="p-0">
+          <CardContent className='p-0'>
             <ExampleOne />
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-0">
+          <CardContent className='p-0'>
             <ExampleTwo />
           </CardContent>
         </Card>
