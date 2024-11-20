@@ -10,6 +10,16 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
   Tooltip,
@@ -17,7 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { checkinAPI } from '@/config/axios';
+import { checkinAPI, ledAPI, manageAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -42,6 +52,38 @@ export default function Page() {
       return checkinAPI.getBachelorList();
     },
   });
+
+  const { data: hallList, error: hallListEr } = useQuery({
+    queryKey: ['hallList'],
+    queryFn: () => {
+      return ledAPI.getHallList();
+    },
+  });
+
+  const { data: sessionList, error: sessionListEr } = useQuery({
+    queryKey: ['sessionList'],
+    queryFn: () => {
+      return ledAPI.getSessionList();
+    },
+  });
+
+  useEffect(() => {
+    if (hallListEr) {
+      toast.error('Lỗi khi lấy danh sách hội trường', {
+        duration: 5000,
+        position: 'top-right',
+      });
+    }
+  }, [hallListEr]);
+
+  useEffect(() => {
+    if (sessionListEr) {
+      toast.error('Lỗi khi lấy danh sách session', {
+        duration: 5000,
+        position: 'top-right',
+      });
+    }
+  }, [sessionListEr]);
 
   useEffect(() => {
     if (bachelorDTEr) {
@@ -212,6 +254,60 @@ export default function Page() {
             isLoading={isLoading}
             data={bachelorList}
             columns={columns}
+            header={
+              <div className='flex gap-2 w-full'>
+                <Input
+                  className='w-[400px]'
+                  placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
+                ></Input>
+                <Select>
+                  <SelectTrigger color='primary' className='w-[180px]'>
+                    <SelectValue
+                      color='primary'
+                      placeholder='Chọn hội trường'
+                    />
+                  </SelectTrigger>
+                  <SelectContent color='primary'>
+                    <SelectGroup>
+                      <SelectLabel>Hội Trường</SelectLabel>
+                      <SelectItem value='ALL' key='all'>
+                        Toàn bộ hội trường
+                      </SelectItem>
+                      {hallList &&
+                        Array.isArray(hallList?.data.data) &&
+                        hallList.data.data.map((item: any) => (
+                          <SelectItem key={item.hallId} value={item.hallId}>
+                            {item.hallName}
+                          </SelectItem>
+                        ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <Select>
+                  <SelectTrigger className='w-[180px]'>
+                    <SelectValue placeholder='Chọn session' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Session</SelectLabel>
+                      <SelectItem value='ALL' key='all'>
+                        Toàn bộ session
+                      </SelectItem>
+                      {sessionList &&
+                        Array.isArray(sessionList?.data.data) &&
+                        sessionList.data.data.map((item: any) => (
+                          <SelectItem
+                            key={item.sessionId}
+                            value={item.sessionId}
+                          >
+                            {item.session1}
+                          </SelectItem>
+                        ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            }
           ></TableCustom>
         </CardContent>
       </Card>

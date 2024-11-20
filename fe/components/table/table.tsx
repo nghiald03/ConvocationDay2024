@@ -83,7 +83,7 @@ const TableCustom = ({
         <div className='flex-1 text-xl font-medium text-default-900'>
           {title}
         </div>
-        <div className='flex-none'>
+        <div className=''>
           {/* <Input
             placeholder='Filter Status...'
             value={
