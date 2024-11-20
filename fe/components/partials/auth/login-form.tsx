@@ -22,7 +22,6 @@ const schema = z.object({
   password: z.string().min(4, { message: 'Mật khẩu phải có ít nhất 4 ký tự' }),
 });
 const LoginForm = () => {
-  const [isPending, startTransition] = React.useTransition();
   const router = useRouter();
   const [passwordType, setPasswordType] = React.useState('password');
 
@@ -43,8 +42,8 @@ const LoginForm = () => {
     resolver: zodResolver(schema),
     mode: 'all',
     defaultValues: {
-      email: 'abcse@gmail.com',
-      password: '*********',
+      email: '',
+      password: '',
     },
   });
 
@@ -114,7 +113,7 @@ const LoginForm = () => {
         </Label>
         <Input
           size='lg'
-          disabled={isPending}
+          disabled={getDriverVerifyMutation.isPending}
           {...register('email')}
           type='email'
           id='email'
@@ -136,7 +135,7 @@ const LoginForm = () => {
         <div className='relative'>
           <Input
             size='lg'
-            disabled={isPending}
+            disabled={getDriverVerifyMutation.isPending}
             {...register('password')}
             type={passwordType}
             id='password'
@@ -167,9 +166,16 @@ const LoginForm = () => {
         </div>
       )}
 
-      <Button fullWidth disabled={isPending} className='bg-primary mt-5'>
-        {isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
-        {isPending ? 'Loading...' : 'Sign In'}
+      <Button
+        fullWidth
+        disabled={getDriverVerifyMutation.isPending}
+        color='primary'
+        className=' mt-5'
+      >
+        {getDriverVerifyMutation.isPending && (
+          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+        )}
+        {getDriverVerifyMutation.isPending ? 'Loading...' : 'Sign In'}
       </Button>
     </form>
   );

@@ -1,21 +1,17 @@
 'use client';
 
 import {
-  ColumnFiltersState,
   SortingState,
   VisibilityState,
   flexRender,
   getCoreRowModel,
   getExpandedRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import ReactPaginate from 'react-paginate';
 
-import { Input } from '@/components/ui/input';
-
+import TablePagination from '@/app/[locale]/(protected)/table/react-table/example2/table-pagination';
 import {
   Table,
   TableBody,
@@ -24,11 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import TablePagination from '@/app/[locale]/(protected)/table/react-table/example2/table-pagination';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import { Fragment, useEffect, useState } from 'react';
-import { set } from 'lodash';
+import { Fragment, useState } from 'react';
 
 export type TableProps = {
   data: any[];
@@ -50,14 +44,12 @@ export type TableProps = {
 };
 
 const TableCustom = ({
-  currentPage,
   hasNextPage,
   hasPreviousPage,
   pageIndex,
   pageSize,
   setPageIndex,
   setPageSize,
-  setCurrentPage,
   totalItems,
   totalPages,
   data,
@@ -72,24 +64,6 @@ const TableCustom = ({
   const [expanded, setExpanded] = useState({});
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-
-  useEffect(() => {
-    console.log('currentPage', currentPage);
-    console.log('pageIndex', pageIndex);
-    console.log('pageSize', pageSize);
-    console.log('totalItems', totalItems);
-    console.log('totalPages', totalPages);
-    console.log('hasNextPage', hasNextPage);
-    console.log('hasPreviousPage', hasPreviousPage);
-  }, [
-    currentPage,
-    pageIndex,
-    pageSize,
-    totalItems,
-    totalPages,
-    hasNextPage,
-    hasPreviousPage,
-  ]);
 
   const table = useReactTable({
     data,
@@ -194,8 +168,7 @@ const TableCustom = ({
         </TableBody>
       </Table>
       {/* Pagination could be added here if you uncomment and configure TablePagination */}
-      {currentPage &&
-        pageIndex &&
+      {pageIndex &&
         pageSize &&
         totalItems &&
         totalPages &&
@@ -204,7 +177,6 @@ const TableCustom = ({
         setPageSize &&
         setPageIndex && (
           <TablePagination
-            currentPage={currentPage}
             hasNextPage={hasNextPage}
             hasPreviousPage={hasPreviousPage}
             pageIndex={pageIndex}

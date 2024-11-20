@@ -8,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,24 +20,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { checkinAPI, ledAPI, manageAPI } from '@/config/axios';
+import { checkinAPI, ledAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
-import { Icon } from '@iconify/react/dist/iconify.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
-import { Eye, SquarePen, Trash2 } from 'lucide-react';
-import Image from 'next/image';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useDebounce } from 'use-debounce';
 import swal from 'sweetalert';
-import { set } from 'lodash';
+import { useDebounce } from 'use-debounce';
 
 export default function Page() {
   const queryClient = useQueryClient();
@@ -332,11 +321,10 @@ export default function Page() {
             hasNextPage={bachelorDT?.data?.data?.hasNextPage}
             hasPreviousPage={bachelorDT?.data?.data?.hasPreviousPage}
             currentPage={bachelorDT?.data?.data?.currentPage}
-            setCurrentPage={setCurrentPage}
             header={
               <div className='flex gap-2 w-full'>
                 <Input
-                  className='w-[400px]'
+                  className='w-[400px] h-full'
                   placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
                   onChange={(e) => setSearch(e.target.value)}
                 />

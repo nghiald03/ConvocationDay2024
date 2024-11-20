@@ -6,11 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Table } from '@tanstack/react-table';
-import { outline } from '@yudiel/react-qr-scanner';
-import { set } from 'lodash';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import React, { useState } from 'react';
 import ReactPaginate from 'react-paginate';
 
 interface DataTablePaginationProps {
@@ -18,7 +14,6 @@ interface DataTablePaginationProps {
   pageIndex: number;
   totalItems: number;
   totalPages: number;
-  currentPage: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
   setPageSize: (pageSize: number) => void;
@@ -33,7 +28,7 @@ const TablePagination = ({
   setPageSize,
   totalPages,
 }: DataTablePaginationProps) => {
-  const PAGE_SIZES = [20, 25, 30, 50, 100];
+  const PAGE_SIZES = [10, 25, 30, 50, 100];
   return (
     <div className='flex items-center justify-end py-4 px-10'>
       <div className='flex text-sm text-muted-foreground'>
@@ -41,7 +36,7 @@ const TablePagination = ({
       </div>
       <div className='flex-1 ml-4'>
         <Select
-          defaultValue='20'
+          defaultValue={PAGE_SIZES[0].toString()}
           onValueChange={(value) => {
             setPageSize(Number(value));
           }}
@@ -62,12 +57,17 @@ const TablePagination = ({
       <div className='flex items-center gap-2 flex-none'>
         <ReactPaginate
           breakLabel={
-            <Button variant={'outline'} color='primary'>
+            <Button size='sm' variant={'ghost'} color='primary'>
               ...
             </Button>
           }
           nextLabel={
-            <Button variant={'outline'} color='primary' disabled={!hasNextPage}>
+            <Button
+              size='sm'
+              variant={'outline'}
+              color='primary'
+              disabled={!hasNextPage}
+            >
               <ChevronRight className='w-4 h-4' />
             </Button>
           }
@@ -78,6 +78,7 @@ const TablePagination = ({
           pageCount={totalPages}
           previousLabel={
             <Button
+              size='sm'
               variant={'outline'}
               color='primary'
               disabled={!hasPreviousPage}
@@ -88,6 +89,7 @@ const TablePagination = ({
           className='flex gap-1 justify-center align-middle'
           pageLabelBuilder={(page) => (
             <Button
+              size='sm'
               variant={page === pageIndex ? 'default' : 'outline'}
               color='primary'
             >
