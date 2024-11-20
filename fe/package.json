@@ -102,6 +102,7 @@
     "react-hook-form": "^7.52.1",
     "react-hot-toast": "^2.4.1",
     "react-leaflet": "^4.2.1",
+    "react-paginate": "^8.2.0",
     "react-quill": "^0.0.2",
     "react-resizable-panels": "^2.0.19",
     "react-select": "^5.8.0",
@@ -114,6 +115,7 @@
     "swiper": "^11.1.4",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "use-debounce": "^10.0.4",
     "vaul": "^0.9.1",
     "xlsx": "^0.18.5",
     "zod": "^3.23.8"

@@ -7,56 +7,47 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Table } from '@tanstack/react-table';
+import { outline } from '@yudiel/react-qr-scanner';
+import { set } from 'lodash';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
+import ReactPaginate from 'react-paginate';
 
 interface DataTablePaginationProps {
-  table: Table<any>;
+  pageSize: number;
+  pageIndex: number;
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  setPageSize: (pageSize: number) => void;
+  setPageIndex: (pageIndex: number) => void;
 }
 
-const TablePagination = ({ table }: DataTablePaginationProps) => {
+const TablePagination = ({
+  currentPage,
+  hasNextPage,
+  hasPreviousPage,
+  pageIndex,
+  pageSize,
+  setPageIndex,
+  setPageSize,
+  totalItems,
+  totalPages,
+}: DataTablePaginationProps) => {
   const MAX_PAGES_DISPLAY = 5; // Số button tối đa sẽ hiển thị
-  const [pageSize, setPageSize] = useState(10);
-  const PAGE_SIZES = [10, 20, 30, 50, 100];
-  const pageIndex = table.getState().pagination.pageIndex;
-  const totalPages = table.getPageOptions().length;
-
-  const getPageRange = () => {
-    if (totalPages <= MAX_PAGES_DISPLAY) {
-      return table.getPageOptions(); // Hiển thị tất cả nếu số trang ít hơn giới hạn
-    }
-
-    const start = Math.max(0, pageIndex - Math.floor(MAX_PAGES_DISPLAY / 2));
-    const end = Math.min(
-      totalPages - 1,
-      pageIndex + Math.floor(MAX_PAGES_DISPLAY / 2)
-    );
-
-    // Nếu đang ở đầu hoặc cuối, điều chỉnh để luôn hiển thị đủ số button
-    const rangeStart =
-      start === 0 ? start : Math.max(0, end - MAX_PAGES_DISPLAY + 1);
-    const rangeEnd =
-      end === totalPages - 1
-        ? end
-        : Math.min(totalPages - 1, rangeStart + MAX_PAGES_DISPLAY - 1);
-
-    return table.getPageOptions().slice(rangeStart, rangeEnd + 1);
-  };
+  const PAGE_SIZES = [20, 25, 30, 50, 100];
   return (
     <div className='flex items-center justify-end py-4 px-10'>
-      {/* <div className="flex-1 text-sm text-muted-foreground">
-        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-        {table.getFilteredRowModel().rows.length} row(s) selected.
-      </div> */}
       <div className='flex text-sm text-muted-foreground'>
-        Hiện thị {pageIndex + 1} / {totalPages} trang
+        Hiện thị {pageIndex} / {totalPages} trang
       </div>
       <div className='flex-1 ml-4'>
         <Select
           defaultValue='10'
           onValueChange={(value) => {
             setPageSize(Number(value));
-            table.setPageSize(Number(value));
           }}
         >
           <SelectTrigger className='w-[200px]'>
@@ -73,64 +64,71 @@ const TablePagination = ({ table }: DataTablePaginationProps) => {
       </div>
 
       <div className='flex items-center gap-2 flex-none'>
-        <Button
+        <ReactPaginate
+          breakLabel={
+            <Button variant={'outline'} color='primary'>
+              ...
+            </Button>
+          }
+          nextLabel={
+            <Button variant={'outline'} color='primary' disabled={!hasNextPage}>
+              <ChevronRight className='w-4 h-4' />
+            </Button>
+          }
+          onPageChange={(page) => {
+            setPageIndex(page.selected + 1);
+          }}
+          pageRangeDisplayed={5}
+          pageCount={totalPages}
+          previousLabel={
+            <Button
+              variant={'outline'}
+              color='primary'
+              disabled={!hasPreviousPage}
+            >
+              <ChevronLeft className='w-4 h-4' />
+            </Button>
+          }
+          className='flex gap-1 justify-center align-middle'
+          pageLabelBuilder={(page) => (
+            <Button
+              variant={page === pageIndex ? 'default' : 'outline'}
+              color='primary'
+            >
+              {page}
+            </Button>
+          )}
+          renderOnZeroPageCount={null}
+        />
+        {/* <Button
           variant='outline'
           color='primary'
           size='icon'
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
+          onClick={() => setPageIndex(pageIndex - 1)}
+          disabled={!hasPreviousPage}
           className='w-8 h-8'
         >
           <ChevronLeft className='w-4 h-4' />
         </Button>
-        {/* {table.getPageOptions().map((page, pageIndex) => (
-          <Button
-            key={`basic-data-table-${pageIndex}`}
-            onClick={() => table.setPageIndex(pageIndex)}
-            size='icon'
-            className='w-8 h-8'
-            variant={
-              table.getState().pagination.pageIndex === pageIndex
-                ? 'default'
-                : 'outline'
-            }
-          >
-            {page + 1}
-          </Button>
-        ))} */}
+
         {pageIndex == totalPages - 1 && totalPages > MAX_PAGES_DISPLAY && (
           <span>...</span>
         )}
-        {getPageRange().map((page, pageIndex) => (
-          <Button
-            key={`basic-data-table-${pageIndex}`}
-            color='primary'
-            onClick={() => table.setPageIndex(page)}
-            size='icon'
-            className='w-8 h-8'
-            variant={
-              table.getState().pagination.pageIndex === page
-                ? 'default'
-                : 'outline'
-            }
-          >
-            {page + 1}
-          </Button>
-        ))}
+
         {pageIndex < totalPages - 1 && totalPages > MAX_PAGES_DISPLAY && (
           <span>...</span>
         )}
         {/* Hiển thị dấu ... nếu còn nhiều trang */}
-        <Button
+        {/* <Button
           variant='outline'
           size='icon'
           color='primary'
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
+          onClick={() => setPageIndex(pageIndex + 1)}
+          disabled={!hasNextPage}
           className='w-8 h-8'
         >
           <ChevronRight className='w-4 h-4' />
-        </Button>
+        </Button>  */}
       </div>
     </div>
   );

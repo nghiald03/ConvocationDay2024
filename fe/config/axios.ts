@@ -70,11 +70,28 @@ export const testing = {
   },
 };
 
+type Pagination = {
+  pageIndex: number;
+  pageSize: number;
+  search?: string;
+  hall?: string;
+  session?: string;
+};
+
 export const checkinAPI = {
-  getBachelorList: async () => {
-    return await axiosInstance.get(
-      '/Bachelor/GetAll?pageIndex=1&pageSize=2000'
-    );
+  getBachelorList: async (data: Pagination) => {
+    const params = new URLSearchParams({
+      pageIndex: data.pageIndex.toString(),
+      pageSize: data.pageSize.toString(),
+    });
+    console.log('data', data);
+
+    // Thêm các tham số tuỳ chọn nếu tồn tại
+    if (data.search) params.append('keySearch', data.search);
+    if (data.hall) params.append('hallId', data.hall);
+    if (data.session) params.append('sessionId', data.session);
+
+    return await axiosInstance.get('/Bachelor/GetAll?' + params.toString());
   },
   checkin: async (data: any) => {
     return await axiosInstance.put('/Checkin/UpdateCheckin', data);

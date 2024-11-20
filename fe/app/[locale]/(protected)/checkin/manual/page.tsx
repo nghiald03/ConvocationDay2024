@@ -36,11 +36,20 @@ import { Eye, SquarePen, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-
+import { useDebounce } from 'use-debounce';
 import swal from 'sweetalert';
+import { set } from 'lodash';
 
 export default function Page() {
   const queryClient = useQueryClient();
+  const DEFAULT_PAGE_SIZE = 20;
+  const [pageIndex, setPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [searchTextQuery] = useDebounce(search, 700);
+  const [hall, setHall] = useState('-1');
+  const [session, setSession] = useState('-1');
   const [bachelorList, setBachelorList] = useState<Bachelor[]>([]);
   const {
     data: bachelorDT,
@@ -48,8 +57,22 @@ export default function Page() {
     isLoading,
   } = useQuery({
     queryKey: ['bachelorList'],
+
     queryFn: () => {
-      return checkinAPI.getBachelorList();
+      if (hall === '-1' || session === '-1') {
+        return checkinAPI.getBachelorList({
+          pageIndex: pageIndex,
+          pageSize: pageSize,
+          search: searchTextQuery,
+        });
+      }
+      return checkinAPI.getBachelorList({
+        pageIndex: pageIndex,
+        pageSize: pageSize,
+        search: searchTextQuery,
+        hall: hall,
+        session: session,
+      });
     },
   });
 
@@ -97,6 +120,8 @@ export default function Page() {
   useEffect(() => {
     if (bachelorDT?.data) {
       setBachelorList(bachelorDT.data.data.items);
+      setPageIndex(bachelorDT.data.data.currentPage);
+      setPageSize(bachelorDT.data.data.pageSize);
     }
   }, [bachelorDT]);
 
@@ -200,6 +225,10 @@ export default function Page() {
     },
   ];
 
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+  }, [hall, session, searchTextQuery, pageIndex, pageSize]);
+
   if (isLoading) {
     return (
       <>
@@ -254,13 +283,24 @@ export default function Page() {
             isLoading={isLoading}
             data={bachelorList}
             columns={columns}
+            pageIndex={pageIndex}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+            setPageIndex={setPageIndex}
+            totalItems={bachelorDT?.data.data.totalItems}
+            totalPages={bachelorDT?.data.data.totalPages}
+            hasNextPage={bachelorDT?.data.data.hasNextPage}
+            hasPreviousPage={bachelorDT?.data.data.hasPreviousPage}
+            currentPage={bachelorDT?.data.data.currentPage}
+            setCurrentPage={setCurrentPage}
             header={
               <div className='flex gap-2 w-full'>
                 <Input
                   className='w-[400px]'
                   placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
-                ></Input>
-                <Select>
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <Select onValueChange={setHall}>
                   <SelectTrigger color='primary' className='w-[180px]'>
                     <SelectValue
                       color='primary'
@@ -283,7 +323,7 @@ export default function Page() {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                <Select>
+                <Select onValueChange={setSession}>
                   <SelectTrigger className='w-[180px]'>
                     <SelectValue placeholder='Chọn session' />
                   </SelectTrigger>
@@ -308,7 +348,7 @@ export default function Page() {
                 </Select>
               </div>
             }
-          ></TableCustom>
+          />
         </CardContent>
       </Card>
     </>
