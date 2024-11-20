@@ -76,8 +76,7 @@ export function MenuClassic({}) {
               'text-center': collapsed || !hovered,
             })}
           >
-            <TeamSwitcher />
-            <SearchBar />
+            <></>
           </div>
         )}
 

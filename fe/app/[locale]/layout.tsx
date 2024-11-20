@@ -35,9 +35,7 @@ export default async function RootLayout({
             <ThemeProvider attribute='class' defaultTheme='light'>
               <MountedProvider>
                 <DirectionProvider direction={direction}>
-                  <ClientQueryProvider>
-                    <URLProvider> {children}</URLProvider>
-                  </ClientQueryProvider>
+                  <ClientQueryProvider>{children}</ClientQueryProvider>
                 </DirectionProvider>
               </MountedProvider>
               <Toaster />
