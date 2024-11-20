@@ -41,8 +41,6 @@ services:
     environment:
       - NEXT_PUBLIC_SITE_URL=http://fjourney.site:85
       - API_URL=http://fjourney.site:85/api
-    depends_on:
-      - be
     restart: unless-stopped
 
   apiimageupload:

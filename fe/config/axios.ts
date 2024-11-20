@@ -4,10 +4,13 @@ import axios from 'axios';
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
   ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
   : 'http://fjourney.site:85/api';
-console.log(BASE_URL);
+console.log('env', process.env.NEXT_PUBLIC_SITE_URL);
+console.log('base', process.env.API_URL);
 
 const axiosInstance = axios.create({
-  baseURL: 'http://fjourney.site:85' + '/api',
+  baseURL: process.env.NEXT_PUBLIC_SITE_URL
+    ? process.env.NEXT_PUBLIC_SITE_URL + '/api'
+    : 'http://fjourney.site:85/api',
 });
 
 axiosInstance.interceptors.request.use((config) => {
