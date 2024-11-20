@@ -45,7 +45,7 @@ const TablePagination = ({
       </div>
       <div className='flex-1 ml-4'>
         <Select
-          defaultValue='10'
+          defaultValue='20'
           onValueChange={(value) => {
             setPageSize(Number(value));
           }}

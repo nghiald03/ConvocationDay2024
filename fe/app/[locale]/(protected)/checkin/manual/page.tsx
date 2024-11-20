@@ -118,10 +118,28 @@ export default function Page() {
   }, [bachelorDTEr]);
 
   useEffect(() => {
-    if (bachelorDT?.data) {
+    if (bachelorDT?.data?.data) {
+      if (
+        bachelorDT?.data?.data?.items &&
+        bachelorDT.data.data.items.length === 0
+      ) {
+        toast.error('Không tìm thấy tân cử nhân', {
+          duration: 3000,
+          position: 'top-right',
+        });
+        setBachelorList([]);
+        return;
+      }
+
       setBachelorList(bachelorDT.data.data.items);
       setPageIndex(bachelorDT.data.data.currentPage);
       setPageSize(bachelorDT.data.data.pageSize);
+    } else {
+      toast.error('Không tìm thấy tân cử nhân', {
+        duration: 3000,
+        position: 'top-right',
+      });
+      setBachelorList([]);
     }
   }, [bachelorDT]);
 
@@ -287,11 +305,11 @@ export default function Page() {
             pageSize={pageSize}
             setPageSize={setPageSize}
             setPageIndex={setPageIndex}
-            totalItems={bachelorDT?.data.data.totalItems}
-            totalPages={bachelorDT?.data.data.totalPages}
-            hasNextPage={bachelorDT?.data.data.hasNextPage}
-            hasPreviousPage={bachelorDT?.data.data.hasPreviousPage}
-            currentPage={bachelorDT?.data.data.currentPage}
+            totalItems={bachelorDT?.data?.data?.totalItems}
+            totalPages={bachelorDT?.data?.data?.totalPages}
+            hasNextPage={bachelorDT?.data?.data?.hasNextPage}
+            hasPreviousPage={bachelorDT?.data?.data?.hasPreviousPage}
+            currentPage={bachelorDT?.data?.data?.currentPage}
             setCurrentPage={setCurrentPage}
             header={
               <div className='flex gap-2 w-full'>
