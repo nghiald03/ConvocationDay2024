@@ -1,10 +1,9 @@
 import { Bachelor } from '@/dtos/BachelorDTO';
 import axios from 'axios';
-import { get } from 'lodash';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
   ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
-  : 'http://fjourney.site:852/api';
+  : 'http://fjourney.site:85/api';
 console.log(BASE_URL);
 
 const axiosInstance = axios.create({
