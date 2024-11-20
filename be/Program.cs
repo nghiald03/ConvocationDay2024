@@ -27,10 +27,11 @@ namespace FA23_Convocation2023_API
             var loggerFactory = LoggerFactory.Create(logging => logging.AddConsole());
             var logger = loggerFactory.CreateLogger<Program>();
 
-            
-            logger.LogInformation("Connection String: {ConnectionString}", connectionString);
-
-            try
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            logger.LogInformation("Enviroment: {Environment}", environment);
+            if (environment != null&&!environment.Equals("Development") ){
+                logger.LogInformation("Connection String: {ConnectionString}", connectionString);
+                try
             {
                 builder.Services.AddDbContext<Convo24Context>(options =>
                     options.UseSqlServer(connectionString));
@@ -41,6 +42,7 @@ namespace FA23_Convocation2023_API
             {
                 // Log any exceptions that occur during the setup
                 logger.LogError(ex, "An error occurred while configuring the DbContext.");
+            }
             }
 
             //var connectionString = builder.Configuration.GetConnectionString("Convocation2023DB");
@@ -128,29 +130,32 @@ namespace FA23_Convocation2023_API
             app.MapHub<MessageHub>("chat-hub");
 
             app.MapControllers();
-            using (var scope = app.Services.CreateScope())
+            if (environment != null && !environment.Equals("Development"))
             {
-                var dbContext = scope.ServiceProvider.GetRequiredService<Convo24Context>();
-
-                try
+                using (var scope = app.Services.CreateScope())
                 {
-                    // Kiểm tra nếu database không tồn tại, tạo mới
-                    if (dbContext.Database.EnsureCreated())
-                    {
-                        dbContext.Database.Migrate();
-                        logger.LogInformation("Database created successfully.");
-                    }
-                    else
-                    {
-                        logger.LogInformation("Database already exists.");
-                    }
+                    var dbContext = scope.ServiceProvider.GetRequiredService<Convo24Context>();
 
-                    
-                    
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "An error occurred while ensuring database creation or applying migrations.");
+                    try
+                    {
+                        // Kiểm tra nếu database không tồn tại, tạo mới
+                        if (dbContext.Database.EnsureCreated())
+                        {
+                            dbContext.Database.Migrate();
+                            logger.LogInformation("Database created successfully.");
+                        }
+                        else
+                        {
+                            logger.LogInformation("Database already exists.");
+                        }
+
+
+
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "An error occurred while ensuring database creation or applying migrations.");
+                    }
                 }
             }
 

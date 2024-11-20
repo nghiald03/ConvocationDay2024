@@ -49,33 +49,56 @@ namespace FA23_Convocation2023_API.Services
 
         }
 
-      
 
-            public async Task<PagedResult<ListBachelor>> GetAllBachelorAsync(int pageIndex, int pageSize)
+
+        public async Task<PagedResult<ListBachelor>> GetAllBachelorAsync(int pageIndex, int pageSize, string keySearch = null, int? sessionId = null, int? hallId = null)
         {
-
             var query = _context.Bachelors.Include(b => b.Hall).Include(b => b.Session)
-          .Select(bachelor => new ListBachelor
-          {
-              Id = bachelor.Id,
-              StudentCode = bachelor.StudentCode,
-              FullName = bachelor.FullName,
-              Mail = bachelor.Mail,
-              Faculty = bachelor.Faculty,
-              Major = bachelor.Major,
-              Image = bachelor.Image,
-              Status = bachelor.Status,
-              StatusBaChelor = bachelor.StatusBaChelor,
-              HallName = bachelor.Hall.HallName,
-              SessionNum = bachelor.Session.Session1,
-              Chair = bachelor.Chair,
-              ChairParent = bachelor.ChairParent,
-              CheckIn = bachelor.CheckIn,
-              TimeCheckIn = bachelor.TimeCheckIn
-          });
+                .AsQueryable();
+
+            // Tìm kiếm theo FullName hoặc StudentCode
+            if (!string.IsNullOrWhiteSpace(keySearch))
+            {
+                query = query.Where(b => b.FullName.Contains(keySearch) || b.StudentCode.Contains(keySearch));
+            }
+
+            // Lọc theo SessionId
+            if (sessionId.HasValue)
+            {
+                query = query.Where(b => b.SessionId == sessionId.Value);
+            }
+
+            // Lọc theo HallId
+            if (hallId.HasValue)
+            {
+                query = query.Where(b => b.HallId == hallId.Value);
+            }
 
             var totalItems = await query.CountAsync();
-            var items = await query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            // Select ra ListBachelor
+            var items = await query
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .Select(bachelor => new ListBachelor
+                {
+                    Id = bachelor.Id,
+                    StudentCode = bachelor.StudentCode,
+                    FullName = bachelor.FullName,
+                    Mail = bachelor.Mail,
+                    Faculty = bachelor.Faculty,
+                    Major = bachelor.Major,
+                    Image = bachelor.Image,
+                    Status = bachelor.Status,
+                    StatusBaChelor = bachelor.StatusBaChelor,
+                    HallName = bachelor.Hall.HallName,
+                    SessionNum = bachelor.Session.Session1,
+                    Chair = bachelor.Chair,
+                    ChairParent = bachelor.ChairParent,
+                    CheckIn = bachelor.CheckIn,
+                    TimeCheckIn = bachelor.TimeCheckIn
+                })
+                .ToListAsync();
 
             var paginatedResult = new PaginatedList<ListBachelor>(items, totalItems, pageIndex, pageSize);
             return new PagedResult<ListBachelor>
@@ -88,7 +111,6 @@ namespace FA23_Convocation2023_API.Services
                 HasPreviousPage = paginatedResult.HasPreviousPage,
                 HasNextPage = paginatedResult.HasNextPage
             };
-            
         }
 
         public async Task<object> AddBachelorAsync([FromBody] List<BachelorDTO> bachelorRequest)
