@@ -5,7 +5,7 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 echo 'Building Docker Images using Docker Compose'
-                sh 'docker compose -f "docker-compose.yml" up -d --build'
+                sh 'docker-compose -f "docker-compose.yml" up -d --build'
             }
         }
         
