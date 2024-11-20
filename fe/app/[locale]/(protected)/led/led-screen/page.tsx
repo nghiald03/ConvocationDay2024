@@ -109,8 +109,7 @@ export default function LedScreen() {
   useEffect(() => {
     const hall = window.localStorage.getItem('hall');
     const session = window.localStorage.getItem('session');
-    console.log('hallx', hall);
-    console.log('sessionx', session);
+
     if (session) {
       setSession(session);
     }
@@ -123,13 +122,15 @@ export default function LedScreen() {
     if (!hall) {
       return;
     }
-    window.localStorage.setItem('hall', hall);
+
+    setBachelorCurrent(null);
   }, [hall]);
 
   useEffect(() => {
     if (!session) {
       return;
     }
+    setBachelorCurrent(null);
     window.localStorage.setItem('session', session);
   }, [session]);
 
@@ -220,12 +221,12 @@ export default function LedScreen() {
               chairParent: parsedData.ChairParent ?? null, // Tránh lỗi nếu không có dữ liệu ChairParent
             };
 
-            console.log('Bachelor data:', bachelorData);
             if (
-              bachelorData.hallName.toString() === hall &&
-              bachelorData.sessionNum.toString() === session &&
+              bachelorData.hallName.toString() === hall.toString() &&
+              bachelorData.sessionNum.toString() === session.toString() &&
               bachelorData.image !== null
             ) {
+              console.log('Set bachelor current');
               setBachelorCurrent(bachelorData);
             }
             // TODO: Thực hiện hành động với dữ liệu này (cập nhật state, gọi API, v.v.)
@@ -335,8 +336,10 @@ export default function LedScreen() {
 
           <Alert variant='soft' color='primary' className='mt-3'>
             <AlertDescription>
-              <Icon icon='gridicons:fullscreen' className='w-5 h-5' /> Để vào
-              chế độ fullscreen, hãy double-click vào hình ảnh bên dưới !
+              <Icon icon='gridicons:fullscreen' className='w-5 h-5' />{' '}
+              {bachelorCurrent
+                ? 'Để vào chế độ fullscreen, hãy double-click vào hình ảnh bên dưới !'
+                : 'Chưa có dữ liệu trình chiếu! Hãy thông báo cho MC F5 để cập nhật dữ liệu!'}
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -360,24 +363,24 @@ export default function LedScreen() {
             </CardContent>
           </Card>
         </div>
-      ) : (
-        // Card bình thường
+      ) : // Card bình thường
+      bachelorCurrent && bachelorCurrent.image ? (
         <Card
           className='mt-3 animate-fade-up animate-duration-1000'
           onDoubleClick={handleDoubleClick} // Bật fullscreen khi double-click
         >
           <CardContent className='p-3'>
-            {bachelorCurrent && bachelorCurrent.image && (
-              <Image
-                src={bachelorCurrent.image}
-                alt='Mô tả hình ảnh'
-                className='w-full h-full object-cover'
-                width={1920}
-                height={1080}
-              />
-            )}
+            <Image
+              src={bachelorCurrent.image}
+              alt='Mô tả hình ảnh'
+              className='w-full h-full object-cover'
+              width={1920}
+              height={1080}
+            />
           </CardContent>
         </Card>
+      ) : (
+        <></>
       )}
     </>
   );
