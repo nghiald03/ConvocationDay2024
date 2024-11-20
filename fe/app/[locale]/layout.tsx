@@ -31,19 +31,15 @@ export default async function RootLayout({
     <html lang='en' dir={direction}>
       <body className={`${inter.className} dashcode-app`}>
         <NextIntlClientProvider messages={messages} locale='en'>
-          <AuthProvider>
-            <ThemeProvider attribute='class' defaultTheme='light'>
-              <MountedProvider>
-                <DirectionProvider direction={direction}>
-                  <ClientQueryProvider>
-                    <URLProvider> {children}</URLProvider>
-                  </ClientQueryProvider>
-                </DirectionProvider>
-              </MountedProvider>
-              <Toaster />
-              <SonnerToaster />
-            </ThemeProvider>
-          </AuthProvider>
+          <ThemeProvider attribute='class' defaultTheme='light'>
+            <MountedProvider>
+              <DirectionProvider direction={direction}>
+                <ClientQueryProvider>{children}</ClientQueryProvider>
+              </DirectionProvider>
+            </MountedProvider>
+            <Toaster />
+            <SonnerToaster />
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

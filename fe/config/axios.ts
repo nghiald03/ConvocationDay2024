@@ -1,10 +1,16 @@
 import { Bachelor } from '@/dtos/BachelorDTO';
 import axios from 'axios';
 
-const BASE_URL = 'http://fjourney.site:85/api';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
+  ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
+  : 'http://fjourney.site:85/api';
+console.log('env', process.env.NEXT_PUBLIC_SITE_URL);
+console.log('base', process.env.API_URL);
 
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_SITE_URL
+    ? process.env.NEXT_PUBLIC_SITE_URL + '/api'
+    : 'http://fjourney.site:85/api',
 });
 
 axiosInstance.interceptors.request.use((config) => {
@@ -36,6 +42,26 @@ export const ledAPI = {
   getSessionList: async () => {
     return await axiosInstance.get('/Session/GetAll');
   },
+  getBachelor1st: async (hall: string, session: string) => {
+    return await axiosInstance.get(
+      `/Mc/GetBachelor1st?hall=${hall}&session=${session}`
+    );
+  },
+  getBachelorNext: async (hall: string, session: string) => {
+    return await axiosInstance.get(
+      `/Mc/GetBachelorNext?hall=${hall}&session=${session}`
+    );
+  },
+  getBachelorCurrent: async (hall: string, session: string) => {
+    return await axiosInstance.get(
+      `/Mc/GetBachelorCurrent?hall=${hall}&session=${session}`
+    );
+  },
+  getBachelorBack: async (hall: string, session: string) => {
+    return await axiosInstance.get(
+      `/Mc/GetBachelorBack?hall=${hall}&session=${session}`
+    );
+  },
 };
 
 export const testing = {
@@ -46,14 +72,17 @@ export const testing = {
 
 export const checkinAPI = {
   getBachelorList: async () => {
-    return await axiosInstance.get('/Bachelor/GetAll');
+    return await axiosInstance.get(
+      '/Bachelor/GetAll?pageIndex=1&pageSize=2000'
+    );
   },
   checkin: async (data: any) => {
     return await axiosInstance.put('/Checkin/UpdateCheckin', data);
   },
   getLocation: async (data: any) => {
+    console.log(BASE_URL + '/Checkin/GetLocation');
     return await axiosInstance.get(
-      `/Bachelor/search?keySearch=${data}&pageIndex=1&pageSize=10`
+      `/Bachelor/search?keySearch=${data}&pageIndex=1&pageSize=1000`
     );
   },
 };
@@ -67,5 +96,11 @@ export const manageAPI = {
   },
   uploadImage: async (data: FormData) => {
     return await axios.post('http://fjourney.site:3214/upload', data);
+  },
+  getCheckinList: async () => {
+    return await axiosInstance.get('/Checkin/GetAllStatusCheckin');
+  },
+  updateStatusCheckin: async (data: any) => {
+    return await axiosInstance.put('/Checkin/UpdateStatusCheckin', data);
   },
 };

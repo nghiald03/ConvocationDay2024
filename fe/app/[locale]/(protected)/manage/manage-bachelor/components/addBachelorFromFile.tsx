@@ -31,6 +31,15 @@ export default function AddBachelorFromFile() {
   const inputRef = useRef<HTMLInputElement | null>(null); // Ref for input element
 
   const columnsFileUpload: ColumnDef<Bachelor[]>[] = [
+    {
+      accessorKey: 'image',
+      header: 'Image',
+
+      cell: ({ row }) => (
+        <div className='text-base'>{row.getValue('image')}</div>
+      ),
+    },
+    { accessorKey: 'major', header: 'Ngành' },
     { accessorKey: 'fullName', header: 'Tên' },
     { accessorKey: 'studentCode', header: 'MSSV' },
     { accessorKey: 'mail', header: 'Mail' },
@@ -141,6 +150,7 @@ export default function AddBachelorFromFile() {
     },
     onError: (error: any) => {
       toast.error('Thêm thất bại' + error.respone.data, { duration: 3000 });
+      console.log('Error:', error);
       setExcelData([]);
       if (inputRef.current) inputRef.current.value = '';
     },

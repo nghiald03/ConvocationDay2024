@@ -84,17 +84,18 @@ namespace FA23_Convocation2023_API.Controllers
         public async Task<IActionResult> AddBechelorAsync([FromBody] List<BachelorDTO> bachelorRequest)
         {
             var result = await _bachService.AddBachelorAsync(bachelorRequest);
-            if (((dynamic)result).ErrorMessages != null) return BadRequest(new
+            if (((dynamic)result).ErrorMessages != null && ((dynamic)result).ErrorMessages.Count > 0)
+                return BadRequest(new
             {
                 status = StatusCodes.Status400BadRequest,
-                message = "Có lỗi xảy ra trong quá trình thêm Bachelor! Chi tiết trong messages",
+                message = "Có lỗi xảy ra trong quá trình thêm tân cử nhân! Chi tiết trong messages",
                 errorMessages = ((dynamic)result).ErrorMessages,
                 data = bachelorRequest
             });
             return Ok(new
             {
                 status = StatusCodes.Status200OK,
-                message = "Thêm danh sách Bachelor thành công!",
+                message = "Thêm danh sách tân cử nhân thành công!",
                 data = bachelorRequest
             });
         }
