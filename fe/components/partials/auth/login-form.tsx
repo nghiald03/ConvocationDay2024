@@ -175,7 +175,7 @@ const LoginForm = () => {
         {getDriverVerifyMutation.isPending && (
           <Loader2 className='mr-2 h-4 w-4 animate-spin' />
         )}
-        {getDriverVerifyMutation.isPending ? 'Loading...' : 'Sign In'}
+        {getDriverVerifyMutation.isPending ? 'Loading...' : 'Đăng nhập'}
       </Button>
     </form>
   );
