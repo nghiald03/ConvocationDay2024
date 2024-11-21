@@ -4,7 +4,7 @@ import { isAccessTokenValid } from '@/utils/isLogin';
 import { redirect } from 'next/navigation';
 const Login = () => {
   if (isAccessTokenValid()) {
-    redirect('/en/dashboard/analytics');
+    redirect('/tutorial');
   }
   return (
     <>
