@@ -36,9 +36,9 @@ export function getMenuList(pathname: string, t: any): Group[] {
       menus: [
         {
           id: 'dashboard',
-          href: '/dashboard/analytics',
-          label: 'Hướng dẫn sử dụng',
-          active: pathname.includes('/dashboard'),
+          href: '/tutorial',
+          label: 'Tổng quan hệ thống',
+          active: pathname.includes('/tutorial'),
           icon: 'heroicons-outline:home',
           submenus: [],
         },
