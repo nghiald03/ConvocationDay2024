@@ -11,7 +11,7 @@ using FA23_Convocation2023_API.Services;
 namespace FA23_Convocation2023_API.Controllers
 {
     [Route("api/[controller]")]
-    [Authorize(Roles = "MN")]
+    [Authorize(Roles = "MN,CK")]
     [ApiController]
     public class BachelorController : ControllerBase
     {
@@ -86,12 +86,12 @@ namespace FA23_Convocation2023_API.Controllers
             var result = await _bachService.AddBachelorAsync(bachelorRequest);
             if (((dynamic)result).ErrorMessages != null && ((dynamic)result).ErrorMessages.Count > 0)
                 return BadRequest(new
-            {
-                status = StatusCodes.Status400BadRequest,
-                message = "Có lỗi xảy ra trong quá trình thêm tân cử nhân! Chi tiết trong messages",
-                errorMessages = ((dynamic)result).ErrorMessages,
-                data = bachelorRequest
-            });
+                {
+                    status = StatusCodes.Status400BadRequest,
+                    message = "Có lỗi xảy ra trong quá trình thêm tân cử nhân! Chi tiết trong messages",
+                    errorMessages = ((dynamic)result).ErrorMessages,
+                    data = bachelorRequest
+                });
             return Ok(new
             {
                 status = StatusCodes.Status200OK,

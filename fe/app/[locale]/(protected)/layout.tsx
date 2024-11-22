@@ -9,6 +9,7 @@ import { redirect } from '@/components/navigation';
 import { useEffect } from 'react';
 import ProtectProvider from '@/providers/ProtectProvider';
 import { Toaster } from 'react-hot-toast';
+import AuthentificationProvider from '@/providers/AuthentificationProvider';
 
 const layout = async ({ children }: { children: React.ReactNode }) => {
   return (
@@ -16,7 +17,9 @@ const layout = async ({ children }: { children: React.ReactNode }) => {
       <DashCodeHeader />
       <DashCodeSidebar />
       <LayoutContentProvider>
-        <ProtectProvider>{children}</ProtectProvider>
+        <AuthentificationProvider>
+          <ProtectProvider>{children}</ProtectProvider>
+        </AuthentificationProvider>
       </LayoutContentProvider>
       <DashCodeFooter />
       <Toaster />

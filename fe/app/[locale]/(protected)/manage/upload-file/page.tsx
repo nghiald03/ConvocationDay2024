@@ -24,23 +24,57 @@ export default function Page() {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setSelectedFiles(e.target.files);
+    const files = e.target.files;
+    if (files) {
+      console.log('Files:', files);
+      const ortherFiles = Array.from(files).filter(
+        (file) => file.type !== 'image/png'
+      );
+      console.log('Orther Files:', ortherFiles);
+      if (ortherFiles.length > 0) {
+        ortherFiles.forEach((file) => {
+          toast.error(`File ${file.name} không đúng định dạng`, {
+            duration: 3000,
+            position: 'top-right',
+          });
+        });
+      }
+      const newFiles = Array.from(files).filter(
+        (file) => file.type === 'image/png'
+      );
+      if (newFiles.length > 0) {
+        console.log('New Files:', newFiles);
+        const dataTransfer = new DataTransfer();
+        newFiles.forEach((file) => dataTransfer.items.add(file));
+        setSelectedFiles(dataTransfer.files);
+      } else {
+        setSelectedFiles(null);
+        toast.error('Không có file hợp lệ', {
+          duration: 5000,
+          position: 'top-right',
+        });
+      }
     }
   };
 
   const addBachelorFromFile = useMutation({
     mutationFn: (formData: FormData) => {
-      return axios.post('http://fjourney.site:3214/upload', formData, {
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded / progressEvent.total) * 100
-            );
-            setUploadProgress(percentCompleted); // Cập nhật tiến trình
-          }
-        },
-      });
+      return axios.post(
+        process.env.NEXT_PUBLIC_URL_UPLOAD_IMAGE
+          ? process.env.NEXT_PUBLIC_URL_UPLOAD_IMAGE + '/upload'
+          : 'http://fjourney.site:3214/upload',
+        formData,
+        {
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded / progressEvent.total) * 100
+              );
+              setUploadProgress(percentCompleted); // Cập nhật tiến trình
+            }
+          },
+        }
+      );
     },
     onSuccess: () => {
       toast.success('Thêm thành công', {
@@ -60,6 +94,7 @@ export default function Page() {
 
   const handleUpload = () => {
     if (selectedFiles) {
+      console.log('Selected Files:', selectedFiles);
       const formData = new FormData();
       for (let i = 0; i < selectedFiles.length; i++) {
         formData.append('file', selectedFiles[i]);
@@ -70,9 +105,14 @@ export default function Page() {
 
   const exportToExcel = () => {
     axios
-      .get('http://localhost:3214/exportToExcel', {
-        responseType: 'arraybuffer',
-      })
+      .get(
+        process.env.NEXT_PUBLIC_URL_UPLOAD_IMAGE
+          ? process.env.NEXT_PUBLIC_URL_UPLOAD_IMAGE + '/exportToExcel'
+          : 'http://fjourney.site:3214/exportToExcel',
+        {
+          responseType: 'arraybuffer',
+        }
+      )
       .then((response: { data: BlobPart }) => {
         // Tạo một tệp Excel từ dữ liệu binary
         const blob = new Blob([response.data], {
@@ -117,6 +157,7 @@ export default function Page() {
                 multiple
                 id='file'
                 type='file'
+                accept='.png'
               />
             </div>
             {uploadProgress > 0 && (
@@ -135,15 +176,21 @@ export default function Page() {
           <div className='flex gap-2 w-full'>
             <div className='flex-1 w-full '></div>
             <Button
+              variant='outline'
+              onClick={() => {
+                exportToExcel();
+              }}
+              color='primary'
+            >
+              Tải danh sách hình đã upload
+            </Button>
+            <Button
               disabled={addBachelorFromFile.isPending}
               onClick={handleUpload}
               variant='default'
               color='primary'
             >
               Tải lên
-            </Button>
-            <Button variant='outline' color='primary'>
-              Reset
             </Button>
           </div>
         </CardFooter>

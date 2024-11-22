@@ -24,6 +24,7 @@ export type Menu = {
 
 export type Group = {
   groupLabel: string;
+  roleAccess?: string[];
   menus: Menu[];
   id: string;
 };
@@ -33,6 +34,7 @@ export function getMenuList(pathname: string, t: any): Group[] {
     {
       groupLabel: '',
       id: 'dashboard',
+      roleAccess: ['MN', 'CK', 'MC', 'US'],
       menus: [
         {
           id: 'dashboard',
@@ -47,7 +49,8 @@ export function getMenuList(pathname: string, t: any): Group[] {
 
     {
       groupLabel: 'Trình chiếu LED',
-      id: 'management',
+      id: 'ledVisual',
+      roleAccess: ['MC', 'MN'],
       menus: [
         {
           id: 'MCController',
@@ -71,6 +74,7 @@ export function getMenuList(pathname: string, t: any): Group[] {
     {
       groupLabel: 'Check in',
       id: 'checkin',
+      roleAccess: ['CK', 'MN'],
       menus: [
         {
           id: 'checkin',
@@ -101,6 +105,7 @@ export function getMenuList(pathname: string, t: any): Group[] {
 
     {
       groupLabel: 'Quản lý',
+      roleAccess: ['MN'],
       id: 'management',
       menus: [
         {

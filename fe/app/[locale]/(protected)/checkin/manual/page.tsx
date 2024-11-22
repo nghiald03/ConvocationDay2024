@@ -34,7 +34,6 @@ export default function Page() {
   const DEFAULT_PAGE_SIZE = 20;
   const [pageIndex, setPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
   const [searchTextQuery] = useDebounce(search, 700);
   const [hall, setHall] = useState('-1');

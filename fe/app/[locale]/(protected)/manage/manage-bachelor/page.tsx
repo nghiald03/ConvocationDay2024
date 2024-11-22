@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import toast from 'react-hot-toast';
 import AddOrUpdateBachelor from './components/formAddOrUpdate';
+import swal from 'sweetalert';
 
 export default function Page() {
   const queryClient = useQueryClient();
@@ -138,6 +139,50 @@ export default function Page() {
     XLSX.writeFile(wb, 'data_mau.xlsx');
   };
 
+  const deleteBachelor = useMutation({
+    mutationFn: (studentCode: string) => {
+      return manageAPI.deleteBachelor(studentCode);
+    },
+    onSuccess: (variables, context) => {
+      toast.success(`Xóa tân cử nhân ${context} thành công`, {
+        duration: 5000,
+        position: 'top-right',
+      });
+
+      console.log('variables', context);
+      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+    },
+    onError: (error: any) => {
+      toast.error('Thêm thất bại' + error.respone.data, {
+        duration: 3000,
+        position: 'top-right',
+      });
+    },
+  });
+
+  const handleDeleteBachelor = (data: string) => {
+    swal({
+      title: `Xóa tân cử nhân ${data}`,
+      text: `Bạn có muốn xóa tân cử nhân ${data} không?`,
+      icon: 'warning',
+      buttons: ['Không', 'Xóa'],
+      dangerMode: true,
+    }).then((value) => {
+      if (value) {
+        // checkinAction.mutate(data);
+        toast.promise(
+          deleteBachelor.mutateAsync(data),
+          {
+            loading: 'Đang xóa...',
+            success: `Xóa tân cử nhân ${data} thành công`,
+            error: `Xóa tân cử nhân ${data} thất bại!`,
+          },
+          { position: 'top-right', duration: 3000 }
+        );
+      }
+    });
+  };
+
   const columns: ColumnDef<Bachelor[]>[] = [
     {
       accessorKey: 'id',
@@ -202,6 +247,10 @@ export default function Page() {
             variant='outline'
             color='destructive'
             size='icon'
+            onClick={() => {
+              handleDeleteBachelor(row.getValue('studentCode'));
+              // console.log(row.getValue('studentCode'));
+            }}
             className=''
           >
             <Icon icon='material-symbols:delete-outline'></Icon>

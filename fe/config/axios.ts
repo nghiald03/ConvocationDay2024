@@ -111,8 +111,8 @@ export const manageAPI = {
   addBachelor: async (data: Bachelor[]) => {
     return await axiosInstance.post('/Bachelor/Add', data);
   },
-  deleteBachelor: async (id: string) => {
-    return await axiosInstance.delete(`/Bachelor/Delete/${id}`);
+  deleteBachelor: async (studentCode: string) => {
+    return await axiosInstance.delete(`/Bachelor/Delete/${studentCode}`);
   },
   updateBachelor: async (data: Bachelor) => {
     return await axiosInstance.put('/Bachelor/Update', data);
