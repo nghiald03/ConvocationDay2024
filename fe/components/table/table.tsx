@@ -1,21 +1,17 @@
 'use client';
 
-import * as React from 'react';
 import {
-  ColumnFiltersState,
   SortingState,
   VisibilityState,
   flexRender,
   getCoreRowModel,
   getExpandedRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 
-import { Input } from '@/components/ui/input';
-
+import TablePagination from '@/app/[locale]/(protected)/table/react-table/example2/table-pagination';
 import {
   Table,
   TableBody,
@@ -24,9 +20,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import TablePagination from '@/app/[locale]/(protected)/table/react-table/example2/table-pagination';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { Fragment, useState } from 'react';
 
 export type TableProps = {
   data: any[];
@@ -35,9 +31,27 @@ export type TableProps = {
   title: string;
   header?: React.ReactNode;
   overflow?: boolean;
+  pageSize?: number;
+  pageIndex?: number;
+  totalItems?: number;
+  totalPages?: number;
+  currentPage?: number;
+  setCurrentPage?: (currentPage: number) => void;
+  hasNextPage?: boolean;
+  hasPreviousPage?: boolean;
+  setPageSize?: (pageSize: number) => void;
+  setPageIndex?: (pageIndex: number) => void;
 };
 
 const TableCustom = ({
+  hasNextPage,
+  hasPreviousPage,
+  pageIndex,
+  pageSize,
+  setPageIndex,
+  setPageSize,
+  totalItems,
+  totalPages,
   data,
   columns,
   isLoading,
@@ -45,31 +59,25 @@ const TableCustom = ({
   header,
   overflow,
 }: TableProps) => {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  );
-  const [expanded, setExpanded] = React.useState({});
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const [expanded, setExpanded] = useState({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = useState({});
 
   const table = useReactTable({
     data,
     columns,
     state: {
       sorting,
-      columnFilters,
       columnVisibility,
       expanded,
       rowSelection,
     },
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     onExpandedChange: setExpanded,
     getRowCanExpand: () => true,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -120,7 +128,7 @@ const TableCustom = ({
           table.getRowModel() &&
           table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <React.Fragment key={row.id}>
+              <Fragment key={row.id}>
                 <TableRow
                   data-state={row.getIsSelected() ? 'selected' : undefined}
                   className='cursor-pointer'
@@ -141,7 +149,7 @@ const TableCustom = ({
                     </TableCell>
                   </TableRow>
                 )}
-              </React.Fragment>
+              </Fragment>
             ))
           ) : (
             <TableRow>
@@ -160,7 +168,25 @@ const TableCustom = ({
         </TableBody>
       </Table>
       {/* Pagination could be added here if you uncomment and configure TablePagination */}
-      <TablePagination table={table}></TablePagination>
+      {pageIndex &&
+        pageSize &&
+        totalItems &&
+        totalPages &&
+        hasNextPage !== undefined &&
+        hasPreviousPage !== undefined &&
+        setPageSize &&
+        setPageIndex && (
+          <TablePagination
+            hasNextPage={hasNextPage}
+            hasPreviousPage={hasPreviousPage}
+            pageIndex={pageIndex}
+            pageSize={pageSize}
+            setPageIndex={setPageIndex}
+            setPageSize={setPageSize}
+            totalItems={totalItems}
+            totalPages={totalPages}
+          ></TablePagination>
+        )}
     </div>
   );
 };

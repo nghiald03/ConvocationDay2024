@@ -8,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,26 +20,25 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { checkinAPI, ledAPI, manageAPI } from '@/config/axios';
+import { checkinAPI, ledAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
-import { Icon } from '@iconify/react/dist/iconify.js';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
-import { Eye, SquarePen, Trash2 } from 'lucide-react';
-import Image from 'next/image';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-
 import swal from 'sweetalert';
+import { useDebounce } from 'use-debounce';
 
 export default function Page() {
   const queryClient = useQueryClient();
+  const DEFAULT_PAGE_SIZE = 20;
+  const [pageIndex, setPageIndex] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [searchTextQuery] = useDebounce(search, 700);
+  const [hall, setHall] = useState('-1');
+  const [session, setSession] = useState('-1');
   const [bachelorList, setBachelorList] = useState<Bachelor[]>([]);
   const {
     data: bachelorDT,
@@ -48,8 +46,44 @@ export default function Page() {
     isLoading,
   } = useQuery({
     queryKey: ['bachelorList'],
+
     queryFn: () => {
-      return checkinAPI.getBachelorList();
+      if (hall === '-1') {
+        if (session === '-1') {
+          return checkinAPI.getBachelorList({
+            pageIndex: pageIndex,
+            pageSize: pageSize,
+            search: searchTextQuery,
+          });
+        }
+        return checkinAPI.getBachelorList({
+          pageIndex: pageIndex,
+          pageSize: pageSize,
+          session: session,
+          search: searchTextQuery,
+        });
+      } else if (session === '-1') {
+        if (hall === '-1') {
+          return checkinAPI.getBachelorList({
+            pageIndex: pageIndex,
+            pageSize: pageSize,
+            search: searchTextQuery,
+          });
+        }
+        return checkinAPI.getBachelorList({
+          pageIndex: pageIndex,
+          pageSize: pageSize,
+          hall: hall,
+          search: searchTextQuery,
+        });
+      }
+      return checkinAPI.getBachelorList({
+        pageIndex: pageIndex,
+        pageSize: pageSize,
+        search: searchTextQuery,
+        hall: hall,
+        session: session,
+      });
     },
   });
 
@@ -95,8 +129,28 @@ export default function Page() {
   }, [bachelorDTEr]);
 
   useEffect(() => {
-    if (bachelorDT?.data) {
+    if (bachelorDT?.data?.data) {
+      if (
+        bachelorDT?.data?.data?.items &&
+        bachelorDT.data.data.items.length === 0
+      ) {
+        toast.error('Không tìm thấy tân cử nhân', {
+          duration: 3000,
+          position: 'top-right',
+        });
+        setBachelorList([]);
+        return;
+      }
+
       setBachelorList(bachelorDT.data.data.items);
+      setPageIndex(bachelorDT.data.data.currentPage);
+      setPageSize(bachelorDT.data.data.pageSize);
+    } else {
+      toast.error('Không tìm thấy tân cử nhân', {
+        duration: 3000,
+        position: 'top-right',
+      });
+      setBachelorList([]);
     }
   }, [bachelorDT]);
 
@@ -200,6 +254,10 @@ export default function Page() {
     },
   ];
 
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+  }, [hall, session, searchTextQuery, pageIndex, pageSize]);
+
   if (isLoading) {
     return (
       <>
@@ -254,13 +312,23 @@ export default function Page() {
             isLoading={isLoading}
             data={bachelorList}
             columns={columns}
+            pageIndex={pageIndex}
+            pageSize={pageSize}
+            setPageSize={setPageSize}
+            setPageIndex={setPageIndex}
+            totalItems={bachelorDT?.data?.data?.totalItems}
+            totalPages={bachelorDT?.data?.data?.totalPages}
+            hasNextPage={bachelorDT?.data?.data?.hasNextPage}
+            hasPreviousPage={bachelorDT?.data?.data?.hasPreviousPage}
+            currentPage={bachelorDT?.data?.data?.currentPage}
             header={
               <div className='flex gap-2 w-full'>
                 <Input
-                  className='w-[400px]'
+                  className='w-[400px] h-full'
                   placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
-                ></Input>
-                <Select>
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <Select onValueChange={setHall}>
                   <SelectTrigger color='primary' className='w-[180px]'>
                     <SelectValue
                       color='primary'
@@ -270,7 +338,7 @@ export default function Page() {
                   <SelectContent color='primary'>
                     <SelectGroup>
                       <SelectLabel>Hội Trường</SelectLabel>
-                      <SelectItem value='ALL' key='all'>
+                      <SelectItem value='-1' key='all'>
                         Toàn bộ hội trường
                       </SelectItem>
                       {hallList &&
@@ -283,14 +351,14 @@ export default function Page() {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                <Select>
+                <Select onValueChange={setSession}>
                   <SelectTrigger className='w-[180px]'>
                     <SelectValue placeholder='Chọn session' />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Session</SelectLabel>
-                      <SelectItem value='ALL' key='all'>
+                      <SelectItem value='-1' key='all'>
                         Toàn bộ session
                       </SelectItem>
                       {sessionList &&
@@ -308,7 +376,7 @@ export default function Page() {
                 </Select>
               </div>
             }
-          ></TableCustom>
+          />
         </CardContent>
       </Card>
     </>

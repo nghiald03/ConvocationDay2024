@@ -159,8 +159,12 @@ export default function AddBachelorFromFile() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant='default' color='primary'>
-          Thêm TCN từ file
+        <Button
+          size='md'
+          variant='outline'
+          className='w-full flex justify-start'
+        >
+          Thêm tân cử nhân từ file
         </Button>
       </DialogTrigger>
       <DialogContent size='lg'>
