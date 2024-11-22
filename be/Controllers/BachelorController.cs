@@ -11,7 +11,7 @@ using FA23_Convocation2023_API.Services;
 namespace FA23_Convocation2023_API.Controllers
 {
     [Route("api/[controller]")]
-    [Authorize(Roles = "MN,CK")]
+
     [ApiController]
     public class BachelorController : ControllerBase
     {
@@ -28,6 +28,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpGet("search")]
+        [Authorize(Roles = "MN, CK")]
         public async Task<ActionResult<PagedResult<BachelorDTO>>> SearchBachelors(
            [FromQuery] string keySearch,
            [FromQuery] int pageIndex = 1,
@@ -48,6 +49,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpGet("GetAll")]
+        [Authorize(Roles = "MN, CK")]
         public async Task<IActionResult> GetAllBachelorAsync(
      [FromQuery] int pageIndex = 1,
      [FromQuery] int pageSize = 10,
@@ -81,6 +83,7 @@ namespace FA23_Convocation2023_API.Controllers
 
 
         [HttpPost("Add")]
+        [Authorize(Roles = "MN")]
         public async Task<IActionResult> AddBechelorAsync([FromBody] List<BachelorDTO> bachelorRequest)
         {
             var result = await _bachService.AddBachelorAsync(bachelorRequest);
@@ -101,6 +104,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("Update")]
+        [Authorize(Roles = "MN")]
         public async Task<IActionResult> UpdateBachelorAsync(BachelorDTO bachelorRequest)
         {
             var hallExist = await _hallService.HallExist(bachelorRequest.HallName);
@@ -123,6 +127,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
         //update list bachelor by hallname and sessionnum
         [HttpPut("UpdateListBachelor/{hallId}/{sessionId}")]
+        [Authorize(Roles = "MN")]
         public async Task<IActionResult> UpdateListBachelorAsync([FromBody] List<ListBachelor> bachelorRequest, [FromRoute] int hallId, [FromRoute] int sessionId)
         {
             var result = await _bachService.UpdateListBachelorAsync(bachelorRequest, hallId, sessionId);
@@ -135,6 +140,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpDelete("Delete/{StudentCode}")]
+        [Authorize(Roles = "MN")]
         public async Task<IActionResult> DeleteBachelorAsync([FromRoute] string StudentCode)
         {
             var result = await _bachService.DeleteBachelorAsync(StudentCode);
@@ -157,6 +163,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpDelete("DeleteAll")]
+        [Authorize(Roles = "MN")]
         public async Task<IActionResult> DeleteAllBachelorAsync()
         {
             var result = await _bachService.DeleteAllBachelorAsync();
@@ -168,6 +175,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("ResetStatus")]
+        [Authorize(Roles = "MN")]
         public async Task<IActionResult> ResetStatusAsync()
         {
             await _bachService.ResetStatusAsync();
@@ -180,6 +188,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         //get bachelor by hall name and session number
         [HttpGet("GetByHallSession/{hallId}/{sessionId}")]
+        [Authorize(Roles = "MN")]
         public async Task<IActionResult> GetBachelorByHallSessionAsync([FromRoute] int hallId, [FromRoute] int sessionId)
         {
             var result = await _bachService.GetBachelorByHallSessionAsync(hallId, sessionId);
