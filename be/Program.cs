@@ -44,6 +44,10 @@ namespace FA23_Convocation2023_API
                 logger.LogError(ex, "An error occurred while configuring the DbContext.");
             }
             }
+            else
+            {
+                builder.Services.AddDbContext<Convo24Context>();
+            }
 
             //var connectionString = builder.Configuration.GetConnectionString("Convocation2023DB");
 
