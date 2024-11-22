@@ -8,8 +8,8 @@ export type Bachelor = {
   image: string;
   status?: boolean;
   statusBaChelor?: string;
-  hallName: number;
-  sessionNum: number;
+  hallName: string;
+  sessionNum: string;
   chair: string;
   chairParent: string;
   checkIn?: boolean;

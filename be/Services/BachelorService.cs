@@ -196,16 +196,48 @@ namespace FA23_Convocation2023_API.Services
 
 
         //update UpdateBachelorAsync
-        public async Task<Bachelor?> UpdateBachelorAsync(BachelorDTO bachelorRequest)
+        public async Task<BachelorResponseDTO?> UpdateBachelorAsync(BachelorDTO bachelorRequest)
         {
-            var existingBachelor = await _context.Bachelors.FirstOrDefaultAsync(b => b.StudentCode == bachelorRequest.StudentCode);
+            var existingBachelor = await _context.Bachelors
+                .Include(b => b.Hall)
+                .Include(b => b.Session)
+                .FirstOrDefaultAsync(b => b.StudentCode == bachelorRequest.StudentCode);
 
             if (existingBachelor == null)
             {
                 return null;
             }
-            var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bachelorRequest.HallName);
-            var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bachelorRequest.SessionNum);
+
+            var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bachelorRequest.HallName)
+                       ?? new Hall { HallName = bachelorRequest.HallName };
+
+            if (hall.HallId == 0) // If Hall is new, add and save it
+            {
+                await _context.Halls.AddAsync(hall);
+                await _context.SaveChangesAsync(); // Save to get the generated HallId
+            }
+
+// Handle session
+            var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bachelorRequest.SessionNum)
+                          ?? new Session { Session1 = bachelorRequest.SessionNum };
+
+            if (session.SessionId == 0) // If Session is new, add and save it
+            {
+                await _context.Sessions.AddAsync(session);
+                await _context.SaveChangesAsync(); // Save to get the generated SessionId
+            }
+
+// Handle check-in
+            var checkin = await _context.CheckIns.FirstOrDefaultAsync(c =>
+                              c.HallId == hall.HallId && c.SessionId == session.SessionId)
+                          ?? new CheckIn { HallId = hall.HallId, SessionId = session.SessionId };
+
+            if (checkin.CheckinId == 0) // If CheckIn is new, add it
+            {
+                await _context.CheckIns.AddAsync(checkin);
+                await _context.SaveChangesAsync(); // Save CheckIn
+            }
+            
             existingBachelor.Image = bachelorRequest.Image;
             existingBachelor.FullName = bachelorRequest.FullName;
             existingBachelor.StudentCode = bachelorRequest.StudentCode;
@@ -218,7 +250,17 @@ namespace FA23_Convocation2023_API.Services
 
             _context.Bachelors.Update(existingBachelor);
             await _context.SaveChangesAsync();
-            return existingBachelor;
+            return new BachelorResponseDTO
+            {
+                Id = existingBachelor.Id,
+                FullName = existingBachelor.FullName,
+                StudentCode = existingBachelor.StudentCode,
+                Mail = existingBachelor.Mail,
+                Major = existingBachelor.Major,
+                HallName = hall.HallName,
+
+                // Map other fields
+            };
         }
 
         //update list bachelor by hallname and sessionnum

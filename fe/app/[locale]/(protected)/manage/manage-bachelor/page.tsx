@@ -11,11 +11,11 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { checkinAPI, ledAPI } from '@/config/axios';
+import { checkinAPI, ledAPI, manageAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
 import { expectedHeaders } from '@/lib/constant';
 import { Icon } from '@iconify/react/dist/iconify.js';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useState } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import toast from 'react-hot-toast';
+import AddOrUpdateBachelor from './components/formAddOrUpdate';
 
 export default function Page() {
   const queryClient = useQueryClient();
@@ -49,7 +50,7 @@ export default function Page() {
   const [searchTextQuery] = useDebounce(search, 700);
   const [hall, setHall] = useState('-1');
   const [session, setSession] = useState('-1');
-  const { data: bachelorDT, error: bachelorDTEr } = useQuery({
+  const { data: bachelorDT } = useQuery({
     queryKey: ['bachelorList'],
     queryFn: () => {
       if (hall === '-1') {
@@ -91,14 +92,14 @@ export default function Page() {
     },
   });
 
-  const { data: hallList, error: hallListEr } = useQuery({
+  const { data: hallList } = useQuery({
     queryKey: ['hallList'],
     queryFn: () => {
       return ledAPI.getHallList();
     },
   });
 
-  const { data: sessionList, error: sessionListEr } = useQuery({
+  const { data: sessionList } = useQuery({
     queryKey: ['sessionList'],
     queryFn: () => {
       return ledAPI.getSessionList();
@@ -180,9 +181,23 @@ export default function Page() {
 
       cell: ({ row }) => (
         <div className='flex gap-1'>
-          <Button variant='outline' color='primary' className='' size='icon'>
-            <Icon icon='line-md:edit-filled'></Icon>
-          </Button>
+          <AddOrUpdateBachelor
+            hallList={
+              hallList && Array.isArray(hallList?.data?.data)
+                ? hallList?.data?.data
+                : []
+            }
+            sessionList={
+              sessionList && Array.isArray(sessionList?.data?.data)
+                ? sessionList?.data?.data
+                : []
+            }
+            bachelor={row.original}
+          >
+            <Button variant='outline' color='primary' className='' size='icon'>
+              <Icon icon='line-md:edit-filled'></Icon>
+            </Button>
+          </AddOrUpdateBachelor>
           <Button
             variant='outline'
             color='destructive'
@@ -308,14 +323,28 @@ export default function Page() {
                       align='start'
                       className='flex-col gap-0'
                     >
-                      <DropdownMenuItem className='p-0'>
-                        <Button
-                          className='w-full flex justify-start'
-                          size='md'
-                          variant={'outline'}
+                      <DropdownMenuItem className='p-0' asChild>
+                        <AddOrUpdateBachelor
+                          hallList={
+                            hallList && Array.isArray(hallList?.data?.data)
+                              ? hallList?.data?.data
+                              : []
+                          }
+                          sessionList={
+                            sessionList &&
+                            Array.isArray(sessionList?.data?.data)
+                              ? sessionList?.data?.data
+                              : []
+                          }
                         >
-                          Thêm một tân cử nhân
-                        </Button>
+                          <Button
+                            className='w-full flex justify-start'
+                            size='md'
+                            variant={'outline'}
+                          >
+                            Thêm một tân cử nhân
+                          </Button>
+                        </AddOrUpdateBachelor>
                       </DropdownMenuItem>
                       <DropdownMenuItem className='p-0' asChild>
                         <AddBachelorFromFile />

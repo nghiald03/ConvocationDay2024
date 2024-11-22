@@ -111,6 +111,12 @@ export const manageAPI = {
   addBachelor: async (data: Bachelor[]) => {
     return await axiosInstance.post('/Bachelor/Add', data);
   },
+  deleteBachelor: async (id: string) => {
+    return await axiosInstance.delete(`/Bachelor/Delete/${id}`);
+  },
+  updateBachelor: async (data: Bachelor) => {
+    return await axiosInstance.put('/Bachelor/Update', data);
+  },
   uploadImage: async (data: FormData) => {
     return await axios.post('http://fjourney.site:3214/upload', data);
   },
