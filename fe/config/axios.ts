@@ -126,4 +126,13 @@ export const manageAPI = {
   updateStatusCheckin: async (data: any) => {
     return await axiosInstance.put('/Checkin/UpdateStatusCheckin', data);
   },
+  uncheckAll: async () => {
+    return await axiosInstance.put('/Checkin/UncheckAll');
+  },
+  deleteAllBachelor: async () => {
+    return await axiosInstance.delete('/Bachelor/DeleteAll');
+  },
+  resetDatabase: async () => {
+    return await axiosInstance.post('/Database/reset-databse');
+  },
 };

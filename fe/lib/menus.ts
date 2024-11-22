@@ -148,6 +148,14 @@ export function getMenuList(pathname: string, t: any): Group[] {
           icon: 'line-md:image',
           submenus: [],
         },
+        {
+          id: 'dangerous',
+          href: '/manage/dangerous',
+          label: 'NGUY HIỂM',
+          active: pathname.includes('/manage/dangerous'),
+          icon: 'bx:bxs-virus',
+          submenus: [],
+        },
       ],
     },
 
