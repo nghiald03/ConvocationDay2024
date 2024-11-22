@@ -138,16 +138,39 @@ namespace FA23_Convocation2023_API.Services
         }
 
         // Handle hall and session
+        // Handle hall
         var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bItem.HallName) 
                    ?? new Hall { HallName = bItem.HallName };
 
+        if (hall.HallId == 0) // If Hall is new, add and save it
+        {
+            await _context.Halls.AddAsync(hall);
+            await _context.SaveChangesAsync(); // Save to get the generated HallId
+        }
+
+// Handle session
         var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum) 
                       ?? new Session { Session1 = bItem.SessionNum };
 
-        if (hall.HallId == 0) await _context.Halls.AddAsync(hall);
-        if (session.SessionId == 0) await _context.Sessions.AddAsync(session);
+        if (session.SessionId == 0) // If Session is new, add and save it
+        {
+            await _context.Sessions.AddAsync(session);
+            await _context.SaveChangesAsync(); // Save to get the generated SessionId
+        }
 
-        await _context.SaveChangesAsync();
+// Handle check-in
+        var checkin = await _context.CheckIns.FirstOrDefaultAsync(c =>
+                          c.HallId == hall.HallId && c.SessionId == session.SessionId)
+                      ?? new CheckIn { HallId = hall.HallId, SessionId = session.SessionId };
+
+        if (checkin.CheckinId == 0) // If CheckIn is new, add it
+        {
+            await _context.CheckIns.AddAsync(checkin);
+            await _context.SaveChangesAsync(); // Save CheckIn
+        }
+        
+        
+        
 
         // Create a new bachelor
         var bachelorEntity = new Bachelor

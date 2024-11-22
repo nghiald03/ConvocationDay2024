@@ -317,7 +317,7 @@ export default function Page() {
                           Thêm một tân cử nhân
                         </Button>
                       </DropdownMenuItem>
-                      <DropdownMenuItem className='p-0'>
+                      <DropdownMenuItem className='p-0' asChild>
                         <AddBachelorFromFile />
                       </DropdownMenuItem>
                       <DropdownMenuItem className='p-0'>

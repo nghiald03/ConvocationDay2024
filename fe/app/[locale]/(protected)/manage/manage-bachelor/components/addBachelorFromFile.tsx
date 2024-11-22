@@ -1,4 +1,3 @@
-import React, { useRef, useState } from 'react';
 import TableCustom from '@/components/table/table';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,16 +16,18 @@ import { Bachelor } from '@/dtos/BachelorDTO';
 import { expectedHeaders } from '@/lib/constant';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
+import React, { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 
-import * as XLSX from 'xlsx';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { set } from 'lodash';
 import { manageAPI } from '@/config/axios';
-import { invalid } from 'moment';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import * as XLSX from 'xlsx';
+import { Loader2 } from 'lucide-react';
+import { set } from 'lodash';
 
 export default function AddBachelorFromFile() {
   const [excelData, setExcelData] = useState<any[] | null>(null);
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement | null>(null); // Ref for input element
 
@@ -145,11 +146,20 @@ export default function AddBachelorFromFile() {
       return manageAPI.addBachelor(dataUpload);
     },
     onSuccess: () => {
-      toast.success('Thêm thành công', { duration: 3000 });
+      toast.success('Thêm thành công', {
+        duration: 5000,
+        position: 'top-right',
+      });
+      setOpen(false);
+      setExcelData([]);
+      if (inputRef.current) inputRef.current.value = '';
       queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
     },
     onError: (error: any) => {
-      toast.error('Thêm thất bại' + error.respone.data, { duration: 3000 });
+      toast.error('Thêm thất bại' + error.respone.data, {
+        duration: 3000,
+        position: 'top-right',
+      });
       console.log('Error:', error);
       setExcelData([]);
       if (inputRef.current) inputRef.current.value = '';
@@ -157,7 +167,7 @@ export default function AddBachelorFromFile() {
   });
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           size='md'
@@ -213,13 +223,17 @@ export default function AddBachelorFromFile() {
           </DialogClose>
 
           <Button
-            disabled={!excelData}
+            disabled={!excelData || addBachelorFromFile.isPending}
             onClick={() => {
-              if (excelData) addBachelorFromFile.mutate({ data: excelData });
+              if (excelData && Array.isArray(excelData) && excelData.length > 0)
+                addBachelorFromFile.mutate({ data: excelData });
             }}
             color='primary'
           >
-            Tải lên
+            {addBachelorFromFile.isPending && (
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+            )}
+            {addBachelorFromFile.isPending ? 'Đang thêm...' : 'Tải lên'}
           </Button>
         </DialogFooter>
       </DialogContent>
