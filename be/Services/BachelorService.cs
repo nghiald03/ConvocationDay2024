@@ -183,7 +183,9 @@ namespace FA23_Convocation2023_API.Services
             HallId = hall.HallId,
             SessionId = session.SessionId,
             Chair = bItem.Chair,
-            ChairParent = bItem.ChairParent
+            ChairParent = bItem.ChairParent,
+            CheckIn=false
+            
         };
 
         await _context.Bachelors.AddAsync(bachelorEntity);
