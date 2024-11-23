@@ -38,10 +38,10 @@ namespace FA23_Convocation2023_API.Services
                 throw new Exception("Bachelor đang được chiếu trên màn hình, không thể cập nhật status checkin ngay lúc này");
             }
 
-            var statusCheckin = await _context.CheckIns
+            var checkin = await _context.CheckIns
                 .FirstOrDefaultAsync(c => c.HallId == bachelor.HallId && c.SessionId == bachelor.SessionId);
 
-            if (statusCheckin?.Status == true)
+            if (checkin?.Status == true)
             {
                 bachelor.TimeCheckIn = DateTime.Now;
                 bachelor.CheckIn = checkinRequest.Status;
@@ -57,9 +57,13 @@ namespace FA23_Convocation2023_API.Services
                 _context.Bachelors.Update(bachelor);
                 await _context.SaveChangesAsync();
             }
+            else if (checkin?.Status == null)
+            {
+                throw new Exception("Session này chưa được mở, vui lòng đến đúng session của bạn");
+            }
             else
             {
-                throw new Exception("Cập nhật thất bại, không thể checkin!");
+                throw new Exception("Tân cử nhân đã bỏ lỡ session này");
             }
 
             return "Checkin thành công!";
@@ -154,14 +158,14 @@ namespace FA23_Convocation2023_API.Services
                 b.SessionId == hallSession.SessionId && b.CheckIn == true && b.Status == true).ToListAsync();
                 var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallId == hallSession.HallId);
                 var session = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == hallSession.SessionId);
-                
+
                 result.Add(new CheckinSession
                 {
                     HallName = hall.HallName,
                     SessionNum = (int)session.Session1,
                     BachelorsCheckined = bachelorCheckined.Count,
                     BachelorsSession = bachelorSession.Count,
-                    Status=hallSession.Status == null ? "Init" : (hallSession.Status == true ? "Opening" : "Closed"),
+                    Status = hallSession.Status == null ? "Init" : (hallSession.Status == true ? "Opening" : "Closed"),
                 });
 
             }
@@ -222,25 +226,25 @@ namespace FA23_Convocation2023_API.Services
         }
 
         public async Task<PagedResult<ListBachelor>> GetBachelorCheckInV2Async(int pageIndex, int pageSize)
-        {        
+        {
             var closedCheckIns = await _context.CheckIns
                 .Where(c => c.Status == false)
                 .Include(c => c.Hall)
                 .Include(c => c.Session)
                 .ToListAsync();
-    
-            var bachelorQuery = _context.Bachelors.Include(c=>c.Hall).Include(s=>s.Session)
-                .Where(b => b.CheckIn == false) 
+
+            var bachelorQuery = _context.Bachelors.Include(c => c.Hall).Include(s => s.Session)
+                .Where(b => b.CheckIn == false)
                 .AsQueryable();
 
             var hallIds = closedCheckIns.Select(c => c.HallId).ToHashSet();
             var sessionIds = closedCheckIns.Select(c => c.SessionId).ToHashSet();
             bachelorQuery = bachelorQuery.Where(b => hallIds.Contains(b.HallId) && sessionIds.Contains(b.SessionId));
 
-            
+
             var totalItems = await bachelorQuery.CountAsync();
 
-           
+
             var items = await bachelorQuery
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)

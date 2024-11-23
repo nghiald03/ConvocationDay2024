@@ -223,8 +223,17 @@ namespace FA23_Convocation2023_API.Controllers
                 return Ok(new
                 {
                     status = StatusCodes.Status200OK,
-                    message = "Update bachelors successfully!",
-                    data = result
+                    message = "Success: Đã thêm tân cử nhân vào session tạm!",
+                    data = new
+                    {
+                        studentCode = result.StudentCode,
+                        hallId = result.Hall.HallName,
+                        sessionId = result.Session.Session1,
+                        chair = result.Chair,
+                        chairParent = result.ChairParent,
+                        checkin = result.CheckIn,
+                        timeCheckIn = result.TimeCheckIn
+                    }
                 });
             }
             catch (Exception e)

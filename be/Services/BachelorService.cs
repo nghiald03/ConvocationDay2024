@@ -361,7 +361,7 @@ namespace FA23_Convocation2023_API.Services
             }
             existingBachelor.SessionId = tempSession!.SessionId;
             var existingCheckin = await _context.CheckIns
-                .FirstOrDefaultAsync((checkin) => checkin.HallId == existingBachelor.HallId);
+                .FirstOrDefaultAsync((checkin) => checkin.HallId == existingBachelor.HallId && checkin.SessionId == tempSession.SessionId);
             if (existingCheckin == null)
             {
                 var newCheckin = new CheckIn

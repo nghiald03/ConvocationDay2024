@@ -156,7 +156,7 @@ namespace FA23_Convocation2023_API.Controllers
 
             try
             {
-                
+
                 var result = await _checkInService.GetBachelorCheckInV2Async(pageIndex, pageSize);
 
                 if (result.TotalItems == 0)
@@ -173,12 +173,12 @@ namespace FA23_Convocation2023_API.Controllers
                     status = StatusCodes.Status200OK,
                     message = "Get list of bachelors not checked in successfully!",
                     data = result,
-                    
+
                 });
             }
             catch (Exception ex)
             {
-                
+
                 return StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     status = StatusCodes.Status500InternalServerError,
@@ -200,8 +200,8 @@ namespace FA23_Convocation2023_API.Controllers
             });
         }
 
-        
-        
+
+
 
 
     }
