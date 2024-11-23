@@ -139,6 +139,6 @@ export const manageAPI = {
     return await axiosInstance.delete('/Bachelor/DeleteAll');
   },
   resetDatabase: async () => {
-    return await axiosInstance.post('/Database/reset-databse');
+    return await axiosInstance.post('/Database/reset-database');
   },
 };

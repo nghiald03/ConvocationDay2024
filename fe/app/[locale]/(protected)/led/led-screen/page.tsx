@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/select';
 import { ledAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 import React, { useEffect, useMemo, useState } from 'react';
 import { HubConnectionBuilder } from '@microsoft/signalr';
@@ -50,6 +50,7 @@ import { toast } from 'sonner';
 import { set } from 'lodash';
 
 export default function LedScreen() {
+  const queryClient = useQueryClient();
   const [hall, setHall] = useState(
     () => window.localStorage.getItem('hall') || ''
   );
@@ -59,6 +60,19 @@ export default function LedScreen() {
   const [hallList, setHallList] = useState([{ value: '', label: '' }]);
   const [sessionList, setSessionList] = useState([{ value: '', label: '' }]);
   const [bachelorCurrent, setBachelorCurrent] = useState<Bachelor | null>(null);
+
+  const { data: bachelorCurrents, error: bachelorError } = useQuery({
+    queryKey: ['bachelorCurrent'],
+    queryFn: () => {
+      ledAPI.getBachelorCurrent(hall, session);
+    },
+  });
+
+  useEffect(() => {
+    if (hall && session) {
+      queryClient.invalidateQueries({ queryKey: ['bachelorCurrent'] });
+    }
+  }, [hall, session]);
 
   const { data: hallData, error: hallError } = useQuery({
     queryKey: ['listHall'],
@@ -165,7 +179,7 @@ export default function LedScreen() {
 
   useEffect(() => {
     const connection = new HubConnectionBuilder()
-      .withUrl('http://34.50.64.42:85/chat-hub')
+      .withUrl(process.env.NEXT_PUBLIC_SIGNALR_URL?.toString() || '')
       .withAutomaticReconnect()
       .build();
 
