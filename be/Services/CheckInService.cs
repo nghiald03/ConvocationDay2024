@@ -154,12 +154,14 @@ namespace FA23_Convocation2023_API.Services
                 b.SessionId == hallSession.SessionId && b.CheckIn == true && b.Status == true).ToListAsync();
                 var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallId == hallSession.HallId);
                 var session = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == hallSession.SessionId);
+                
                 result.Add(new CheckinSession
                 {
                     HallName = hall.HallName,
                     SessionNum = (int)session.Session1,
                     BachelorsCheckined = bachelorCheckined.Count,
-                    BachelorsSession = bachelorSession.Count
+                    BachelorsSession = bachelorSession.Count,
+                    Status=hallSession.Status == null ? "Init" : (hallSession.Status == true ? "Opening" : "Closed"),
                 });
 
             }
