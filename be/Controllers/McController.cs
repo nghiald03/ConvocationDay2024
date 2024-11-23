@@ -13,7 +13,7 @@ using static System.Net.Mime.MediaTypeNames;
 namespace FA23_Convocation2023_API.Controllers
 {
     [Route("api/[controller]")]
-    [Authorize(Roles = "MN, US, MC")]
+    [Authorize(Roles = "MN, MC")]
     [ApiController]
     public class McController : ControllerBase
     {

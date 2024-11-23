@@ -28,7 +28,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpGet("search")]
-        [Authorize(Roles = "MN, CK")]
+        [Authorize(Roles = "MN, CK, US")]
         public async Task<ActionResult<PagedResult<BachelorDTO>>> SearchBachelors(
            [FromQuery] string keySearch,
            [FromQuery] int pageIndex = 1,
@@ -49,7 +49,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Roles = "MN, CK")]
+        [Authorize(Roles = "MN, CK, US")]
         public async Task<IActionResult> GetAllBachelorAsync(
      [FromQuery] int pageIndex = 1,
      [FromQuery] int pageSize = 10,

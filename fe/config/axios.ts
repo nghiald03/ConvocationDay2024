@@ -105,7 +105,7 @@ export const checkinAPI = {
   UpdateBachelorToTempSession: async (mssv: string, isMorning: boolean) => {
     return await axiosInstance.put(
       `/Bachelor/UpdateBachelorToTempSession/${mssv}`,
-      isMorning ? 'true' : 'false'
+      { isMorning: isMorning }
     );
   },
 };

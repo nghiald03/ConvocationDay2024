@@ -23,7 +23,7 @@ export default function page() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Checkin thủ công</BreadcrumbPage>
+                <BreadcrumbPage>Tra cứu vị trí chỗ ngồi</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>

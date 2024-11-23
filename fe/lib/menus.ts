@@ -70,6 +70,31 @@ export function getMenuList(pathname: string, t: any): Group[] {
         },
       ],
     },
+    {
+      groupLabel: 'Điều phối chỗ ngồi',
+      id: 'seatingArrangement',
+      roleAccess: ['MN', 'US', 'CK'],
+      menus: [
+        {
+          id: 'bachlorMissingSession',
+          href: '/seatingArrangement/bachelorMissingSession',
+          label: 'Tra cứu chỗ ngồi TCN tham gia bù',
+          active: pathname.includes(
+            '/seatingArrangement/bachelorMissingSession'
+          ),
+          icon: 'icon-park-twotone:bachelor-cap-one',
+          submenus: [],
+        },
+        {
+          id: 'location',
+          href: '/seatingArrangement/seatLocation',
+          label: 'Tra cứu vị trí chỗ ngồi',
+          active: pathname.includes('/seatingArrangement/seatLocation'),
+          icon: 'mdi:seat-outline',
+          submenus: [],
+        },
+      ],
+    },
 
     {
       groupLabel: 'Check in',
@@ -90,14 +115,6 @@ export function getMenuList(pathname: string, t: any): Group[] {
           label: 'Checkin với QR',
           active: pathname.includes('/checkinWithQR'),
           icon: 'gg:qr',
-          submenus: [],
-        },
-        {
-          id: 'location',
-          href: '/checkin/seatLocation',
-          label: 'Tra cứu vị trí chỗ ngồi',
-          active: pathname.includes('/seatLocation'),
-          icon: 'mdi:seat-outline',
           submenus: [],
         },
       ],

@@ -23,6 +23,7 @@ import {
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Fragment, useState } from 'react';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 export type TableProps = {
   data: any[];
@@ -84,14 +85,20 @@ const TableCustom = ({
     onRowSelectionChange: setRowSelection,
     getExpandedRowModel: getExpandedRowModel(),
   });
+  const isDesktop = useMediaQuery('(min-width: 1280px)');
 
   return (
     <div className='w-full'>
       <div className='flex items-center py-4 '>
-        <div className='flex-1 text-xl font-medium text-default-900'>
+        <div
+          className={cn(
+            'flex-1  font-normal text-default-900',
+            !isDesktop ? 'text-sm' : 'text-base'
+          )}
+        >
           {title}
         </div>
-        <div className=''>
+        <div>
           {/* <Input
             placeholder='Filter Status...'
             value={

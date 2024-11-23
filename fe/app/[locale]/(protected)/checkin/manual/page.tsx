@@ -240,6 +240,15 @@ export default function Page() {
     {
       accessorKey: 'sessionNum',
       header: 'Session',
+      cell: ({ row }) => (
+        <p>
+          {row.getValue('sessionNum') === 100
+            ? 'Session bù sáng'
+            : row.getValue('sessionNum') === 111
+            ? 'Session bù chiều'
+            : row.getValue('sessionNum')}
+        </p>
+      ),
     },
     {
       accessorKey: 'chair',
@@ -271,7 +280,7 @@ export default function Page() {
     if (error) {
       swal({
         title: 'Đăng kí tham gia trao bằng tốt nghiệp bổ sung',
-        text: `Bạn có muốn ăng kí tham gia trao bằng tốt nghiệp bổ sung không? Lưu ý: Phiên phát bằng bổ sung có hai phiên vào buổi sáng khoảng 10h00 và buổi chiều khoảng 16h00. Vui lòng chọn phiên phù hợp.`,
+        text: `Bạn có muốn đăng kí tham gia trao bằng tốt nghiệp bổ sung không? Lưu ý: Phiên phát bằng bổ sung có hai phiên vào buổi sáng khoảng 10h00 và buổi chiều khoảng 16h00. Vui lòng chọn phiên phù hợp.`,
         icon: 'warning',
         buttons: ['Không', 'Đăng kí'],
       }).then((value) => {
@@ -309,6 +318,35 @@ export default function Page() {
       queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
     },
   });
+
+  const handleUpdateBachelorMissingSession = () => {
+    toast.promise(
+      updateBachelorMissingSession.mutateAsync(),
+      {
+        loading: 'Đang đăng kí...',
+        success: (data) => {
+          console.log(data);
+          swal({
+            title: 'Đăng kí tham gia trao bằng tốt nghiệp bổ sung',
+            text: `Tân cử nhân ${data.data.data.fullName} với MSSV ${
+              data.data.data.studentCode
+            } số ghế mới là ${data.data.data.chair} và ghế phụ huynh là ${
+              data.data.data.chairParent
+            } vào khoảng ${
+              data.data.data.chairParent === 100 ? '10H00' : '16H00'
+            } để checkin lại .`,
+            icon: 'success',
+            buttons: ['Đã biết'],
+          });
+          return 'Đăng kí thành công';
+        },
+        error: `Không thể đăng kí`,
+      },
+      { position: 'top-right', duration: 6000 }
+    );
+
+    setApplying(false);
+  };
 
   if (isLoading) {
     return (
@@ -467,7 +505,12 @@ export default function Page() {
                 Hủy
               </Button>
             </DialogClose>
-            <Button onClick={() => {}} color='primary'>
+            <Button
+              onClick={() => {
+                handleUpdateBachelorMissingSession();
+              }}
+              color='primary'
+            >
               Đăng kí
             </Button>
           </DialogFooter>
