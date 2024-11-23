@@ -145,7 +145,8 @@ namespace FA23_Convocation2023_API.Services
         public async Task<List<CheckinSession>> GetCountCheckinAsync()
         {
             List<CheckinSession> result = new();
-            foreach (var hallSession in _context.CheckIns)
+            var checkIn = await _context.CheckIns.ToListAsync();
+            foreach (var hallSession in checkIn)
             {
                 var bachelorSession = await _context.Bachelors.Where(b => b.HallId == hallSession.HallId &&
                 b.SessionId == hallSession.SessionId).ToListAsync();
