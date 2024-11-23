@@ -212,5 +212,38 @@ namespace FA23_Convocation2023_API.Controllers
         //        data = result
         //    });
         //}
+
+        //update bachelor nếu đi trễ thì đẩy vào session tạm
+        [HttpPut("UpdateBachelorToTempSession/{studentCode}")]
+        public async Task<IActionResult> UpdateBachelorToTempSessionAsync([FromRoute] string studentCode, [FromBody] bool isMorning)
+        {
+            try
+            {
+                var result = await _bachService.UpdateBachelorToTempSessionAsync(studentCode, isMorning);
+                return Ok(new
+                {
+                    status = StatusCodes.Status200OK,
+                    message = "Success: Đã thêm tân cử nhân vào session tạm!",
+                    data = new
+                    {
+                        studentCode = result.StudentCode,
+                        hallId = result.Hall.HallName,
+                        sessionId = result.Session.Session1,
+                        chair = result.Chair,
+                        chairParent = result.ChairParent,
+                        checkin = result.CheckIn,
+                        timeCheckIn = result.TimeCheckIn
+                    }
+                });
+            }
+            catch (Exception e)
+            {
+                return BadRequest(new
+                {
+                    status = StatusCodes.Status400BadRequest,
+                    message = e.Message
+                });
+            }
+        }
     }
 }
