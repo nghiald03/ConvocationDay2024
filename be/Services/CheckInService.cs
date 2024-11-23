@@ -144,7 +144,7 @@ namespace FA23_Convocation2023_API.Services
         //get count checkin
         public async Task<List<CheckinSession>> GetCountCheckinAsync()
         {
-            List<CheckinSession> result = new();
+            var result = new List<CheckinSession>();
             var checkIn = await _context.CheckIns.ToListAsync();
             foreach (var hallSession in checkIn)
             {
