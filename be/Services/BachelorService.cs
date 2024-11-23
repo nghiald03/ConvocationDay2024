@@ -113,88 +113,88 @@ namespace FA23_Convocation2023_API.Services
             };
         }
 
-       public async Task<AddBachelorResponse> AddBachelorAsync(List<BachelorDTO> bachelorRequest)
-{
-    var response = new AddBachelorResponse();
-
-    foreach (var bItem in bachelorRequest)
-    {
-        // Check for null fields
-        if (string.IsNullOrEmpty(bItem.Image) || string.IsNullOrEmpty(bItem.FullName) || 
-            string.IsNullOrEmpty(bItem.StudentCode) || string.IsNullOrEmpty(bItem.Mail) || 
-            string.IsNullOrEmpty(bItem.Major) || string.IsNullOrEmpty(bItem.HallName) || 
-            bItem.SessionNum == 0 || string.IsNullOrEmpty(bItem.Chair) || string.IsNullOrEmpty(bItem.ChairParent))
+        public async Task<AddBachelorResponse> AddBachelorAsync(List<BachelorDTO> bachelorRequest)
         {
-            response.ErrorMessages.Add($"Bachelor {bItem.StudentCode} has null field!");
-            continue;
+            var response = new AddBachelorResponse();
+
+            foreach (var bItem in bachelorRequest)
+            {
+                // Check for null fields
+                if (string.IsNullOrEmpty(bItem.Image) || string.IsNullOrEmpty(bItem.FullName) ||
+                    string.IsNullOrEmpty(bItem.StudentCode) || string.IsNullOrEmpty(bItem.Mail) ||
+                    string.IsNullOrEmpty(bItem.Major) || string.IsNullOrEmpty(bItem.HallName) ||
+                    bItem.SessionNum == 0 || string.IsNullOrEmpty(bItem.Chair) || string.IsNullOrEmpty(bItem.ChairParent))
+                {
+                    response.ErrorMessages.Add($"Bachelor {bItem.StudentCode} has null field!");
+                    continue;
+                }
+
+                // Check if bachelor already exists
+                var bachelor = await _context.Bachelors.FirstOrDefaultAsync(b => b.StudentCode.Equals(bItem.StudentCode));
+                if (bachelor != null)
+                {
+                    response.ErrorMessages.Add($"Bachelor {bItem.StudentCode} already exists!");
+                    continue;
+                }
+
+                // Handle hall and session
+                // Handle hall
+                var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bItem.HallName)
+                           ?? new Hall { HallName = bItem.HallName };
+
+                if (hall.HallId == 0) // If Hall is new, add and save it
+                {
+                    await _context.Halls.AddAsync(hall);
+                    await _context.SaveChangesAsync(); // Save to get the generated HallId
+                }
+
+                // Handle session
+                var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum)
+                              ?? new Session { Session1 = bItem.SessionNum };
+
+                if (session.SessionId == 0) // If Session is new, add and save it
+                {
+                    await _context.Sessions.AddAsync(session);
+                    await _context.SaveChangesAsync(); // Save to get the generated SessionId
+                }
+
+                // Handle check-in
+                var checkin = await _context.CheckIns.FirstOrDefaultAsync(c =>
+                                  c.HallId == hall.HallId && c.SessionId == session.SessionId)
+                              ?? new CheckIn { HallId = hall.HallId, SessionId = session.SessionId };
+
+                if (checkin.CheckinId == 0) // If CheckIn is new, add it
+                {
+                    await _context.CheckIns.AddAsync(checkin);
+                    await _context.SaveChangesAsync(); // Save CheckIn
+                }
+
+
+
+
+                // Create a new bachelor
+                var bachelorEntity = new Bachelor
+                {
+                    Image = bItem.Image,
+                    FullName = bItem.FullName,
+                    StudentCode = bItem.StudentCode,
+                    Mail = bItem.Mail,
+                    Major = bItem.Major,
+                    HallId = hall.HallId,
+                    SessionId = session.SessionId,
+                    Chair = bItem.Chair,
+                    ChairParent = bItem.ChairParent,
+                    CheckIn = false
+
+                };
+
+                await _context.Bachelors.AddAsync(bachelorEntity);
+                response.SuccessfulBachelors.Add(bItem);
+            }
+
+            await _context.SaveChangesAsync();
+            return response;
         }
-
-        // Check if bachelor already exists
-        var bachelor = await _context.Bachelors.FirstOrDefaultAsync(b => b.StudentCode.Equals(bItem.StudentCode));
-        if (bachelor != null)
-        {
-            response.ErrorMessages.Add($"Bachelor {bItem.StudentCode} already exists!");
-            continue;
-        }
-
-        // Handle hall and session
-        // Handle hall
-        var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallName == bItem.HallName) 
-                   ?? new Hall { HallName = bItem.HallName };
-
-        if (hall.HallId == 0) // If Hall is new, add and save it
-        {
-            await _context.Halls.AddAsync(hall);
-            await _context.SaveChangesAsync(); // Save to get the generated HallId
-        }
-
-// Handle session
-        var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum) 
-                      ?? new Session { Session1 = bItem.SessionNum };
-
-        if (session.SessionId == 0) // If Session is new, add and save it
-        {
-            await _context.Sessions.AddAsync(session);
-            await _context.SaveChangesAsync(); // Save to get the generated SessionId
-        }
-
-// Handle check-in
-        var checkin = await _context.CheckIns.FirstOrDefaultAsync(c =>
-                          c.HallId == hall.HallId && c.SessionId == session.SessionId)
-                      ?? new CheckIn { HallId = hall.HallId, SessionId = session.SessionId };
-
-        if (checkin.CheckinId == 0) // If CheckIn is new, add it
-        {
-            await _context.CheckIns.AddAsync(checkin);
-            await _context.SaveChangesAsync(); // Save CheckIn
-        }
-        
-        
-        
-
-        // Create a new bachelor
-        var bachelorEntity = new Bachelor
-        {
-            Image = bItem.Image,
-            FullName = bItem.FullName,
-            StudentCode = bItem.StudentCode,
-            Mail = bItem.Mail,
-            Major = bItem.Major,
-            HallId = hall.HallId,
-            SessionId = session.SessionId,
-            Chair = bItem.Chair,
-            ChairParent = bItem.ChairParent,
-            CheckIn=false
-            
-        };
-
-        await _context.Bachelors.AddAsync(bachelorEntity);
-        response.SuccessfulBachelors.Add(bItem);
-    }
-
-    await _context.SaveChangesAsync();
-    return response;
-}
 
 
         //update UpdateBachelorAsync
@@ -219,7 +219,7 @@ namespace FA23_Convocation2023_API.Services
                 await _context.SaveChangesAsync(); // Save to get the generated HallId
             }
 
-// Handle session
+            // Handle session
             var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bachelorRequest.SessionNum)
                           ?? new Session { Session1 = bachelorRequest.SessionNum };
 
@@ -229,7 +229,7 @@ namespace FA23_Convocation2023_API.Services
                 await _context.SaveChangesAsync(); // Save to get the generated SessionId
             }
 
-// Handle check-in
+            // Handle check-in
             var checkin = await _context.CheckIns.FirstOrDefaultAsync(c =>
                               c.HallId == hall.HallId && c.SessionId == session.SessionId)
                           ?? new CheckIn { HallId = hall.HallId, SessionId = session.SessionId };
@@ -239,7 +239,7 @@ namespace FA23_Convocation2023_API.Services
                 await _context.CheckIns.AddAsync(checkin);
                 await _context.SaveChangesAsync(); // Save CheckIn
             }
-            
+
             existingBachelor.Image = bachelorRequest.Image;
             existingBachelor.FullName = bachelorRequest.FullName;
             existingBachelor.StudentCode = bachelorRequest.StudentCode;
@@ -340,5 +340,13 @@ namespace FA23_Convocation2023_API.Services
             return result;
         }
 
+        //update bachelor nếu đi trễ thì đẩy vào session tạm
+        // public async Task<Bachelor> UpdateBachelorToTempSessionAsync(string studentCode, bool isMorning)
+        // {
+        //     var existingBachelor = await _context.Bachelors
+        //         .Include(b => b.Hall)
+        //         .Include(b => b.Session)
+        //         .FirstOrDefaultAsync(b => b.StudentCode.ToLower().Equals(studentCode.ToLower())) ?? throw new Exception("Tân cử nhân chưa được import vào hệ thống!");
+        // }
     }
 }
