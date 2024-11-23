@@ -102,6 +102,12 @@ export const checkinAPI = {
       `/Bachelor/search?keySearch=${data}&pageIndex=1&pageSize=1000`
     );
   },
+  UpdateBachelorToTempSession: async (mssv: string, isMorning: boolean) => {
+    return await axiosInstance.put(
+      `/Bachelor/UpdateBachelorToTempSession/${mssv}`,
+      isMorning ? 'true' : 'false'
+    );
+  },
 };
 
 export const manageAPI = {

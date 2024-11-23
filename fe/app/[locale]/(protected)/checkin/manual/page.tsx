@@ -8,8 +8,19 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -22,8 +33,10 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { checkinAPI, ledAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
+import { DialogTrigger } from '@radix-ui/react-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
+import { set } from 'lodash';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import swal from 'sweetalert';
@@ -39,6 +52,10 @@ export default function Page() {
   const [hall, setHall] = useState('-1');
   const [session, setSession] = useState('-1');
   const [bachelorList, setBachelorList] = useState<Bachelor[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [applying, setApplying] = useState(false);
+  const [mssv, setMSSV] = useState('');
+  const [sessionBachelor, setSessionBachelor] = useState<string | null>(null);
   const {
     data: bachelorDT,
     error: bachelorDTEr,
@@ -118,24 +135,6 @@ export default function Page() {
   }, [hallListEr]);
 
   useEffect(() => {
-    if (sessionListEr) {
-      toast.error('Lỗi khi lấy danh sách session', {
-        duration: 5000,
-        position: 'top-right',
-      });
-    }
-  }, [sessionListEr]);
-
-  useEffect(() => {
-    if (bachelorDTEr) {
-      toast.error('Lỗi khi lấy danh sách tân cử nhân', {
-        duration: 3000,
-        position: 'top-right',
-      });
-    }
-  }, [bachelorDTEr]);
-
-  useEffect(() => {
     if (bachelorDT?.data?.data) {
       if (
         bachelorDT?.data?.data?.items &&
@@ -202,7 +201,14 @@ export default function Page() {
           {
             loading: 'Đang checkin...',
             success: `Checkin cho ${data.fullName} thành công`,
-            error: `Checkin cho ${data.fullName} thất bại hoặc session chưa mở hoặc kết thúc!`,
+            error: (error) => {
+              console.log(error);
+              if (error.response.data === 'Tân cử nhân đã bỏ lỡ session này') {
+                setMSSV(data.studentCode);
+                setError(error.response.data);
+              }
+              return `Không thể checkin vì ${error.response.data}`;
+            },
           },
           { position: 'top-right', duration: 3000 }
         );
@@ -262,8 +268,47 @@ export default function Page() {
   ];
 
   useEffect(() => {
+    if (error) {
+      swal({
+        title: 'Đăng kí tham gia trao bằng tốt nghiệp bổ sung',
+        text: `Bạn có muốn ăng kí tham gia trao bằng tốt nghiệp bổ sung không? Lưu ý: Phiên phát bằng bổ sung có hai phiên vào buổi sáng khoảng 10h00 và buổi chiều khoảng 16h00. Vui lòng chọn phiên phù hợp.`,
+        icon: 'warning',
+        buttons: ['Không', 'Đăng kí'],
+      }).then((value) => {
+        if (value) {
+          setApplying(true);
+          setError(null);
+          console.log('OPEN DIALOG');
+        }
+      });
+    }
+  }, [error]);
+
+  useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
   }, [hall, session, searchTextQuery, pageIndex, pageSize]);
+
+  const updateBachelorMissingSession = useMutation({
+    mutationFn: () => {
+      if (sessionBachelor === '1')
+        return checkinAPI.UpdateBachelorToTempSession(mssv, true);
+      return checkinAPI.UpdateBachelorToTempSession(mssv, false);
+    },
+    onError: (error) => {
+      toast.error(`Đăng kí thất bại`, {
+        duration: 3000,
+        position: 'top-right',
+      });
+    },
+    onSuccess: (data, variables) => {
+      console.log('onSuccess', variables);
+      toast.success(`Đăng kí thành công`, {
+        duration: 3000,
+        position: 'top-right',
+      });
+      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+    },
+  });
 
   if (isLoading) {
     return (
@@ -386,6 +431,48 @@ export default function Page() {
           />
         </CardContent>
       </Card>
+      <Dialog open={applying} onOpenChange={setApplying}>
+        <DialogContent className='sm:max-w-[425px]'>
+          <DialogHeader>
+            <DialogTitle>Đăng kí tham gia trao bằng tốt nghiệp bù</DialogTitle>
+            <DialogDescription>
+              Vui lòng chọn phiên trao bằng cho tân cử nhân có MSSV {mssv}
+            </DialogDescription>
+          </DialogHeader>
+          <Select onValueChange={setSessionBachelor}>
+            <SelectTrigger className='w-full'>
+              <SelectValue placeholder='Chọn phiên trao bằng' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value='1' key='1'>
+                  Phiên trao bằng buổi sáng (10h00)
+                </SelectItem>
+                <SelectItem value='0' key='2'>
+                  Phiên trao bằng buổi chiều (16h00)
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <DialogFooter>
+            <DialogClose>
+              <Button
+                variant={'ghost'}
+                onClick={() => {
+                  setApplying(false);
+                  setError(null);
+                }}
+                color='primary'
+              >
+                Hủy
+              </Button>
+            </DialogClose>
+            <Button onClick={() => {}} color='primary'>
+              Đăng kí
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
