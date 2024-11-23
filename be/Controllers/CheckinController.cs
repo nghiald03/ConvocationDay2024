@@ -187,5 +187,22 @@ namespace FA23_Convocation2023_API.Controllers
             }
         }
 
+        //get checkin status = false
+        [HttpGet("GetCheckinStatusFalse")]
+        public async Task<IActionResult> GetCheckinStatusFalseAsync()
+        {
+            var result = await _checkInService.GetCheckinStatusFalseAsync();
+            return Ok(new
+            {
+                status = StatusCodes.Status200OK,
+                message = "Get checkin status false successfully!",
+                data = result
+            });
+        }
+
+        
+        
+
+
     }
 }

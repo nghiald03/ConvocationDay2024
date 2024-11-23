@@ -152,10 +152,12 @@ namespace FA23_Convocation2023_API.Services
                 b.SessionId == hallSession.SessionId).ToListAsync();
                 var bachelorCheckined = await _context.Bachelors.Where(b => b.HallId == hallSession.HallId &&
                 b.SessionId == hallSession.SessionId && b.CheckIn == true && b.Status == true).ToListAsync();
+                var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallId == hallSession.HallId);
+                var session = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == hallSession.SessionId);
                 result.Add(new CheckinSession
                 {
-                    HallName = hallSession.Hall.HallName,
-                    SessionNum = (int)hallSession.Session.Session1,
+                    HallName = hall.HallName,
+                    SessionNum = (int)session.Session1,
                     BachelorsCheckined = bachelorCheckined.Count,
                     BachelorsSession = bachelorSession.Count
                 });
@@ -272,5 +274,27 @@ namespace FA23_Convocation2023_API.Services
                 HasNextPage = pageIndex < (int)Math.Ceiling(totalItems / (double)pageSize)
             };
         }
+
+        //get checkin status = false
+        public async Task<List<CheckInDTO>> GetCheckinStatusFalseAsync()
+        {
+            var checkins = await _context.CheckIns.Where(c => c.Status == false).ToListAsync();
+            var result = new List<CheckInDTO>();
+            foreach (var check in checkins)
+            {
+                var hall = await _context.Halls.FirstOrDefaultAsync(h => h.HallId == check.HallId);
+                var session = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == check.SessionId);
+                result.Add(new CheckInDTO
+                {
+                    CheckinId = check.CheckinId,
+                    HallName = hall.HallName,
+                    SessionNum = session.Session1,
+                    Status = check.Status
+                });
+            }
+            return result;
+
+        }
     }
+
 }
