@@ -215,11 +215,12 @@ namespace FA23_Convocation2023_API.Controllers
 
         //update bachelor nếu đi trễ thì đẩy vào session tạm
         [HttpPut("UpdateBachelorToTempSession/{studentCode}")]
-        public async Task<IActionResult> UpdateBachelorToTempSessionAsync([FromRoute] string studentCode, [FromBody] bool isMorning)
+        [Authorize(Roles = "MN, CK")]
+        public async Task<IActionResult> UpdateBachelorToTempSessionAsync([FromRoute] string studentCode, [FromBody] UpdateBachelorToTempSessionRequest request)
         {
             try
             {
-                var result = await _bachService.UpdateBachelorToTempSessionAsync(studentCode, isMorning);
+                var result = await _bachService.UpdateBachelorToTempSessionAsync(studentCode, request.IsMorning);
                 return Ok(new
                 {
                     status = StatusCodes.Status200OK,
