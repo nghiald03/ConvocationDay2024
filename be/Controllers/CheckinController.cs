@@ -138,5 +138,54 @@ namespace FA23_Convocation2023_API.Controllers
                 data = result
             });
         }
+
+        [HttpGet("GetListBachelorNotCheckinV2")]
+        public async Task<IActionResult> GetListBachelorNotCheckinAsync(
+    [FromQuery] int pageIndex = 1,
+    [FromQuery] int pageSize = 10)
+        {
+            // Kiểm tra giá trị của pageIndex và pageSize
+            if (pageIndex < 1 || pageSize < 1)
+            {
+                return BadRequest(new
+                {
+                    status = StatusCodes.Status400BadRequest,
+                    message = "Page index and page size must be greater than zero."
+                });
+            }
+
+            try
+            {
+                
+                var result = await _checkInService.GetBachelorCheckInV2Async(pageIndex, pageSize);
+
+                if (result.TotalItems == 0)
+                {
+                    return Ok(new
+                    {
+                        status = StatusCodes.Status204NoContent,
+                        message = "No bachelors found who have not checked in!"
+                    });
+                }
+
+                return Ok(new
+                {
+                    status = StatusCodes.Status200OK,
+                    message = "Get list of bachelors not checked in successfully!",
+                    data = result,
+                    
+                });
+            }
+            catch (Exception ex)
+            {
+                
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    status = StatusCodes.Status500InternalServerError,
+                    message = ex.Message
+                });
+            }
+        }
+
     }
 }

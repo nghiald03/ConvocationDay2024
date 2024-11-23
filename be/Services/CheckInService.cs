@@ -216,5 +216,61 @@ namespace FA23_Convocation2023_API.Services
             }
             return result;
         }
+
+        public async Task<PagedResult<ListBachelor>> GetBachelorCheckInV2Async(int pageIndex, int pageSize)
+        {        
+            var closedCheckIns = await _context.CheckIns
+                .Where(c => c.Status == false)
+                .Include(c => c.Hall)
+                .Include(c => c.Session)
+                .ToListAsync();
+    
+            var bachelorQuery = _context.Bachelors.Include(c=>c.Hall).Include(s=>s.Session)
+                .Where(b => b.CheckIn == false) 
+                .AsQueryable();
+
+            var hallIds = closedCheckIns.Select(c => c.HallId).ToHashSet();
+            var sessionIds = closedCheckIns.Select(c => c.SessionId).ToHashSet();
+            bachelorQuery = bachelorQuery.Where(b => hallIds.Contains(b.HallId) && sessionIds.Contains(b.SessionId));
+
+            
+            var totalItems = await bachelorQuery.CountAsync();
+
+           
+            var items = await bachelorQuery
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .Select(bachelor => new ListBachelor
+                {
+                    Id = bachelor.Id,
+                    StudentCode = bachelor.StudentCode,
+                    FullName = bachelor.FullName,
+                    Mail = bachelor.Mail,
+                    Faculty = bachelor.Faculty,
+                    Major = bachelor.Major,
+                    Image = bachelor.Image,
+                    Status = bachelor.Status,
+                    StatusBaChelor = bachelor.StatusBaChelor,
+                    HallName = bachelor.Hall.HallName,
+                    SessionNum = bachelor.Session.Session1,
+                    Chair = bachelor.Chair,
+                    ChairParent = bachelor.ChairParent,
+                    CheckIn = bachelor.CheckIn,
+                    TimeCheckIn = bachelor.TimeCheckIn
+                })
+                .ToListAsync();
+
+            // Kết quả phân trang
+            return new PagedResult<ListBachelor>
+            {
+                Items = items,
+                TotalItems = totalItems,
+                TotalPages = (int)Math.Ceiling(totalItems / (double)pageSize),
+                CurrentPage = pageIndex,
+                PageSize = pageSize,
+                HasPreviousPage = pageIndex > 1,
+                HasNextPage = pageIndex < (int)Math.Ceiling(totalItems / (double)pageSize)
+            };
+        }
     }
 }
