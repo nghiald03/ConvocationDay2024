@@ -228,6 +228,7 @@ namespace FA23_Convocation2023_API.Controllers
                     data = new
                     {
                         studentCode = result.StudentCode,
+                        fullName = result.FullName,
                         hallId = result.Hall.HallName,
                         sessionId = result.Session.Session1,
                         chair = result.Chair,

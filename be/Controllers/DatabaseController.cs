@@ -22,6 +22,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPost("reset-database")]
+        [Authorize(Roles = "MN")]
         public IActionResult ResetDatabase()
         {
             using (var scope = _serviceProvider.CreateScope())
