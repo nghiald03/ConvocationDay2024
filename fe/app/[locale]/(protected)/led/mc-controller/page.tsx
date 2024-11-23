@@ -311,7 +311,7 @@ export default function Page() {
                     <SelectTrigger className='w-full'>
                       <SelectValue placeholder='Chọn Hall' />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position='item-aligned'>
                       {hallList &&
                         hallList.length > 0 &&
                         hallList.map((item) => (
@@ -327,7 +327,7 @@ export default function Page() {
                     <SelectTrigger className='w-full'>
                       <SelectValue placeholder='Chọn session' />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position='item-aligned'>
                       {sessionList &&
                         sessionList.length > 0 &&
                         sessionList.map((item) => (
@@ -368,9 +368,15 @@ export default function Page() {
                   )}
                 </CardContent>
                 <CardDescription className='pb-3'>
-                  <p className='text-center'>{bachelorBack.fullName}</p>
-                  <p className='text-center'>{bachelorBack.studentCode}</p>
-                  <p className='text-center'>{bachelorBack.major}</p>
+                  <p className='text-center font-bold text-lg'>
+                    {bachelorBack.fullName}
+                  </p>
+                  <p className='text-center font-bold text-lg'>
+                    {bachelorBack.studentCode}
+                  </p>
+                  <p className='text-center font-bold text-lg'>
+                    {bachelorBack.major}
+                  </p>
                 </CardDescription>
               </Card>
             ) : (
@@ -403,9 +409,15 @@ export default function Page() {
                   )}
                 </CardContent>
                 <CardDescription className='pb-3'>
-                  <p className='text-center'>{bachelorCurrent.fullName}</p>
-                  <p className='text-center'>{bachelorCurrent.studentCode}</p>
-                  <p className='text-center'>{bachelorCurrent.major}</p>
+                  <p className='text-center font-bold text-lg'>
+                    {bachelorCurrent.fullName}
+                  </p>
+                  <p className='text-center font-bold text-lg'>
+                    {bachelorCurrent.studentCode}
+                  </p>
+                  <p className='text-center font-bold text-lg'>
+                    {bachelorCurrent.major}
+                  </p>
                 </CardDescription>
               </Card>
             ) : (
@@ -438,9 +450,15 @@ export default function Page() {
                   )}
                 </CardContent>
                 <CardDescription className='pb-3'>
-                  <p className='text-center'>{bachelorNext.fullName}</p>
-                  <p className='text-center'>{bachelorNext.studentCode}</p>
-                  <p className='text-center'>{bachelorNext.major}</p>
+                  <p className='text-center font-bold text-lg'>
+                    {bachelorNext.fullName}
+                  </p>
+                  <p className='text-center font-bold text-lg'>
+                    {bachelorNext.studentCode}
+                  </p>
+                  <p className='text-center font-bold text-lg'>
+                    {bachelorNext.major}
+                  </p>
                 </CardDescription>
               </Card>
             ) : (

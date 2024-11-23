@@ -298,7 +298,7 @@ export default function LedScreen() {
                     <SelectTrigger className='w-full'>
                       <SelectValue placeholder='Chọn Hall' />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position='item-aligned'>
                       {hallList &&
                         hallList.length > 0 &&
                         hallList.map((item) => (
@@ -314,7 +314,7 @@ export default function LedScreen() {
                     <SelectTrigger className='w-full'>
                       <SelectValue placeholder='Chọn session' />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position='item-aligned'>
                       {sessionList &&
                         sessionList.length > 0 &&
                         sessionList.map((item) => (
