@@ -341,12 +341,46 @@ namespace FA23_Convocation2023_API.Services
         }
 
         //update bachelor nếu đi trễ thì đẩy vào session tạm
-        // public async Task<Bachelor> UpdateBachelorToTempSessionAsync(string studentCode, bool isMorning)
-        // {
-        //     var existingBachelor = await _context.Bachelors
-        //         .Include(b => b.Hall)
-        //         .Include(b => b.Session)
-        //         .FirstOrDefaultAsync(b => b.StudentCode.ToLower().Equals(studentCode.ToLower())) ?? throw new Exception("Tân cử nhân chưa được import vào hệ thống!");
-        // }
+        public async Task<Bachelor> UpdateBachelorToTempSessionAsync(string studentCode, bool isMorning)
+        {
+            var existingBachelor = await _context.Bachelors
+                .Include(b => b.Hall)
+                .Include(b => b.Session)
+                .FirstOrDefaultAsync(b => b.StudentCode.ToLower().Equals(studentCode.ToLower())) ?? throw new Exception("Tân cử nhân chưa được import vào hệ thống!");
+
+            Session tempSession = new();
+            if (isMorning)
+            {
+                tempSession = await _context.Sessions
+                    .FirstOrDefaultAsync((session) => session.Session1 == 100);
+            }
+            else
+            {
+                tempSession = await _context.Sessions
+                .FirstOrDefaultAsync((session) => session.Session1 == 111);
+            }
+            existingBachelor.SessionId = tempSession!.SessionId;
+            var existingCheckin = await _context.CheckIns
+                .FirstOrDefaultAsync((checkin) => checkin.HallId == existingBachelor.HallId);
+            if (existingCheckin == null)
+            {
+                var newCheckin = new CheckIn
+                {
+                    HallId = existingBachelor.HallId,
+                    SessionId = tempSession.SessionId,
+                    Status = false
+                };
+                _context.CheckIns.Add(newCheckin);
+                await _context.SaveChangesAsync();
+            }
+            existingBachelor.Session = tempSession;
+            int _count = await _context.Bachelors.Where(b => b.HallId == existingBachelor.HallId &&
+                b.SessionId == tempSession.SessionId).CountAsync();
+            existingBachelor.Chair = (_count + 1).ToString();
+            existingBachelor.ChairParent = "PH" + (_count + 1).ToString();
+            _context.Bachelors.Update(existingBachelor);
+            await _context.SaveChangesAsync();
+            return existingBachelor;
+        }
     }
 }
