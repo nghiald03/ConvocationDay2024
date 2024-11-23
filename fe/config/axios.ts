@@ -18,7 +18,7 @@ axiosInstance.interceptors.request.use((config) => {
 
   if (accessToken) {
     config.headers['Authorization'] = `Bearer ${accessToken}`;
-    config.timeout = 10000;
+    config.timeout = 30000;
   }
 
   return config;
