@@ -199,5 +199,18 @@ namespace FA23_Convocation2023_API.Controllers
                 data = result
             });
         }
+
+        ////get list bachelor not checkin follow hall and list session
+        //[HttpGet("GetListBachelorNotCheckin")]
+        //public async Task<IActionResult> GetListBachelorNotCheckinAsync()
+        //{
+        //    var result = await _bachService.GetListBachelorNotCheckinAsync();
+        //    return Ok(new
+        //    {
+        //        status = StatusCodes.Status200OK,
+        //        message = "Get list bachelor not checkin successfully!",
+        //        data = result
+        //    });
+        //}
     }
 }
