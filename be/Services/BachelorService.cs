@@ -374,10 +374,15 @@ namespace FA23_Convocation2023_API.Services
                 await _context.SaveChangesAsync();
             }
             existingBachelor.Session = tempSession;
-            int _count = await _context.Bachelors.Where(b => b.HallId == existingBachelor.HallId &&
-                b.SessionId == tempSession.SessionId).CountAsync();
-            existingBachelor.Chair = (_count + 1).ToString();
-            existingBachelor.ChairParent = "PH" + (_count + 1).ToString();
+            var listChair = await _context.Bachelors.Where(b => b.HallId == existingBachelor.HallId &&
+                b.SessionId == tempSession.SessionId).Select(b => b.Chair).ToListAsync();
+            int _count = 1;
+            while (listChair.Contains(_count.ToString()))
+            {
+                _count++;
+            }
+            existingBachelor.Chair = _count.ToString();
+            existingBachelor.ChairParent = "PH" + _count.ToString();
             _context.Bachelors.Update(existingBachelor);
             await _context.SaveChangesAsync();
             return existingBachelor;
