@@ -6,5 +6,6 @@
         public int SessionNum { get; set; }
         public int BachelorsCheckined {  get; set; }
         public int BachelorsSession {  get; set; }
+        public string? Status { get; set; }
     }
 }
