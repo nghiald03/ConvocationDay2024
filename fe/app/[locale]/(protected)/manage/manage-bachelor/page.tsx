@@ -40,6 +40,8 @@ import {
 import toast from 'react-hot-toast';
 import AddOrUpdateBachelor from './components/formAddOrUpdate';
 import swal from 'sweetalert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import BachelorListNotCheckin from './components/bachelorListNotCheckin';
 
 export default function Page() {
   const queryClient = useQueryClient();
@@ -51,8 +53,13 @@ export default function Page() {
   const [searchTextQuery] = useDebounce(search, 700);
   const [hall, setHall] = useState('-1');
   const [session, setSession] = useState('-1');
-  const { data: bachelorDT } = useQuery({
+  const {
+    data: bachelorDT,
+    error: bachelorDTEr,
+    isLoading,
+  } = useQuery({
     queryKey: ['bachelorList'],
+
     queryFn: () => {
       if (hall === '-1') {
         if (session === '-1') {
@@ -83,10 +90,18 @@ export default function Page() {
           search: searchTextQuery,
         });
       }
+      if (searchTextQuery !== '') {
+        return checkinAPI.getBachelorList({
+          pageIndex: pageIndex,
+          pageSize: pageSize,
+          search: searchTextQuery,
+          hall: hall,
+          session: session,
+        });
+      }
       return checkinAPI.getBachelorList({
         pageIndex: pageIndex,
         pageSize: pageSize,
-        search: searchTextQuery,
         hall: hall,
         session: session,
       });
@@ -259,6 +274,7 @@ export default function Page() {
       ),
     },
   ];
+  const [tabsSelect, setTabsSelect] = useState('home');
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
@@ -277,6 +293,16 @@ export default function Page() {
               <BreadcrumbItem>
                 <BreadcrumbPage>Quản lí danh sách TCN</BreadcrumbPage>
               </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>
+                  {tabsSelect === 'bachelorList'
+                    ? 'Danh sách tân cử nhân'
+                    : tabsSelect === 'bachelorListNotCheckin'
+                    ? 'Danh sách tân cử nhân chưa checkin'
+                    : 'Thống kê số liệu checkin'}
+                </BreadcrumbPage>
+              </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </CardContent>
@@ -284,138 +310,191 @@ export default function Page() {
 
       <Card className='mt-3'>
         <CardContent className='p-3'>
-          <TableCustom
-            title='Danh sách tân cử nhân'
-            data={bachelorList}
-            columns={columns}
-            pageIndex={pageIndex}
-            pageSize={pageSize}
-            setPageSize={setPageSize}
-            setPageIndex={setPageIndex}
-            totalItems={bachelorDT?.data?.data?.totalItems}
-            totalPages={bachelorDT?.data?.data?.totalPages}
-            hasNextPage={bachelorDT?.data?.data?.hasNextPage}
-            hasPreviousPage={bachelorDT?.data?.data?.hasPreviousPage}
-            header={
-              <>
-                <div className='flex gap-1 w-full h-[40px]'>
-                  <Input
-                    className='w-[300px] h-full'
-                    placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <div className='h-full'>
-                    <Select onValueChange={setHall}>
-                      <SelectTrigger color='primary' className='w-[170px] '>
-                        <SelectValue
-                          className=' h-full'
-                          color='primary'
-                          placeholder='Chọn hội trường'
-                        />
-                      </SelectTrigger>
-                      <SelectContent color='primary'>
-                        <SelectGroup>
-                          <SelectLabel>Hội Trường</SelectLabel>
-                          <SelectItem value='-1' key='all'>
-                            Toàn bộ hội trường
-                          </SelectItem>
-                          {hallList &&
-                            Array.isArray(hallList?.data.data) &&
-                            hallList.data.data.map((item: any) => (
-                              <SelectItem key={item.hallId} value={item.hallId}>
-                                {item.hallName}
+          <Tabs
+            defaultValue='bachelorList'
+            className='w-full'
+            onValueChange={setTabsSelect}
+          >
+            <TabsList>
+              <TabsTrigger
+                value='bachelorList'
+                className='relative before:absolute before:top-full before:left-0 before:h-px before:w-full data-[state=active]:before:bg-primary'
+              >
+                <Icon
+                  icon='icon-park-solid:bachelor-cap-one'
+                  className='h-4 w-4 me-1'
+                />
+                Danh sách tân cử nhân
+              </TabsTrigger>
+              <TabsTrigger
+                value='bachelorListNotCheckin'
+                className='relative before:absolute before:top-full before:left-0 before:h-px before:w-full data-[state=active]:before:bg-primary'
+              >
+                <Icon icon='mynaui:user-x' className='h-4 w-4 me-1' />
+                Danh sách tân cử nhân chưa checkin
+              </TabsTrigger>
+              <TabsTrigger
+                value='checkinList'
+                className='relative before:absolute before:top-full before:left-0 before:h-px before:w-full data-[state=active]:before:bg-primary'
+              >
+                <Icon
+                  icon='icon-park-outline:market-analysis'
+                  className='h-4 w-4 me-1'
+                />
+                Thống kê số liệu checkin
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value='bachelorList'>
+              <TableCustom
+                title='Danh sách tân cử nhân'
+                data={bachelorList}
+                columns={columns}
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                setPageSize={setPageSize}
+                setPageIndex={setPageIndex}
+                totalItems={bachelorDT?.data?.data?.totalItems}
+                totalPages={bachelorDT?.data?.data?.totalPages}
+                hasNextPage={bachelorDT?.data?.data?.hasNextPage}
+                hasPreviousPage={bachelorDT?.data?.data?.hasPreviousPage}
+                header={
+                  <>
+                    <div className='flex gap-1 w-full h-[40px]'>
+                      <Input
+                        className='w-[300px] h-full'
+                        placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
+                        onChange={(e) => setSearch(e.target.value)}
+                      />
+                      <div className='h-full'>
+                        <Select onValueChange={setHall}>
+                          <SelectTrigger color='primary' className='w-[170px] '>
+                            <SelectValue
+                              className=' h-full'
+                              color='primary'
+                              placeholder='Chọn hội trường'
+                            />
+                          </SelectTrigger>
+                          <SelectContent color='primary'>
+                            <SelectGroup>
+                              <SelectLabel>Hội Trường</SelectLabel>
+                              <SelectItem value='-1' key='all'>
+                                Toàn bộ hội trường
                               </SelectItem>
-                            ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                              {hallList &&
+                                Array.isArray(hallList?.data.data) &&
+                                hallList.data.data.map((item: any) => (
+                                  <SelectItem
+                                    key={item.hallId}
+                                    value={item.hallId}
+                                  >
+                                    {item.hallName}
+                                  </SelectItem>
+                                ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  <Select onValueChange={setSession}>
-                    <SelectTrigger className='w-[180px]'>
-                      <SelectValue placeholder='Chọn session' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Session</SelectLabel>
-                        <SelectItem value='-1' key='all'>
-                          Toàn bộ session
-                        </SelectItem>
-                        {sessionList &&
-                          Array.isArray(sessionList?.data.data) &&
-                          sessionList.data.data.map((item: any) => (
-                            <SelectItem
-                              key={item.sessionId}
-                              value={item.sessionId}
-                            >
-                              {item.session1}
+                      <Select onValueChange={setSession}>
+                        <SelectTrigger className='w-[180px]'>
+                          <SelectValue placeholder='Chọn session' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Session</SelectLabel>
+                            <SelectItem value='-1' key='all'>
+                              Toàn bộ session
                             </SelectItem>
-                          ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant='outline'
-                        className='h-full'
-                        color='primary'
-                      >
-                        Thêm tân cử nhân
-                        <Icon
-                          icon='heroicons:chevron-right'
-                          className=' h-4 w-4 ms-2 rtl:rotate-180 '
-                        />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align='start'
-                      className='flex-col gap-0'
-                    >
-                      <DropdownMenuItem className='p-0' asChild>
-                        <AddOrUpdateBachelor
-                          hallList={
-                            hallList && Array.isArray(hallList?.data?.data)
-                              ? hallList?.data?.data
-                              : []
-                          }
-                          sessionList={
-                            sessionList &&
-                            Array.isArray(sessionList?.data?.data)
-                              ? sessionList?.data?.data
-                              : []
-                          }
-                        >
+                            {sessionList &&
+                              Array.isArray(sessionList?.data.data) &&
+                              sessionList.data.data.map((item: any) => (
+                                <SelectItem
+                                  key={item.sessionId}
+                                  value={item.sessionId}
+                                >
+                                  {item.session1}
+                                </SelectItem>
+                              ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
-                            className='w-full flex justify-start'
-                            size='md'
-                            variant={'outline'}
+                            variant='outline'
+                            className='h-full'
+                            color='primary'
                           >
-                            Thêm một tân cử nhân
+                            Thêm tân cử nhân
+                            <Icon
+                              icon='heroicons:chevron-right'
+                              className=' h-4 w-4 ms-2 rtl:rotate-180 '
+                            />
                           </Button>
-                        </AddOrUpdateBachelor>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className='p-0' asChild>
-                        <AddBachelorFromFile />
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className='p-0'>
-                        <Button
-                          className='w-full flex justify-start'
-                          size='md'
-                          variant={'outline'}
-                          onClick={() => {
-                            handleDownloadTemplate();
-                          }}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align='start'
+                          className='flex-col gap-0'
                         >
-                          Tải file mẫu
-                        </Button>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </>
-            }
-          />
+                          <DropdownMenuItem className='p-0' asChild>
+                            <AddOrUpdateBachelor
+                              hallList={
+                                hallList && Array.isArray(hallList?.data?.data)
+                                  ? hallList?.data?.data
+                                  : []
+                              }
+                              sessionList={
+                                sessionList &&
+                                Array.isArray(sessionList?.data?.data)
+                                  ? sessionList?.data?.data
+                                  : []
+                              }
+                            >
+                              <Button
+                                className='w-full flex justify-start'
+                                size='md'
+                                variant={'outline'}
+                              >
+                                Thêm một tân cử nhân
+                              </Button>
+                            </AddOrUpdateBachelor>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className='p-0' asChild>
+                            <AddBachelorFromFile />
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className='p-0'>
+                            <Button
+                              className='w-full flex justify-start'
+                              size='md'
+                              variant={'outline'}
+                              onClick={() => {
+                                handleDownloadTemplate();
+                              }}
+                            >
+                              Tải file mẫu
+                            </Button>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </>
+                }
+              />
+            </TabsContent>
+            <TabsContent value='bachelorListNotCheckin'>
+              <BachelorListNotCheckin />
+            </TabsContent>
+            <TabsContent value='messages'>
+              Aliqua id fugiat nostrud irure ex duis ea quis id quis ad et. Sunt
+              qui
+            </TabsContent>
+            <TabsContent value='settings'>
+              Aliqua id fugiat nostrud irure ex duis ea quis id quis ad et. Sunt
+              qui esse pariatur duis deserunt mollit dolore cillum minim tempor
+              enim. Elit aute irure tempor cupidatat incididunt sint deserunt ut
+              voluptate aute id deserunt nisi.
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </>

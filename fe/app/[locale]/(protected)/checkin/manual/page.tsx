@@ -76,10 +76,18 @@ export default function Page() {
           search: searchTextQuery,
         });
       }
+      if (searchTextQuery !== '') {
+        return checkinAPI.getBachelorList({
+          pageIndex: pageIndex,
+          pageSize: pageSize,
+          search: searchTextQuery,
+          hall: hall,
+          session: session,
+        });
+      }
       return checkinAPI.getBachelorList({
         pageIndex: pageIndex,
         pageSize: pageSize,
-        search: searchTextQuery,
         hall: hall,
         session: session,
       });
