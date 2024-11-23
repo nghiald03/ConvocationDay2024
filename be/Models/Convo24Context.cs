@@ -57,6 +57,11 @@ namespace FA23_Convocation2023_API.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
+            modelBuilder.Entity<Session>().HasData(
+        new Session { SessionId = 100, Session1 = 100 },
+        new Session { SessionId = 111, Session1 = 111 }
+    );
+
             modelBuilder.Entity<Role>().HasData(
         new Role { RoleId = "1", RoleName = "MN" },
         new Role { RoleId = "2", RoleName = "CK" },
