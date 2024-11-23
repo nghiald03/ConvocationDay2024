@@ -1,4 +1,5 @@
 ﻿using FA23_Convocation2023_API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -8,6 +9,7 @@ namespace FA23_Convocation2023_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class DatabaseController : ControllerBase
     {
         private readonly IServiceProvider _serviceProvider;
