@@ -29,7 +29,9 @@ export default async function RootLayout({
 
   return (
     <html lang='en' dir={direction}>
-      <body className={`${inter.className} dashcode-app`}>
+      <body
+        className={`${inter.className} dashcode-app h-[100vh] w-[100vw] bg-white`}
+      >
         <NextIntlClientProvider messages={messages} locale='en'>
           <ThemeProvider attribute='class' defaultTheme='light'>
             <MountedProvider>

@@ -40,6 +40,10 @@ const nextConfig = {
         protocol: 'http',
         hostname: 'localhost',
       },
+      {
+        protocol: 'http',
+        hostname: '192.168.0.110',
+      },
     ],
   },
   swcMinify: true,
