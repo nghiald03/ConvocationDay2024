@@ -69,6 +69,65 @@ namespace FA23_Convocation2023_API.Services
             return "Checkin thành công!";
         }
 
+        public async Task<string> UpdateCheckinWithStudentCode(string studentCode)
+        {
+            // Kiểm tra xem có nhiều bản ghi trùng lặp hay không
+            var bachelorDuplicate = await _context.Bachelors
+                .Where(b => b.StudentCode == studentCode)
+                .ToListAsync();
+
+            if (bachelorDuplicate.Count > 1)
+            {
+                // Tìm bản ghi trùng lặp mà có HallId là null
+                var bachelorDuplicateLastCreate = await _context.Bachelors
+                    .FirstOrDefaultAsync(b => b.StudentCode == studentCode && b.HallId == null);
+
+                // Chỉ xóa nếu tìm thấy bản ghi trùng lặp
+                if (bachelorDuplicateLastCreate != null)
+                {
+                    _context.Bachelors.Remove(bachelorDuplicateLastCreate);
+                }
+            }
+
+            var bachelor = await _context.Bachelors
+                .FirstOrDefaultAsync(b => b.StudentCode == studentCode);
+
+            if (bachelor != null && bachelor.StatusBaChelor == "Current")
+            {
+                throw new Exception("Bachelor đang được chiếu trên màn hình, không thể cập nhật status checkin ngay lúc này");
+            }
+
+            var checkin = await _context.CheckIns
+                .FirstOrDefaultAsync(c => c.HallId == bachelor.HallId && c.SessionId == bachelor.SessionId);
+
+            if (checkin?.Status == true)
+            {
+                bachelor.TimeCheckIn = DateTime.Now;
+                bachelor.CheckIn = true;
+                if (bachelor.CheckIn == true)
+                {
+                    bachelor.Status = true;
+                }
+                else
+                {
+                    bachelor.Status = false;
+                }
+
+                _context.Bachelors.Update(bachelor);
+                await _context.SaveChangesAsync();
+            }
+            else if (checkin?.Status == null)
+            {
+                throw new Exception("Session này chưa được mở, vui lòng đến đúng session của bạn");
+            }
+            else
+            {
+                throw new Exception("Tân cử nhân đã bỏ lỡ session này");
+            }
+
+            return "Checkin thành công!";
+        }
+
         //get all checkin
         public async Task<List<CheckIn>> GetAllCheckinAsync()
         {

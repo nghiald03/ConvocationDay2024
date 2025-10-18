@@ -108,7 +108,8 @@ namespace FA23_Convocation2023_API
             builder.Services.AddScoped<BachelorService>()
                 .AddScoped<CheckInService>()
                 .AddScoped<HallService>()
-                .AddScoped<SessionService>();
+                .AddScoped<SessionService>()
+                .AddScoped<StatisticsService>();
 
             // Nhớ là nếu cái gì liên quan tới config builder như builder.Services. gì á,
             // thì nhớ là phải bỏ trên dòng này nha, tại từ dòng này trở xuống là 

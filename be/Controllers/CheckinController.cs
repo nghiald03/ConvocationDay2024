@@ -34,6 +34,20 @@ namespace FA23_Convocation2023_API.Controllers
             }
         }
 
+        [HttpPut("UpdateCheckinStudentCode")]
+        public async Task<IActionResult> UpdateCheckinWithStudentCode(string studentCode)
+        {
+            try
+            {
+                var result = await _checkInService.UpdateCheckinWithStudentCode(studentCode);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpGet("GetAll")]
         [Authorize(Roles = "MN, CK")]
         public async Task<IActionResult> GetAllCheckinAsync()
