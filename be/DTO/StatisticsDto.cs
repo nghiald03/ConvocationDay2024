@@ -1,27 +1,23 @@
 ﻿namespace FA23_Convocation2023_API.DTO
 {
-    public class HallCheckInDto
-    {
-        public int HallId { get; set; }
-        public string HallName { get; set; }
-        public int TotalCheckIn { get; set; }
-    }
-
-    public class SessionStatisticDto
+    public class HallSessionSummaryDto
     {
         public int SessionId { get; set; }
         public int? SessionNumber { get; set; }
-        public int TotalCheckIn { get; set; }
-        public int TotalHalls { get; set; }
-        public List<HallCheckInDto> Halls { get; set; } = new();
+        public int TotalStudents { get; set; }
+        public int CheckedInCount { get; set; }
     }
 
-    public class StatisticsDto
+    public class HallOverviewDto
     {
+        public int HallId { get; set; }
+        public string HallName { get; set; }
         public int TotalSessions { get; set; }
-        public int TotalHalls { get; set; }
-        public int TotalCheckIn { get; set; }
-        // Danh sách thống kê từng session
-        public List<SessionStatisticDto> Sessions { get; set; } = new();
+
+        public List<HallSessionSummaryDto> Sessions { get; set; } = new();
+
+        // Xác định session hiện tại (mới nhất hoặc đang LED)
+        public int? CurrentSessionId { get; set; }
+        public int? CurrentSessionNumber { get; set; }
     }
 }
