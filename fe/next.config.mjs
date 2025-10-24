@@ -44,6 +44,10 @@ const nextConfig = {
         protocol: 'http',
         hostname: '192.168.0.110',
       },
+      {
+        protocol: 'https',
+        hostname: 'img.freepik.com',
+      },
     ],
   },
   swcMinify: true,

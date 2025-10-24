@@ -9,7 +9,7 @@ export type Bachelor = {
   status?: boolean;
   statusBaChelor?: string;
   hallName: string;
-  sessionNum: string;
+  sessionNum: number;
   chair: string;
   chairParent: string;
   checkIn?: boolean;

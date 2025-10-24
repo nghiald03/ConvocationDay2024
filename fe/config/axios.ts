@@ -1,16 +1,15 @@
 import { Bachelor } from '@/dtos/BachelorDTO';
 import axios from 'axios';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
-  ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
-  : 'http://fjourney.site:85/api';
-console.log('env', process.env.NEXT_PUBLIC_SITE_URL);
-console.log('base', process.env.API_URL);
+// const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
+//   ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
+//   : 'https://localhost:7105/api';
+// console.log('env', process.env.NEXT_PUBLIC_SITE_URL);
+// console.log('base', process.env.API_URL);
 
+const BASE_URL = 'https://localhost:7105/api';
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_SITE_URL
-    ? process.env.NEXT_PUBLIC_SITE_URL + '/api'
-    : 'http://fjourney.site:85/api',
+  baseURL: BASE_URL,
 });
 
 axiosInstance.interceptors.request.use((config) => {
@@ -140,5 +139,30 @@ export const manageAPI = {
   },
   resetDatabase: async () => {
     return await axiosInstance.post('/Database/reset-database');
+  },
+};
+
+// Statistics APIs
+export type HallOverview = {
+  hallId: number;
+  hallName: string;
+  totalSessions: number;
+  sessions: Array<{
+    sessionId: number;
+    sessionNumber: number;
+    totalStudents: number;
+    checkedInCount: number;
+  }>;
+  currentSessionId: number | null;
+  currentSessionNumber: number | null;
+};
+
+export const statisticsAPI = {
+  getHallOverview: async () => {
+    return await axiosInstance.get<{
+      status: number;
+      message: string;
+      data: HallOverview[];
+    }>('/Statistics/hall-overview');
   },
 };

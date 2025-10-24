@@ -1,4 +1,5 @@
 'use client';
+
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Breadcrumb,
@@ -35,95 +36,167 @@ import {
 } from '@/components/ui/select';
 import { ledAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
-import { th } from '@faker-js/faker';
-import { Icon } from '@iconify/react/dist/iconify.js';
+import { Icon } from '@iconify/react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
-import React, { use, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-export default function Page() {
-  const [hall, setHall] = useState(
-    () => window.localStorage.getItem('hall') || ''
-  );
-  const [session, setSession] = useState(
-    () => window.localStorage.getItem('session') || ''
-  );
-  const [hallList, setHallList] = useState([{ value: '', label: '' }]);
-  const [sessionList, setSessionList] = useState([{ value: '', label: '' }]);
-  const [bachelorCurrent, setBachelorCurrent] = useState<Bachelor | null>(null);
-  const [bachelorBack, setBachelorBack] = useState<Bachelor | null>();
-  const [bachelorNext, setBachelorNext] = useState<Bachelor | null>();
+// ====== Helpers cho ảnh ======
+const isValidImageSrc = (src?: string | null) => {
+  if (!src || typeof src !== 'string') return false;
+  const trimmed = src.trim();
+  if (trimmed.length < 2) return false;
+  // Không dùng data: trực tiếp với next/image (nên fallback)
+  if (trimmed.startsWith('data:')) return false;
 
+  // URL tuyệt đối
+  try {
+    const u = new URL(trimmed);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    // Không phải URL tuyệt đối -> chấp nhận nếu là đường dẫn tương đối có '/'
+    return trimmed.startsWith('/');
+  }
+};
+
+function SafeImg({
+  src,
+  alt,
+  width,
+  height,
+  className,
+}: {
+  src?: string | null;
+  alt: string;
+  width: number;
+  height: number;
+  className?: string;
+}) {
+  if (!isValidImageSrc(src)) {
+    return (
+      <div
+        className={`flex items-center justify-center bg-muted ${
+          className || ''
+        }`}
+        style={{ width, height }}
+      >
+        <span className='text-sm opacity-60'>Không có ảnh</span>
+      </div>
+    );
+  }
+  return (
+    <Image
+      src={src as string}
+      alt={alt}
+      width={width}
+      height={height}
+      className={className}
+      unoptimized
+      onError={(e) => {
+        // Ẩn khi lỗi tải ảnh
+        const el = e.currentTarget as HTMLImageElement;
+        el.style.display = 'none';
+      }}
+    />
+  );
+}
+
+export default function Page() {
+  const [hall, setHall] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    return window.localStorage.getItem('hall') || '';
+  });
+  const [session, setSession] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    return window.localStorage.getItem('session') || '';
+  });
+
+  const [hallList, setHallList] = useState<{ value: string; label: string }[]>(
+    []
+  );
+  const [sessionList, setSessionList] = useState<
+    { value: string; label: string }[]
+  >([]);
+
+  const [bachelorCurrent, setBachelorCurrent] = useState<Bachelor | null>(null);
+  const [bachelorBack, setBachelorBack] = useState<Bachelor | null>(null);
+  const [bachelorNext, setBachelorNext] = useState<Bachelor | null>(null);
+
+  // ---- Fetch hall
   const { data: hallData, error: hallError } = useQuery({
     queryKey: ['listHall'],
-    queryFn: () => {
-      return ledAPI
+    queryFn: () =>
+      ledAPI
         .getHallList()
         .then((res) => res.data)
         .catch((err) => {
           throw err;
-        });
-    },
+        }),
   });
 
   useEffect(() => {
-    if (hallData && hallData.data.length > 0) {
+    if (hallError) {
+      toast.error('Lỗi lấy danh sách hall');
+    }
+  }, [hallError]);
+
+  useEffect(() => {
+    if (hallData?.data?.length > 0) {
       setHallList(
         hallData.data.map((item: any) => ({
-          value: item.hallId,
+          value: String(item.hallId),
           label: item.hallName,
         }))
       );
     }
   }, [hallData]);
 
+  // ---- Fetch session
   const { data: sessionData, error: sessionError } = useQuery({
     queryKey: ['listSession'],
-    queryFn: () => {
-      return ledAPI
+    queryFn: () =>
+      ledAPI
         .getSessionList()
         .then((res) => res.data)
         .catch((err) => {
           throw err;
-        });
-    },
+        }),
   });
 
   useEffect(() => {
-    if (sessionData && sessionData.data.length > 0) {
+    if (sessionError) {
+      toast.error('Lỗi lấy danh sách session');
+    }
+  }, [sessionError]);
+
+  useEffect(() => {
+    if (sessionData?.data?.length > 0) {
       setSessionList(
         sessionData.data.map((item: any) => ({
-          value: item.sessionId,
+          value: String(item.sessionId),
           label: item.session1,
         }))
       );
     }
   }, [sessionData]);
 
+  // ---- Persist lựa chọn
   useEffect(() => {
-    const hall = window.localStorage.getItem('hall');
-    const session = window.localStorage.getItem('session');
-
-    if (session) {
-      setSession(session);
-    }
-    if (hall) {
-      setHall(hall);
-    }
+    if (typeof window === 'undefined') return;
+    const h = window.localStorage.getItem('hall');
+    const s = window.localStorage.getItem('session');
+    if (s) setSession(s);
+    if (h) setHall(h);
   }, []);
 
   useEffect(() => {
-    if (!hall) {
-      return;
-    }
+    if (!hall || typeof window === 'undefined') return;
     window.localStorage.setItem('hall', hall);
   }, [hall]);
 
   useEffect(() => {
-    if (!session) {
-      return;
-    }
+    if (!session || typeof window === 'undefined') return;
     window.localStorage.setItem('session', session);
   }, [session]);
 
@@ -141,6 +214,7 @@ export default function Page() {
     );
   }, [sessionList, session]);
 
+  // ---- Mutations
   const getBachelorCurrent = useMutation({
     mutationFn: async () => {
       if (!hall || !session) {
@@ -149,36 +223,27 @@ export default function Page() {
       return ledAPI.getBachelorCurrent(hall, session);
     },
     onSuccess: (data) => {
-      console.log('BachelorCurrent', data);
-      if (data?.data?.data) {
-        console.log('bachelorBack', data.data.data.bachelor1);
-        console.log('bachelorCurrent', data.data.data.bachelor2);
-        console.log('bachelorNext', data.data.data.bachelor3);
-        if (data.data.data.bachelor1 !== '') {
-          setBachelorBack(data.data.data.bachelor1);
-        } else {
-          setBachelorBack(null);
-        }
-        if (data.data.data.bachelor2) {
-          setBachelorCurrent(data.data.data.bachelor2);
-        }
-        if (data.data.data.bachelor3 !== '') {
-          setBachelorNext(data.data.data.bachelor3);
-        } else {
-          setBachelorNext(null);
-        }
+      const payload = data?.data?.data;
+      if (!payload) {
+        setBachelorBack(null);
+        setBachelorCurrent(null);
+        setBachelorNext(null);
+        return;
       }
-      // setBachelorCurrent(data.data);
-    },
-    onError: (error) => {
-      toast.error(
-        'Có lỗi khi lấy dữ liệu vui lòng chọn hall và session khác!',
-        {
-          duration: 3000,
-          position: 'top-right',
-        }
+
+      // bachelor1/2/3 có thể là '' hoặc object
+      setBachelorBack(
+        payload.bachelor1 && payload.bachelor1 !== '' ? payload.bachelor1 : null
       );
-      console.log('Error:', error);
+      setBachelorCurrent(payload.bachelor2 || null);
+      setBachelorNext(
+        payload.bachelor3 && payload.bachelor3 !== '' ? payload.bachelor3 : null
+      );
+    },
+    onError: () => {
+      toast.error('Có lỗi khi lấy dữ liệu. Vui lòng chọn hall/session khác!', {
+        duration: 3000,
+      });
     },
   });
 
@@ -191,21 +256,14 @@ export default function Page() {
     },
     onSuccess: () => {
       getBachelorCurrent.mutate();
-
-      // setBachelorCurrent(data.data);
     },
-    onError: (error) => {
-      toast.error(
-        'Có lỗi khi lấy dữ liệu vui lòng chọn hall và session khác!',
-        {
-          duration: 3000,
-          position: 'top-right',
-        }
-      );
+    onError: () => {
+      toast.error('Có lỗi khi lấy dữ liệu. Vui lòng chọn hall/session khác!', {
+        duration: 3000,
+      });
       setBachelorCurrent(null);
       setBachelorBack(null);
       setBachelorNext(null);
-      console.log('Error:', error);
     },
   });
 
@@ -218,15 +276,9 @@ export default function Page() {
     },
     onSuccess: () => {
       getBachelorCurrent.mutate();
-
-      // setBachelorCurrent(data.data);
     },
-    onError: (error) => {
-      toast.error('Lỗi khi lấy dữ liệu', {
-        duration: 3000,
-        position: 'top-right',
-      });
-      console.log('Error:', error);
+    onError: () => {
+      toast.error('Lỗi khi lấy dữ liệu', { duration: 3000 });
     },
   });
 
@@ -239,28 +291,22 @@ export default function Page() {
     },
     onSuccess: () => {
       getBachelorCurrent.mutate();
-
-      // setBachelorCurrent(data.data);
     },
-    onError: (error) => {
-      toast.error('Lỗi khi lấy dữ liệu', {
-        duration: 3000,
-        position: 'top-right',
-      });
-      console.log('Error:', error);
+    onError: () => {
+      toast.error('Lỗi khi lấy dữ liệu', { duration: 3000 });
     },
   });
 
+  // ---- Tự gọi lần đầu khi đã chọn đủ hall/session
   useEffect(() => {
     if (!hall || !session) {
-      toast.error('Chưa chọn hall hoặc session', {
-        duration: 3000,
-        position: 'top-right',
-      });
+      toast.error('Chưa chọn hall hoặc session', { duration: 3000 });
       return;
     }
     getBachelor1st.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hall, session]);
+
   return (
     <>
       <Card>
@@ -287,17 +333,22 @@ export default function Page() {
               bạn cần hỗ trợ, vui lòng liên hệ với ADMIN để được hỗ trợ.
             </AlertDescription>
           </Alert>
+
           <Dialog>
             <DialogTrigger asChild>
-              <Alert variant='soft' color='success' className='mt-3'>
+              <Alert
+                variant='soft'
+                color='success'
+                className='mt-3 cursor-pointer'
+              >
                 <AlertDescription key={hall + session}>
                   <Icon icon='akar-icons:double-check' className='w-5 h-5' />{' '}
                   Cài đặt hall và session bằng cách click tại đây [ hall:{' '}
                   {hallLabel} và session: {sessionLabel} ]
                 </AlertDescription>
-                ;
               </Alert>
             </DialogTrigger>
+
             <DialogContent className='sm:max-w-[425px]'>
               <DialogHeader>
                 <DialogTitle>Cài đặt hall và session</DialogTitle>
@@ -305,6 +356,7 @@ export default function Page() {
                   Chọn hall và session để trình chiếu LED rồi bấm lưu
                 </DialogDescription>
               </DialogHeader>
+
               <div className='grid gap-4 py-4'>
                 <div className='flex w-full items-center gap-4'>
                   <Select onValueChange={setHall} value={hall}>
@@ -312,33 +364,31 @@ export default function Page() {
                       <SelectValue placeholder='Chọn Hall' />
                     </SelectTrigger>
                     <SelectContent position='item-aligned'>
-                      {hallList &&
-                        hallList.length > 0 &&
-                        hallList.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
+                      {hallList.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className='flex w-full items-center gap-4'>
                   <Select onValueChange={setSession} value={session}>
                     <SelectTrigger className='w-full'>
                       <SelectValue placeholder='Chọn session' />
                     </SelectTrigger>
                     <SelectContent position='item-aligned'>
-                      {sessionList &&
-                        sessionList.length > 0 &&
-                        sessionList.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
+                      {sessionList.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
+
               <DialogFooter>
                 <DialogClose>
                   <Button>Lưu</Button>
@@ -348,25 +398,25 @@ export default function Page() {
           </Dialog>
         </CardContent>
       </Card>
+
       {hall && session && (
-        <Card className='mt-3  justify-center align-middle animate-fade-up'>
+        <Card className='mt-3 justify-center align-middle animate-fade-up'>
           <CardContent className='grid grid-cols-3 w-full gap-4 '>
-            {bachelorBack ? (
-              <Card className='mt-16 shadow-lg'>
-                <CardTitle className='mb-1'>
-                  <h2 className='text-center text-base'>Tân cử nhân trước</h2>
-                </CardTitle>
-                <CardContent>
-                  {bachelorBack.image && (
-                    <Image
-                      src={bachelorBack.image}
-                      alt='Mô tả hình ảnh'
-                      className=' object-cover'
-                      width={1920}
-                      height={1080}
-                    />
-                  )}
-                </CardContent>
+            {/* BACK */}
+            <Card className='mt-16 shadow-lg'>
+              <CardTitle className='mb-1'>
+                <h2 className='text-center text-base'>Tân cử nhân trước</h2>
+              </CardTitle>
+              <CardContent>
+                <SafeImg
+                  src={bachelorBack?.image}
+                  alt='Ảnh tân cử nhân trước'
+                  className='object-cover'
+                  width={1920}
+                  height={1080}
+                />
+              </CardContent>
+              {bachelorBack ? (
                 <CardDescription className='pb-3'>
                   <p className='text-center font-bold text-lg'>
                     {bachelorBack.fullName}
@@ -378,36 +428,28 @@ export default function Page() {
                     {bachelorBack.major}
                   </p>
                 </CardDescription>
-              </Card>
-            ) : (
-              <Card className='mt-16 shadow-lg'>
-                <CardTitle className='mb-1'>
-                  <h2 className='text-center text-base'>Tân cử nhân trước</h2>
-                </CardTitle>
-                <CardContent className='h-full w-full flex items-center justify-center'>
-                  <Icon icon='ph:empty-bold' className='w-10 h-10'></Icon>
+              ) : (
+                <CardDescription className='pb-3 text-center opacity-70'>
                   Không tồn tại
-                </CardContent>
-              </Card>
-            )}
-            {bachelorCurrent ? (
-              <Card className='mt-16 shadow-lg'>
-                <CardTitle className='mb-1'>
-                  <h2 className='text-center text-base'>
-                    Tân cử nhân hiện tại
-                  </h2>
-                </CardTitle>
-                <CardContent>
-                  {bachelorCurrent.image && (
-                    <Image
-                      src={bachelorCurrent.image}
-                      alt='Mô tả hình ảnh'
-                      className=' object-cover'
-                      width={1920}
-                      height={1080}
-                    />
-                  )}
-                </CardContent>
+                </CardDescription>
+              )}
+            </Card>
+
+            {/* CURRENT */}
+            <Card className='mt-16 shadow-lg'>
+              <CardTitle className='mb-1'>
+                <h2 className='text-center text-base'>Tân cử nhân hiện tại</h2>
+              </CardTitle>
+              <CardContent>
+                <SafeImg
+                  src={bachelorCurrent?.image}
+                  alt='Ảnh tân cử nhân hiện tại'
+                  className='object-cover'
+                  width={1920}
+                  height={1080}
+                />
+              </CardContent>
+              {bachelorCurrent ? (
                 <CardDescription className='pb-3'>
                   <p className='text-center font-bold text-lg'>
                     {bachelorCurrent.fullName}
@@ -419,36 +461,28 @@ export default function Page() {
                     {bachelorCurrent.major}
                   </p>
                 </CardDescription>
-              </Card>
-            ) : (
-              <Card className='mt-16 shadow-lg'>
-                <CardTitle className='mb-1'>
-                  <h2 className='text-center text-base'>
-                    Tân cử nhân hiện tại
-                  </h2>
-                </CardTitle>
-                <CardContent className='h-full w-full flex items-center justify-center'>
-                  <Icon icon='ph:empty-bold' className='w-10 h-10'></Icon>
+              ) : (
+                <CardDescription className='pb-3 text-center opacity-70'>
                   Không tồn tại
-                </CardContent>
-              </Card>
-            )}
-            {bachelorNext ? (
-              <Card className='mt-16 shadow-lg'>
-                <CardTitle className='mb-1'>
-                  <h2 className='text-center text-base'>Tân cử nhân sau</h2>
-                </CardTitle>
-                <CardContent>
-                  {bachelorNext.image && (
-                    <Image
-                      src={bachelorNext.image}
-                      alt='Mô tả hình ảnh'
-                      className=' object-cover'
-                      width={1920}
-                      height={1080}
-                    />
-                  )}
-                </CardContent>
+                </CardDescription>
+              )}
+            </Card>
+
+            {/* NEXT */}
+            <Card className='mt-16 shadow-lg'>
+              <CardTitle className='mb-1'>
+                <h2 className='text-center text-base'>Tân cử nhân sau</h2>
+              </CardTitle>
+              <CardContent>
+                <SafeImg
+                  src={bachelorNext?.image}
+                  alt='Ảnh tân cử nhân sau'
+                  className='object-cover'
+                  width={1920}
+                  height={1080}
+                />
+              </CardContent>
+              {bachelorNext ? (
                 <CardDescription className='pb-3'>
                   <p className='text-center font-bold text-lg'>
                     {bachelorNext.fullName}
@@ -460,25 +494,20 @@ export default function Page() {
                     {bachelorNext.major}
                   </p>
                 </CardDescription>
-              </Card>
-            ) : (
-              <Card className='mt-16 shadow-lg'>
-                <CardTitle className='mb-1'>
-                  <h2 className='text-center text-base'>Tân cử nhân sau</h2>
-                </CardTitle>
-                <CardContent className='h-full w-full flex items-center justify-center'>
-                  <Icon icon='ph:empty-bold' className='w-10 h-10'></Icon>
+              ) : (
+                <CardDescription className='pb-3 text-center opacity-70'>
                   Không tồn tại
-                </CardContent>
-              </Card>
-            )}
+                </CardDescription>
+              )}
+            </Card>
           </CardContent>
-          <CardFooter className='flex justify-center align-middle mt-5 rounded-tr-none rounded-br-none pb-10'>
+
+          <CardFooter className='flex justify-center align-middle mt-5 rounded-tr-none rounded-br-none pb-10 gap-2'>
             <Button
-              variant={'outline'}
-              disabled={!bachelorBack}
+              variant='outline'
+              disabled={!bachelorBack || getBachelorBack.isPending}
               onClick={() => {
-                getBachelorBack.mutate();
+                if (!getBachelorBack.isPending) getBachelorBack.mutate();
               }}
               color='primary'
             >
@@ -487,22 +516,24 @@ export default function Page() {
                 className='w-5 h-5'
               />
             </Button>
+
             <Button
-              variant={'outline'}
+              variant='outline'
               disabled
               color='primary'
               className='rounded-none'
             >
               {bachelorCurrent
-                ? bachelorCurrent.fullName + ' ' + bachelorCurrent.studentCode
+                ? `${bachelorCurrent.fullName} ${bachelorCurrent.studentCode}`
                 : 'Không tồn tại'}
             </Button>
+
             <Button
-              variant={'outline'}
+              variant='outline'
               onClick={() => {
-                getBachelorNext.mutate();
+                if (!getBachelorNext.isPending) getBachelorNext.mutate();
               }}
-              disabled={!bachelorNext}
+              disabled={!bachelorNext || getBachelorNext.isPending}
               color='primary'
             >
               <Icon icon='fluent:arrow-next-12-filled' className='w-5 h-5' />

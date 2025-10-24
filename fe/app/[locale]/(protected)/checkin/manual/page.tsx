@@ -33,17 +33,16 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { checkinAPI, ledAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
-import { DialogTrigger } from '@radix-ui/react-dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
-import { set } from 'lodash';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import swal from 'sweetalert';
 import { useDebounce } from 'use-debounce';
 
 export default function Page() {
   const queryClient = useQueryClient();
+
   const DEFAULT_PAGE_SIZE = 20;
   const [pageIndex, setPageIndex] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -51,78 +50,47 @@ export default function Page() {
   const [searchTextQuery] = useDebounce(search, 700);
   const [hall, setHall] = useState('-1');
   const [session, setSession] = useState('-1');
+
   const [bachelorList, setBachelorList] = useState<Bachelor[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
   const [mssv, setMSSV] = useState('');
   const [sessionBachelor, setSessionBachelor] = useState<string | null>(null);
-  const {
-    data: bachelorDT,
-    error: bachelorDTEr,
-    isLoading,
-  } = useQuery({
-    queryKey: ['bachelorList'],
 
+  // Set MSSV đang xử lý để disable switch theo từng hàng
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+
+  // ---- Fetch list, rút gọn queryFn
+  const { data: bachelorDT, isLoading } = useQuery({
+    queryKey: [
+      'bachelorList',
+      pageIndex,
+      pageSize,
+      hall,
+      session,
+      searchTextQuery,
+    ],
     queryFn: () => {
-      if (hall === '-1') {
-        if (session === '-1') {
-          return checkinAPI.getBachelorList({
-            pageIndex: pageIndex,
-            pageSize: pageSize,
-            search: searchTextQuery,
-          });
-        }
-        return checkinAPI.getBachelorList({
-          pageIndex: pageIndex,
-          pageSize: pageSize,
-          session: session,
-          search: searchTextQuery,
-        });
-      } else if (session === '-1') {
-        if (hall === '-1') {
-          return checkinAPI.getBachelorList({
-            pageIndex: pageIndex,
-            pageSize: pageSize,
-            search: searchTextQuery,
-          });
-        }
-        return checkinAPI.getBachelorList({
-          pageIndex: pageIndex,
-          pageSize: pageSize,
-          hall: hall,
-          search: searchTextQuery,
-        });
-      }
-      if (searchTextQuery !== '') {
-        return checkinAPI.getBachelorList({
-          pageIndex: pageIndex,
-          pageSize: pageSize,
-          search: searchTextQuery,
-          hall: hall,
-          session: session,
-        });
-      }
-      return checkinAPI.getBachelorList({
-        pageIndex: pageIndex,
-        pageSize: pageSize,
-        hall: hall,
-        session: session,
-      });
+      const params: any = { pageIndex, pageSize };
+      if (hall !== '-1') params.hall = hall;
+      if (session !== '-1') params.session = session;
+      if (searchTextQuery) params.search = searchTextQuery;
+      return checkinAPI.getBachelorList(params);
     },
+
+    refetchOnWindowFocus: false,
   });
 
   const { data: hallList, error: hallListEr } = useQuery({
     queryKey: ['hallList'],
-    queryFn: () => {
-      return ledAPI.getHallList();
-    },
+    queryFn: () => ledAPI.getHallList(),
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { data: sessionList, error: sessionListEr } = useQuery({
+  const { data: sessionList } = useQuery({
     queryKey: ['sessionList'],
-    queryFn: () => {
-      return ledAPI.getSessionList();
-    },
+    queryFn: () => ledAPI.getSessionList(),
+    staleTime: 5 * 60 * 1000,
   });
 
   useEffect(() => {
@@ -135,187 +103,96 @@ export default function Page() {
   }, [hallListEr]);
 
   useEffect(() => {
-    if (bachelorDT?.data?.data) {
-      if (
-        bachelorDT?.data?.data?.items &&
-        bachelorDT.data.data.items.length === 0
-      ) {
+    const res = bachelorDT?.data?.data;
+    if (res?.items && Array.isArray(res.items)) {
+      if (res.items.length === 0) {
         toast.error('Không tìm thấy tân cử nhân', {
           duration: 3000,
           position: 'top-right',
         });
-        setBachelorList([]);
-        return;
       }
-
-      setBachelorList(bachelorDT.data.data.items);
-      setPageIndex(bachelorDT.data.data.currentPage);
-      setPageSize(bachelorDT.data.data.pageSize);
+      setBachelorList(res.items);
+      setPageIndex(res.currentPage ?? pageIndex);
+      setPageSize(res.pageSize ?? pageSize);
     } else {
-      toast.error('Không tìm thấy tân cử nhân', {
-        duration: 3000,
-        position: 'top-right',
-      });
       setBachelorList([]);
     }
   }, [bachelorDT]);
 
+  // ---- Checkin
   const checkinAction = useMutation({
-    mutationFn: (data: any) => {
-      const nData = {
-        studentCode: data.studentCode,
-        status: !data.checkIn,
-      };
-      console.log(nData);
-      return checkinAPI.checkin(nData);
+    mutationFn: async (payload: { studentCode: string; status: boolean }) => {
+      return checkinAPI.checkin(payload);
     },
-    onError: (error) => {
-      // toast.error(`Checkin thất bại`, {
-      //   duration: 3000,
-      //   position: 'top-right',
-      //   important: true,
-      // });
-    },
-    onSuccess: (data, variables) => {
-      console.log('onSuccess', variables);
-      // toast.success(`Checkin cho ${variables.fullName} thành công`, {
-      //   duration: 3000,
-      //   position: 'top-right',
-      // });
+    onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
     },
   });
 
-  const handleCheckin = (data: any) => {
-    swal({
-      title: `Checkin`,
-      text: `Bạn có muốn checkin cho tân cử nhân ${data.fullName} không?`,
+  const handleCheckin = async (row: any) => {
+    const studentCode: string = row.studentCode;
+
+    const confirm = await swal({
+      title: 'Checkin',
+      text: `Bạn có muốn checkin cho tân cử nhân ${row.fullName} không?`,
       icon: 'warning',
       buttons: ['Không', 'Checkin'],
       dangerMode: true,
-    }).then((value) => {
-      if (value) {
-        // checkinAction.mutate(data);
-        toast.promise(
-          checkinAction.mutateAsync(data),
-          {
-            loading: 'Đang checkin...',
-            success: `Checkin cho ${data.fullName} thành công`,
-            error: (error) => {
-              console.log(error);
-              if (error.response.data === 'Tân cử nhân đã bỏ lỡ session này') {
-                setMSSV(data.studentCode);
-                setError(error.response.data);
-              }
-              return `Không thể checkin vì ${error.response.data}`;
-            },
-          },
-          { position: 'top-right', duration: 3000 }
-        );
-      }
     });
-  };
 
-  const columns: ColumnDef<Bachelor[]>[] = [
-    {
-      accessorKey: 'id',
-      header: 'ID',
-    },
-    {
-      accessorKey: 'fullName',
-      header: 'Tên',
-    },
-    {
-      accessorKey: 'studentCode',
-      header: 'MSSV',
-    },
-    {
-      accessorKey: 'mail',
-      header: 'Mail',
-    },
-    {
-      accessorKey: 'hallName',
-      header: 'Hội trường',
-    },
-    {
-      accessorKey: 'sessionNum',
-      header: 'Session',
-      cell: ({ row }) => (
-        <p>
-          {row.getValue('sessionNum') === 100
-            ? 'Session bù sáng'
-            : row.getValue('sessionNum') === 111
-            ? 'Session bù chiều'
-            : row.getValue('sessionNum')}
-        </p>
-      ),
-    },
-    {
-      accessorKey: 'chair',
-      header: 'Ghế',
-    },
-    {
-      accessorKey: 'chairParent',
-      header: 'Ghế phụ huynh',
-    },
-    {
-      accessorKey: 'checkIn',
-      header: 'checkin',
+    if (!confirm) return;
 
-      cell: ({ row }) => (
-        <p>
-          <Switch
-            checked={row.getValue('checkIn')}
-            color='primary'
-            onClick={() => {
-              handleCheckin(row.original);
-            }}
-          ></Switch>
-        </p>
-      ),
-    },
-  ];
+    // Disable switch của MSSV này
+    setProcessingIds((prev) => new Set(prev).add(studentCode));
 
-  useEffect(() => {
-    if (error) {
-      swal({
-        title: 'Đăng kí tham gia trao bằng tốt nghiệp bổ sung',
-        text: `Bạn có muốn đăng kí tham gia trao bằng tốt nghiệp bổ sung không? Lưu ý: Phiên phát bằng bổ sung có hai phiên vào buổi sáng khoảng 10h00 và buổi chiều khoảng 16h00. Vui lòng chọn phiên phù hợp.`,
-        icon: 'warning',
-        buttons: ['Không', 'Đăng kí'],
-      }).then((value) => {
-        if (value) {
-          setApplying(true);
-          setError(null);
-          console.log('OPEN DIALOG');
-        }
+    try {
+      const nData = { studentCode, status: !row.checkIn };
+      await toast.promise(
+        checkinAction.mutateAsync(nData),
+        {
+          loading: 'Đang checkin...',
+          success: `Checkin cho ${row.fullName} thành công`,
+          error: (err: any) => {
+            const msg = err?.response?.data ?? 'Lỗi không xác định';
+            if (msg === 'Tân cử nhân đã bỏ lỡ session này') {
+              setMSSV(studentCode);
+              setError(msg);
+            }
+            return `Không thể checkin vì ${msg}`;
+          },
+        },
+        { position: 'top-right', duration: 3000 }
+      );
+    } finally {
+      // Gỡ disable dù thành công hay lỗi
+      setProcessingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(studentCode);
+        return next;
       });
     }
-  }, [error]);
+  };
 
-  useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
-  }, [hall, session, searchTextQuery, pageIndex, pageSize]);
-
+  // ---- Đăng ký session bù
   const updateBachelorMissingSession = useMutation({
     mutationFn: () => {
-      if (sessionBachelor === '1')
-        return checkinAPI.UpdateBachelorToTempSession(mssv, true);
-      return checkinAPI.UpdateBachelorToTempSession(mssv, false);
+      return checkinAPI.UpdateBachelorToTempSession(
+        mssv,
+        sessionBachelor === '1'
+      );
     },
-    onError: (error) => {
-      toast.error(`Đăng kí thất bại`, {
-        duration: 3000,
-        position: 'top-right',
-      });
-    },
-    onSuccess: (data, variables) => {
-      console.log('onSuccess', variables);
+    onSuccess: () => {
       toast.success(`Đăng kí thành công`, {
         duration: 3000,
         position: 'top-right',
       });
       queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+    },
+    onError: () => {
+      toast.error(`Đăng kí thất bại`, {
+        duration: 3000,
+        position: 'top-right',
+      });
     },
   });
 
@@ -324,16 +201,16 @@ export default function Page() {
       updateBachelorMissingSession.mutateAsync(),
       {
         loading: 'Đang đăng kí...',
-        success: (data) => {
-          console.log(data);
+        success: (data: any) => {
+          const d = data?.data?.data;
           swal({
             title: 'Đăng kí tham gia trao bằng tốt nghiệp bổ sung',
-            text: `Tân cử nhân ${data.data.data.fullName} với MSSV ${
-              data.data.data.studentCode
-            } số ghế mới là ${data.data.data.chair} và ghế phụ huynh là ${
-              data.data.data.chairParent
+            text: `Tân cử nhân ${d?.fullName} với MSSV ${
+              d?.studentCode
+            } số ghế mới là ${d?.chair} và ghế phụ huynh là ${
+              d?.chairParent
             } vào khoảng ${
-              data.data.data.chairParent === 100 ? '10H00' : '16H00'
+              d?.chairParent === 100 ? '10H00' : '16H00'
             } để checkin lại .`,
             icon: 'success',
             buttons: ['Đã biết'],
@@ -344,9 +221,69 @@ export default function Page() {
       },
       { position: 'top-right', duration: 6000 }
     );
-
     setApplying(false);
   };
+
+  useEffect(() => {
+    if (error) {
+      swal({
+        title: 'Đăng kí tham gia trao bằng tốt nghiệp bổ sung',
+        text: `Bạn có muốn đăng kí tham gia trao bằng tốt nghiệp bổ sung không? Lưu ý: Phiên phát bằng bổ sung có hai phiên vào buổi sáng khoảng 10h00 và buổi chiều khoảng 16h00. Vui lòng chọn phiên phù hợp.`,
+        icon: 'warning',
+        buttons: ['Không', 'Đăng kí'],
+      }).then((ok) => {
+        if (ok) {
+          setApplying(true);
+          setError(null);
+        }
+      });
+    }
+  }, [error]);
+
+  const columns: ColumnDef<any>[] = useMemo(
+    () => [
+      { accessorKey: 'id', header: 'ID' },
+      { accessorKey: 'fullName', header: 'Tên' },
+      { accessorKey: 'studentCode', header: 'MSSV' },
+      { accessorKey: 'mail', header: 'Mail' },
+      { accessorKey: 'hallName', header: 'Hội trường' },
+      {
+        accessorKey: 'sessionNum',
+        header: 'Session',
+        cell: ({ row }) => {
+          const v = row.getValue<number>('sessionNum');
+          return (
+            <p>
+              {v === 100
+                ? 'Session bù sáng'
+                : v === 111
+                ? 'Session bù chiều'
+                : v}
+            </p>
+          );
+        },
+      },
+      { accessorKey: 'chair', header: 'Ghế' },
+      { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
+      {
+        accessorKey: 'checkIn',
+        header: 'Checkin',
+        cell: ({ row }) => {
+          const sc = row.original.studentCode as string;
+          const isProcessing =
+            processingIds.has(sc) || updateBachelorMissingSession.isPending;
+          return (
+            <Switch
+              checked={row.getValue<boolean>('checkIn')}
+              disabled={isProcessing}
+              onCheckedChange={() => handleCheckin(row.original)}
+            />
+          );
+        },
+      },
+    ],
+    [processingIds, updateBachelorMissingSession.isPending]
+  );
 
   if (isLoading) {
     return (
@@ -431,8 +368,7 @@ export default function Page() {
                       <SelectItem value='-1' key='all'>
                         Toàn bộ hội trường
                       </SelectItem>
-                      {hallList &&
-                        Array.isArray(hallList?.data.data) &&
+                      {Array.isArray(hallList?.data?.data) &&
                         hallList.data.data.map((item: any) => (
                           <SelectItem key={item.hallId} value={item.hallId}>
                             {item.hallName}
@@ -451,8 +387,7 @@ export default function Page() {
                       <SelectItem value='-1' key='all'>
                         Toàn bộ session
                       </SelectItem>
-                      {sessionList &&
-                        Array.isArray(sessionList?.data.data) &&
+                      {Array.isArray(sessionList?.data?.data) &&
                         sessionList.data.data.map((item: any) => (
                           <SelectItem
                             key={item.sessionId}
@@ -469,6 +404,7 @@ export default function Page() {
           />
         </CardContent>
       </Card>
+
       <Dialog open={applying} onOpenChange={setApplying}>
         <DialogContent className='sm:max-w-[425px]'>
           <DialogHeader>
@@ -495,7 +431,7 @@ export default function Page() {
           <DialogFooter>
             <DialogClose>
               <Button
-                variant={'ghost'}
+                variant='ghost'
                 onClick={() => {
                   setApplying(false);
                   setError(null);
@@ -506,9 +442,7 @@ export default function Page() {
               </Button>
             </DialogClose>
             <Button
-              onClick={() => {
-                handleUpdateBachelorMissingSession();
-              }}
+              onClick={handleUpdateBachelorMissingSession}
               color='primary'
             >
               Đăng kí

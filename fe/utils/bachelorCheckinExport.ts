@@ -16,37 +16,66 @@ interface StudentData {
 
 // Hàm để export dữ liệu
 export const exportToExcel = async (
-  data: StudentData[],
+  dataInput: Partial<StudentData>[] | StudentData[] | null | undefined,
   fileName: string = 'students_data.xlsx'
 ) => {
-  // 1. Chuyển đổi dữ liệu thành định dạng phù hợp
-  const formattedData = data.map((student) => {
-    const adjustedTime = new Date(student.timeCheckIn);
-    adjustedTime.setHours(adjustedTime.getHours() + 7); // Thêm 7 giờ
+  try {
+    // Đảm bảo dữ liệu là mảng để tránh lỗi undefined
+    const data = Array.isArray(dataInput) ? dataInput : [];
 
-    return {
-      'Student Code': student.studentCode,
-      'Full Name': student.fullName,
-      Email: student.mail,
-      Major: student.major,
-      'Hall Name': student.hallName,
-      'Session Number': student.sessionNum,
-      Chair: student.chair,
-      'Chair Parent': student.chairParent,
-      'Checked In': student.checkIn ? 'Yes' : 'No',
-      'Check-In Time': adjustedTime.toLocaleString(), // Thời gian sau khi thêm 7 giờ
-    };
-  });
+    // 1. Chuyển đổi dữ liệu thành định dạng phù hợp, có kiểm tra an toàn
+    const formattedData = data.map((s: Partial<StudentData> = {}) => {
+      const studentCode = s.studentCode ?? '';
+      const fullName = s.fullName ?? '';
+      const mail = s.mail ?? '';
+      const major = s.major ?? '';
+      const hallName = s.hallName ?? '';
+      const sessionNum = s.sessionNum ?? '';
+      const chair = s.chair ?? '';
+      const chairParent = s.chairParent ?? '';
+      const checkIn = s.checkIn === true ? 'Yes' : 'No';
 
-  // 2. Tạo một workbook và sheet từ dữ liệu
-  const worksheet = XLSX.utils.json_to_sheet(formattedData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
+      let checkInTime = '';
+      if (s.timeCheckIn) {
+        const adjustedTime = new Date(s.timeCheckIn);
+        if (!isNaN(adjustedTime.getTime())) {
+          adjustedTime.setHours(adjustedTime.getHours() + 7); // Thêm 7 giờ
+          checkInTime = adjustedTime.toLocaleString();
+        }
+      }
 
-  // 3. Tạo buffer (dành cho Node.js) hoặc blob (trình duyệt)
-  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      return {
+        'Student Code': studentCode,
+        'Full Name': fullName,
+        Email: mail,
+        Major: major,
+        'Hall Name': hallName,
+        'Session Number': sessionNum,
+        Chair: chair,
+        'Chair Parent': chairParent,
+        'Checked In': checkIn,
+        'Check-In Time': checkInTime,
+      };
+    });
 
-  // 4. Tải file xuống
-  saveAs(blob, fileName);
+    // 2. Tạo một workbook và sheet từ dữ liệu
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Students');
+
+    // 3. Tạo buffer (dành cho Node.js) hoặc blob (trình duyệt)
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: 'xlsx',
+      type: 'array',
+    });
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+
+    // 4. Tải file xuống
+    saveAs(blob, fileName);
+  } catch (err) {
+    // Tránh crash UI, log lỗi để debug
+    console.error('Export to Excel failed:', err);
+  }
 };

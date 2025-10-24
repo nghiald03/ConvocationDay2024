@@ -135,7 +135,7 @@ export default function AddBachelorFromFile() {
           studentCode: item.studentCode,
           fullName: item.fullName,
           mail: item.mail,
-          major: item.major,
+          major: item.major.toString(),
           image: item.image,
           hallName: item.hallName,
           sessionNum: item.sessionNum,
