@@ -79,10 +79,7 @@ function SafeImg({
         className={`flex items-center justify-center bg-muted ${
           className || ''
         }`}
-        style={{ width, height }}
-      >
-        <span className='text-sm opacity-60'>Không có ảnh</span>
-      </div>
+      ></div>
     );
   }
   return (

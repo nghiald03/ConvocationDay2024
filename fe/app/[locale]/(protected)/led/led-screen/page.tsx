@@ -20,19 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from '@/components/ui/drawer';
 import { Icon } from '@/components/ui/icon';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -45,52 +33,50 @@ import { Bachelor } from '@/dtos/BachelorDTO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 import React, { useEffect, useMemo, useState } from 'react';
-import { HubConnectionBuilder } from '@microsoft/signalr';
+import {
+  HubConnectionBuilder,
+  HubConnection,
+  LogLevel,
+} from '@microsoft/signalr';
 import { toast } from 'sonner';
-import { set } from 'lodash';
 
 export default function LedScreen() {
   const queryClient = useQueryClient();
-  const [hall, setHall] = useState(
-    () => window.localStorage.getItem('hall') || ''
+
+  const [hall, setHall] = useState<string>(() =>
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem('hall') || ''
+      : ''
   );
-  const [session, setSession] = useState(
-    () => window.localStorage.getItem('session') || ''
+  const [session, setSession] = useState<string>(() =>
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem('session') || ''
+      : ''
   );
-  const [hallList, setHallList] = useState([{ value: '', label: '' }]);
-  const [sessionList, setSessionList] = useState([{ value: '', label: '' }]);
+
+  const [hallList, setHallList] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
+  const [sessionList, setSessionList] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const [bachelorCurrent, setBachelorCurrent] = useState<Bachelor | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { data: bachelorCurrents, error: bachelorError } = useQuery({
-    queryKey: ['bachelorCurrent'],
-    queryFn: () => {
-      ledAPI.getBachelorCurrent(hall, session);
-    },
-  });
-
-  useEffect(() => {
-    if (hall && session) {
-      queryClient.invalidateQueries({ queryKey: ['bachelorCurrent'] });
-    }
-  }, [hall, session]);
-
+  // ========= Fetch lists =========
   const { data: hallData, error: hallError } = useQuery({
     queryKey: ['listHall'],
-    queryFn: () => {
-      return ledAPI
-        .getHallList()
-        .then((res) => res.data)
-        .catch((err) => {
-          throw err;
-        });
+    queryFn: async () => {
+      const res = await ledAPI.getHallList();
+      return res.data;
     },
   });
 
   useEffect(() => {
-    if (hallData && hallData.data.length > 0) {
+    if (hallData?.data?.length) {
       setHallList(
         hallData.data.map((item: any) => ({
-          value: item.hallId,
+          value: String(item.hallId),
           label: item.hallName,
         }))
       );
@@ -99,169 +85,149 @@ export default function LedScreen() {
 
   const { data: sessionData, error: sessionError } = useQuery({
     queryKey: ['listSession'],
-    queryFn: () => {
-      return ledAPI
-        .getSessionList()
-        .then((res) => res.data)
-        .catch((err) => {
-          throw err;
-        });
+    queryFn: async () => {
+      const res = await ledAPI.getSessionList();
+      return res.data;
     },
   });
 
   useEffect(() => {
-    if (sessionData && sessionData.data.length > 0) {
+    if (sessionData?.data?.length) {
       setSessionList(
         sessionData.data.map((item: any) => ({
-          value: item.sessionId,
+          value: String(item.sessionId),
           label: item.session1,
         }))
       );
     }
   }, [sessionData]);
 
+  // Persist selection
   useEffect(() => {
-    const hall = window.localStorage.getItem('hall');
-    const session = window.localStorage.getItem('session');
-
-    if (session) {
-      setSession(session);
-    }
-    if (hall) {
-      setHall(hall);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!hall) {
-      return;
-    }
-
-    setBachelorCurrent(null);
+    if (hall) window.localStorage.setItem('hall', hall);
   }, [hall]);
-
   useEffect(() => {
-    if (!session) {
-      return;
-    }
-    setBachelorCurrent(null);
-    window.localStorage.setItem('session', session);
+    if (session) window.localStorage.setItem('session', session);
   }, [session]);
 
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  // ========= Fetch CURRENT on initial load & when hall/session changes =========
+  const {
+    data: bachelorCurrentData,
+    isFetching: isFetchingCurrent,
+    error: currentError,
+  } = useQuery({
+    queryKey: ['bachelorCurrent', hall, session],
+    queryFn: async () => {
+      const res = await ledAPI.getBachelorCurrent(hall, session);
+      // BE expected to return { data: { ...Bachelor } } or null
+      return res?.data?.data ?? null;
+    },
+    enabled: Boolean(hall && session),
+    // We get live updates via SignalR; avoid noisy refetches
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+  });
 
+  useEffect(() => {
+    if (bachelorCurrentData !== undefined) {
+      setBachelorCurrent(bachelorCurrentData.bachelor2 || null);
+    }
+  }, [bachelorCurrentData]);
+
+  // ========= SignalR (stable, single connection) =========
+  useEffect(() => {
+    let connection: HubConnection | null = null;
+
+    async function startSignalR() {
+      try {
+        const url = process.env.NEXT_PUBLIC_SIGNALR_URL?.toString() || '';
+        if (!url) return;
+
+        connection = new HubConnectionBuilder()
+          .withUrl(url)
+          .withAutomaticReconnect()
+          .configureLogging(LogLevel.Error)
+          .build();
+
+        // Handler must be registered BEFORE start()
+        connection.on('SendMessage', (message: string) => {
+          // some producers prefix with "CurrentBachelor" and add escape quotes
+          const cleaned = message.replace(/^CurrentBachelor\s*/, '').trim();
+          const normalized = cleaned
+            .replace(/\\?"/g, '"')
+            .replace(/,? *\}$/, '}');
+          try {
+            const parsed = JSON.parse(normalized);
+            const bachelorData: Bachelor = {
+              image: parsed.Image,
+              fullName: parsed.FullName,
+              major: parsed.Major,
+              studentCode: parsed.StudentCode,
+              mail: parsed.Mail,
+              hallName: parsed.HallName,
+              sessionNum: parsed.SessionNum,
+              chair: parsed.Chair ?? null,
+              chairParent: parsed.ChairParent ?? null,
+            };
+
+            // Only accept updates matching current hall/session and with a valid image
+            if (
+              String(bachelorData.hallName) === String(hall) &&
+              String(bachelorData.sessionNum) === String(session) &&
+              bachelorData.image
+            ) {
+              setBachelorCurrent(bachelorData);
+            }
+          } catch (e) {
+            console.error('Error parsing SignalR payload', e, { message });
+          }
+        });
+
+        await connection.start();
+        // Optional: you could invoke a method to join a group by hall+session if BE supports
+        // await connection.invoke("JoinGroup", `${hall}:${session}`)
+      } catch (err) {
+        console.error('SignalR start failed', err);
+      }
+    }
+
+    startSignalR();
+
+    return () => {
+      if (connection) {
+        connection.stop().catch(() => {});
+        connection = null;
+      }
+    };
+  }, [hall, session]);
+
+  // ========= UI helpers =========
   const handleDoubleClick = () => {
-    if (hall === '' || session === '' || hall === null || session === null) {
-      console.log('rerCos looix');
+    if (!hall || !session) {
       toast.error('Vui lòng chọn hall và session trước khi xem trình chiếu', {
         duration: 10000,
         position: 'top-right',
       });
       return;
     }
-    console.log('perfect');
-    setIsFullscreen(!isFullscreen);
+    setIsFullscreen((v) => !v);
   };
 
   const hallLabel = useMemo(() => {
     return (
-      hallList.find((item) => item.value.toString() === hall.toString())
-        ?.label || 'Chưa chọn'
+      hallList.find((i) => i.value.toString() === hall.toString())?.label ||
+      'Chưa chọn'
     );
   }, [hallList, hall]);
 
   const sessionLabel = useMemo(() => {
     return (
-      sessionList.find((item) => item.value.toString() === session.toString())
+      sessionList.find((i) => i.value.toString() === session.toString())
         ?.label || 'Chưa chọn'
     );
   }, [sessionList, session]);
 
-  useEffect(() => {
-    const connection = new HubConnectionBuilder()
-      .withUrl(process.env.NEXT_PUBLIC_SIGNALR_URL?.toString() || '')
-      .withAutomaticReconnect()
-      .build();
-
-    // Hàm xử lý chuỗi JSON
-    const parseMessage = (message: string) => {
-      try {
-        // Loại bỏ prefix "CurrentBachelor"
-        const cleanedMessage = message
-          .replace(/^CurrentBachelor\s*/, '')
-          .trim();
-
-        const sanitizedMessage = cleanedMessage
-          .replace(/\\?"/g, '"') // Thay \" bằng "
-          .replace(/,? *\}$/, '}'); // Đảm bảo chỉ có một dấu } cuối cùng
-
-        // Chuyển chuỗi JSON thành object
-        const parsedData = JSON.parse(sanitizedMessage);
-        return parsedData;
-      } catch (error) {
-        console.error('Error parsing JSON message:', error);
-        return null; // Trả về null nếu có lỗi
-      }
-    };
-
-    // Hàm khởi tạo kết nối SignalR
-    async function startSignalRConnection() {
-      try {
-        await connection.start();
-        console.log('SignalR connection started.');
-
-        // Lắng nghe sự kiện 'SendMessage'
-        connection.on('SendMessage', (message: string) => {
-          try {
-            // Gọi hàm parseMessage để xử lý chuỗi
-            const parsedData = parseMessage(message);
-            if (!parsedData) {
-              console.warn(
-                'Parsed message is null. Skipping further processing.'
-              );
-              return;
-            }
-
-            // Chuyển đổi dữ liệu thành đối tượng Bachelor
-            const bachelorData: Bachelor = {
-              image: parsedData.Image,
-              fullName: parsedData.FullName,
-              major: parsedData.Major,
-              studentCode: parsedData.StudentCode,
-              mail: parsedData.Mail,
-              hallName: parsedData.HallName,
-              sessionNum: parsedData.SessionNum,
-              chair: parsedData.Chair ?? null, // Tránh lỗi nếu không có dữ liệu Chair
-              chairParent: parsedData.ChairParent ?? null, // Tránh lỗi nếu không có dữ liệu ChairParent
-            };
-
-            if (
-              bachelorData.hallName.toString() === hall.toString() &&
-              bachelorData.sessionNum.toString() === session.toString() &&
-              bachelorData.image !== null
-            ) {
-              console.log('Set bachelor current');
-              setBachelorCurrent(bachelorData);
-            }
-            // TODO: Thực hiện hành động với dữ liệu này (cập nhật state, gọi API, v.v.)
-          } catch (error) {
-            console.error('Error processing message:', error);
-          }
-        });
-      } catch (error) {
-        console.error('Error starting SignalR connection:', error);
-      }
-    }
-
-    startSignalRConnection();
-
-    // Cleanup khi component bị hủy
-    return () => {
-      connection.stop();
-      console.log('SignalR connection stopped.');
-    };
-  });
-
+  // ========= Render =========
   return (
     <>
       <Card>
@@ -273,7 +239,7 @@ export default function LedScreen() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Trình chiếu LED </BreadcrumbPage>
+                <BreadcrumbPage>Trình chiếu LED</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -288,15 +254,15 @@ export default function LedScreen() {
               bạn cần hỗ trợ, vui lòng liên hệ với ADMIN để được hỗ trợ.
             </AlertDescription>
           </Alert>
+
           <Dialog>
             <DialogTrigger asChild>
               <Alert variant='soft' color='success' className='mt-3'>
                 <AlertDescription key={hall + session}>
                   <Icon icon='akar-icons:double-check' className='w-5 h-5' />{' '}
                   Cài đặt hall và session bằng cách click tại đây [ hall:{' '}
-                  {hallLabel} và session: {sessionLabel} ]
+                  {hallLabel} & session: {sessionLabel} ]
                 </AlertDescription>
-                ;
               </Alert>
             </DialogTrigger>
             <DialogContent className='sm:max-w-[425px]'>
@@ -313,13 +279,11 @@ export default function LedScreen() {
                       <SelectValue placeholder='Chọn Hall' />
                     </SelectTrigger>
                     <SelectContent position='item-aligned'>
-                      {hallList &&
-                        hallList.length > 0 &&
-                        hallList.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
+                      {hallList.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -329,13 +293,11 @@ export default function LedScreen() {
                       <SelectValue placeholder='Chọn session' />
                     </SelectTrigger>
                     <SelectContent position='item-aligned'>
-                      {sessionList &&
-                        sessionList.length > 0 &&
-                        sessionList.map((item) => (
-                          <SelectItem key={item.value} value={item.value}>
-                            {item.label}
-                          </SelectItem>
-                        ))}
+                      {sessionList.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -350,22 +312,34 @@ export default function LedScreen() {
 
           <Alert variant='soft' color='primary' className='mt-3'>
             <AlertDescription>
-              <Icon icon='gridicons:fullscreen' className='w-5 h-5' />{' '}
-              {bachelorCurrent
-                ? 'Để vào chế độ fullscreen, hãy double-click vào hình ảnh bên dưới !'
-                : 'Chưa có dữ liệu trình chiếu! Hãy thông báo cho MC F5 để cập nhật dữ liệu!'}
+              <Icon icon='gridicons:fullscreen' className='w-5 h-5' />
+              {bachelorCurrent ? (
+                <>
+                  {' '}
+                  Để vào chế độ fullscreen, hãy double-click vào hình ảnh bên
+                  dưới !
+                </>
+              ) : (
+                <>
+                  {' '}
+                  Chưa có dữ liệu trình chiếu! Hãy thông báo cho MC F5 để cập
+                  nhật dữ liệu!
+                </>
+              )}
             </AlertDescription>
           </Alert>
         </CardContent>
       </Card>
+
+      {/* Fullscreen */}
       {isFullscreen ? (
         <div
           className='absolute inset-0 z-[999999999] bg-black flex items-center justify-center'
-          onDoubleClick={handleDoubleClick} // Thoát fullscreen khi double-click
+          onDoubleClick={handleDoubleClick}
         >
           <Card className='w-[100vw] h-[100vh]'>
             <CardContent className='p-0 w-[100vw] h-[100vh]'>
-              {bachelorCurrent && bachelorCurrent.image && (
+              {bachelorCurrent?.image && (
                 <Image
                   src={bachelorCurrent.image}
                   alt='Mô tả hình ảnh'
@@ -377,11 +351,11 @@ export default function LedScreen() {
             </CardContent>
           </Card>
         </div>
-      ) : // Card bình thường
-      bachelorCurrent && bachelorCurrent.image ? (
+      ) : bachelorCurrent?.image ? (
+        // Normal card
         <Card
           className='mt-3 animate-fade-up animate-duration-1000'
-          onDoubleClick={handleDoubleClick} // Bật fullscreen khi double-click
+          onDoubleClick={handleDoubleClick}
         >
           <CardContent className='p-3'>
             <Image
@@ -394,7 +368,21 @@ export default function LedScreen() {
           </CardContent>
         </Card>
       ) : (
-        <></>
+        // Placeholder when no data or still fetching
+        <Card className='mt-3'>
+          <CardContent className='p-6 text-sm text-muted-foreground'>
+            {(!hall || !session) && 'Hãy chọn hall & session để bắt đầu.'}
+            {hall &&
+              session &&
+              isFetchingCurrent &&
+              'Đang tải dữ liệu hiện tại…'}
+            {hall &&
+              session &&
+              !isFetchingCurrent &&
+              !bachelorCurrent &&
+              'Chưa có dữ liệu hiện tại.'}
+          </CardContent>
+        </Card>
       )}
     </>
   );

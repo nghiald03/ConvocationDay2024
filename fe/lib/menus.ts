@@ -46,6 +46,21 @@ export function getMenuList(pathname: string, t: any): Group[] {
         },
       ],
     },
+    {
+      groupLabel: 'Thông báo',
+      id: 'notification',
+      roleAccess: ['MN', 'CK', 'MC', 'US'],
+      menus: [
+        {
+          id: 'notification',
+          href: '/notify',
+          label: 'Thông báo',
+          active: pathname.includes('/notify'),
+          icon: 'heroicons-outline:bell',
+          submenus: [],
+        },
+      ],
+    },
 
     {
       groupLabel: 'Trình chiếu LED',

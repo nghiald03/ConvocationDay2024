@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +28,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
+import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
+
 // ===== Mock types =====
 type NotifyMessage = {
   id: string | number;
@@ -35,6 +37,8 @@ type NotifyMessage = {
   createdAt: string; // ISO
   priority?: 'high' | 'normal' | 'low';
 };
+
+type TTSEngine = 'browser' | 'elevenlabs';
 
 export default function NotifyMockPage() {
   const queryClient = useQueryClient();
@@ -68,16 +72,23 @@ export default function NotifyMockPage() {
 
   // ================== TTS state & logic ==================
   const [enabled, setEnabled] = useState(true);
+  const [engine, setEngine] = useState<TTSEngine>('elevenlabs'); // mặc định dùng ElevenLabs
+  const [repeatCount, setRepeatCount] = useState<number>(1); // NEW: số lần đọc lại
+
+  // Các tham số cho Browser TTS (fallback)
   const [voiceURI, setVoiceURI] = useState<string>('');
   const [rate, setRate] = useState(1);
   const [pitch, setPitch] = useState(1);
   const [volume, setVolume] = useState(1);
-
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  // ElevenLabs TTS hook (đã hỗ trợ chime, fade-in, repeat không tốn token)
+  const { speak: xiSpeak, stop: xiStop } = useElevenLabsTTS();
+
   const playedIdsRef = useRef<Set<string | number>>(new Set());
   const speakingRef = useRef(false);
 
-  // Load voices
+  // Load voices (chỉ cho Browser TTS)
   useEffect(() => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     const loadVoices = () => setVoices(window.speechSynthesis.getVoices());
@@ -90,7 +101,7 @@ export default function NotifyMockPage() {
     };
   }, []);
 
-  // Chọn voice mặc định ưu tiên vi-VN
+  // Chọn voice mặc định ưu tiên vi-VN (Browser TTS)
   useEffect(() => {
     if (!voices.length || voiceURI) return;
     const viVN = voices.find((v) => v.lang?.toLowerCase() === 'vi-vn');
@@ -98,8 +109,7 @@ export default function NotifyMockPage() {
     setVoiceURI((viVN ?? viAny ?? voices[0])?.voiceURI ?? '');
   }, [voices, voiceURI]);
 
-  const speak = (text: string) => {
-    if (!enabled) return;
+  const browserSpeak = (text: string) => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
     const utter = new SpeechSynthesisUtterance(text);
@@ -116,11 +126,40 @@ export default function NotifyMockPage() {
     window.speechSynthesis.speak(utter);
   };
 
+  const stopAll = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    xiStop();
+    speakingRef.current = false;
+  };
+
+  // Hàm speak chung (ưu tiên ElevenLabs) + repeat
+  const speak = (text: string) => {
+    if (!enabled) return;
+
+    if (engine === 'elevenlabs') {
+      // XI: repeat không gọi lại API nhờ cache trong hook; có thể thêm chime nếu muốn
+      xiSpeak(text, {
+        repeat: repeatCount,
+        chimeUrl: '/sounds/Notification Alert 01.wav', // bật nếu muốn âm báo mở đầu
+        chimeVolume: 1.0,
+        gain: 1.6,
+        fadeInMsChime: 200,
+        fadeInMsTTS: 200,
+      });
+    } else {
+      // Browser TTS: cứ lặp N lần, Web Speech sẽ tự queue
+      for (let i = 0; i < repeatCount; i++) {
+        browserSpeak(text);
+      }
+    }
+  };
+
   // Tự phát message mới (theo id)
   useEffect(() => {
     if (!items.length || !enabled) return;
 
-    // newest -> oldest then reverse để phát theo thời gian tăng dần
     const sorted = [...items].sort(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -131,7 +170,17 @@ export default function NotifyMockPage() {
       playedIdsRef.current.add(next.id);
       speak(humanizeMessage(next));
     }
-  }, [items, enabled, voices, voiceURI, rate, pitch, volume]);
+  }, [
+    items,
+    enabled,
+    voices,
+    voiceURI,
+    rate,
+    pitch,
+    volume,
+    engine,
+    repeatCount,
+  ]);
 
   // ================== Form mock input ==================
   const [msg, setMsg] = useState('');
@@ -152,7 +201,6 @@ export default function NotifyMockPage() {
       return { data: { data: [...current, newItem] } };
     });
 
-    // Tránh auto đọc lại lần nữa
     playedIdsRef.current.add(newItem.id);
     if (immediateSpeak) speak(humanizeMessage(newItem));
 
@@ -190,7 +238,48 @@ export default function NotifyMockPage() {
               <Switch checked={enabled} onCheckedChange={setEnabled} />
             </div>
 
-            <div className='w-64'>
+            {/* Chọn engine TTS */}
+            <div className='w-40'>
+              <label className='text-xs text-muted-foreground'>Engine</label>
+              <Select value={engine} onValueChange={(v: any) => setEngine(v)}>
+                <SelectTrigger className='mt-1'>
+                  <SelectValue placeholder='Chọn engine' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='elevenlabs'>
+                    ElevenLabs (khuyên dùng)
+                  </SelectItem>
+                  <SelectItem value='browser'>Browser TTS</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* NEW: Số lần đọc lại */}
+            <div className='w-40'>
+              <label className='text-xs text-muted-foreground'>
+                Số lần đọc lại
+              </label>
+              <Input
+                type='number'
+                min={1}
+                max={5}
+                value={repeatCount}
+                onChange={(e) =>
+                  setRepeatCount(
+                    Math.max(1, Math.min(5, Number(e.target.value) || 1))
+                  )
+                }
+                className='mt-1'
+              />
+            </div>
+
+            {/* Các tham số chỉ hữu ích cho Browser TTS */}
+            <div
+              className={cn(
+                'w-64',
+                engine !== 'browser' && 'opacity-50 pointer-events-none'
+              )}
+            >
               <label className='text-xs text-muted-foreground'>Giọng đọc</label>
               <Select value={voiceURI} onValueChange={setVoiceURI}>
                 <SelectTrigger className='mt-1'>
@@ -206,7 +295,12 @@ export default function NotifyMockPage() {
               </Select>
             </div>
 
-            <div className='w-56'>
+            <div
+              className={cn(
+                'w-56',
+                engine !== 'browser' && 'opacity-50 pointer-events-none'
+              )}
+            >
               <label className='text-xs text-muted-foreground'>
                 Tốc độ (rate): {rate.toFixed(2)}
               </label>
@@ -219,7 +313,12 @@ export default function NotifyMockPage() {
               />
             </div>
 
-            <div className='w-56'>
+            <div
+              className={cn(
+                'w-56',
+                engine !== 'browser' && 'opacity-50 pointer-events-none'
+              )}
+            >
               <label className='text-xs text-muted-foreground'>
                 Cao độ (pitch): {pitch.toFixed(2)}
               </label>
@@ -232,7 +331,12 @@ export default function NotifyMockPage() {
               />
             </div>
 
-            <div className='w-56'>
+            <div
+              className={cn(
+                'w-56',
+                engine !== 'browser' && 'opacity-50 pointer-events-none'
+              )}
+            >
               <label className='text-xs text-muted-foreground'>
                 Âm lượng (volume): {volume.toFixed(2)}
               </label>
@@ -254,18 +358,7 @@ export default function NotifyMockPage() {
               >
                 Test đọc
               </Button>
-              <Button
-                variant='outline'
-                onClick={() => {
-                  if (
-                    typeof window !== 'undefined' &&
-                    'speechSynthesis' in window
-                  ) {
-                    window.speechSynthesis.cancel();
-                    speakingRef.current = false;
-                  }
-                }}
-              >
+              <Button variant='outline' onClick={stopAll}>
                 Dừng đọc
               </Button>
               <Button
@@ -337,7 +430,6 @@ export default function NotifyMockPage() {
               <Button
                 variant='outline'
                 onClick={() => {
-                  // Thêm vài mẫu nhanh
                   const samples: Array<
                     Pick<NotifyMessage, 'message' | 'priority'>
                   > = [
@@ -367,7 +459,6 @@ export default function NotifyMockPage() {
                       const current: NotifyMessage[] = prev?.data?.data ?? [];
                       return { data: { data: [...current, newItem] } };
                     });
-                    // Không auto speak sample, để user bấm Đọc lại
                   });
                 }}
               >
@@ -381,6 +472,7 @@ export default function NotifyMockPage() {
                     data: { data: [] as NotifyMessage[] },
                   });
                   playedIdsRef.current.clear();
+                  stopAll();
                 }}
               >
                 Xóa danh sách
