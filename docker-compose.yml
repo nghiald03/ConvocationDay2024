@@ -27,8 +27,8 @@ services:
     environment:
       - 'ConnectionStrings:DefaultConnection=Server=database,1433;Database=ConvocationDB;User Id=sa;Password=YourStronggg@Passw0rd;Encrypt=True;TrustServerCertificate=True;'
       - ASPNETCORE_ENVIRONMENT=Production
-    depends_on:
-      - database
+    # depends_on:
+    #   - database
     restart: unless-stopped
 
   fe:
