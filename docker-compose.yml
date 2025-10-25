@@ -43,18 +43,18 @@ services:
       - API_URL=http://fjourney.site:85/api
     restart: unless-stopped
 
-  apiimageupload:
-    build:
-      context: ./imageAPI
-      dockerfile: Dockerfile
-    container_name: apiimageupload
-    ports:
-      - '3214:3214'
-    volumes:
-      - ./imageAPI/uploads:/app/uploads # Gắn thư mục 'uploads'
-    depends_on:
-      - database
-    restart: unless-stopped
+  # apiimageupload:
+  #   build:
+  #     context: ./imageAPI
+  #     dockerfile: Dockerfile
+  #   container_name: apiimageupload
+  #   ports:
+  #     - '3214:3214'
+  #   volumes:
+  #     - ./imageAPI/uploads:/app/uploads # Gắn thư mục 'uploads'
+  #   depends_on:
+  #     - database
+  #   restart: unless-stopped
 
 volumes:
   sql_data:
