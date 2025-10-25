@@ -151,7 +151,7 @@ export default function AddOrUpdateBachelor({
           major: values.major,
           image: values.image,
           hallName: values.hallName,
-          sessionNum: values.sessionNum,
+          sessionNum: Number(values.sessionNum),
           chair: values.chair,
           chairParent: values.chairParent,
         });
@@ -164,7 +164,7 @@ export default function AddOrUpdateBachelor({
             major: values.major,
             image: values.image,
             hallName: values.hallName,
-            sessionNum: values.sessionNum,
+            sessionNum: Number(values.sessionNum),
             chair: values.chair,
             chairParent: values.chairParent,
           },
