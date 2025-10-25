@@ -44,10 +44,6 @@ namespace FA23_Convocation2023_API.Services
         public async Task<Notification?> GetNotificationByIdAsync(int id)
         {
             return await _context.Notifications
-                .Include(n => n.Hall)
-                .Include(n => n.Session)
-                .Include(n => n.CreatedByUser)
-                .Include(n => n.BroadcastByUser)
                 .FirstOrDefaultAsync(n => n.NotificationId == id);
         }
 

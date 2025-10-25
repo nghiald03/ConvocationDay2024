@@ -1,8 +1,10 @@
 using FA23_Convocation2023_API.DTO;
 using FA23_Convocation2023_API.Models;
 using FA23_Convocation2023_API.Services;
+using FA23_Convocation2023_API.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
 namespace FA23_Convocation2023_API.Controllers
@@ -225,8 +227,8 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         // POST: api/Notification/{id}/broadcast
-        [HttpPost("{id}/broadcast")]
-        [Authorize(Roles = "NO")] // Only Noticer can broadcast
+        [HttpPost("{id}/start-broadcast")]
+        [Authorize(Roles = "NO,MN")] // Noticer and Manager can broadcast
         public async Task<ActionResult> StartBroadcast(int id)
         {
             try
@@ -321,6 +323,58 @@ namespace FA23_Convocation2023_API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Error retrieving pending notifications", error = ex.Message });
+            }
+        }
+
+        // POST: api/Notification/{id}/broadcast
+        [HttpPost("{id}/broadcast")]
+        [Authorize(Roles = "MN")] // Only Managers can broadcast
+        public async Task<IActionResult> BroadcastNotification(int id)
+        {
+            try
+            {
+                Console.WriteLine($"[API] BroadcastNotification called with ID: {id}");
+                var notification = await _notificationService.GetNotificationByIdAsync(id);
+                if (notification == null)
+                {
+                    Console.WriteLine($"[API] Notification with ID {id} not found in database");
+                    return NotFound(new { message = "Notification not found" });
+                }
+                Console.WriteLine($"[API] Found notification: {notification.Title}");
+
+                // Manually load related entities
+                var hall = notification.HallId.HasValue ? await _context.Halls.FindAsync(notification.HallId.Value) : null;
+                var session = notification.SessionId.HasValue ? await _context.Sessions.FindAsync(notification.SessionId.Value) : null;
+
+                var broadcastData = new
+                {
+                    NotificationId = notification.NotificationId,
+                    Title = notification.Title,
+                    Content = notification.Content,
+                    Priority = notification.Priority,
+                    PriorityText = GetPriorityText(notification.Priority),
+                    RepeatCount = notification.RepeatCount,
+                    HallName = hall?.HallName,
+                    SessionNumber = session?.Session1,
+                    Scope = GetNotificationScope(notification, hall, session),
+                    BroadcastAt = DateTime.UtcNow
+                };
+
+                // Broadcast to SignalR Hub
+                Console.WriteLine($"[API DEBUG] About to broadcast notification {id} to NO group via SignalR");
+                Console.WriteLine($"[API DEBUG] Broadcast data: {System.Text.Json.JsonSerializer.Serialize(broadcastData)}");
+
+                var hubContext = HttpContext.RequestServices.GetRequiredService<IHubContext<MessageHub>>();
+                await hubContext.Clients.Group("NO").SendAsync("ReceiveTTSBroadcast", broadcastData);
+
+                Console.WriteLine($"[API SUCCESS] Successfully broadcast notification {id} to NO group via SignalR");
+
+                return Ok(new { message = "Notification broadcasted successfully to Noticers", data = broadcastData });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[API] Error broadcasting notification {id}: {ex.Message}");
+                return StatusCode(500, new { message = "Error broadcasting notification", error = ex.Message });
             }
         }
 

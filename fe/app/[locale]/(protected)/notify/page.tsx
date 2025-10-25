@@ -30,6 +30,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
+import { useSignalR } from '@/hooks/useSignalR';
 import {
   notificationAPI,
   CreateNotificationRequest,
@@ -108,6 +109,56 @@ export default function NotifyMockPage() {
 
   // ElevenLabs TTS hook (đã hỗ trợ chime, fade-in, repeat không tốn token)
   const { speak: xiSpeak, stop: xiStop } = useElevenLabsTTS();
+
+  // SignalR connection for receiving TTS broadcasts
+  const [signalREnabled, setSignalREnabled] = useState(false);
+  const signalREnabledRef = useRef(false); // Add ref to track current state
+  const hubUrl = process.env.NEXT_PUBLIC_SITE_URL
+    ? `${process.env.NEXT_PUBLIC_SITE_URL}/chat-hub`
+    : 'http://localhost:85/chat-hub';
+
+  // Update ref when state changes
+  useEffect(() => {
+    signalREnabledRef.current = signalREnabled;
+  }, [signalREnabled]);
+
+  const { connectionState, isConnected, joinNoticerGroup, leaveNoticerGroup, startConnection, stopConnection } = useSignalR({
+    hubUrl,
+    accessToken: typeof window !== 'undefined' ? localStorage.getItem('accessToken') || '' : '',
+    autoConnect: false, // We'll manage connection manually
+    onTTSBroadcast: (data) => {
+      console.log('[SignalR] Received TTS broadcast:', data);
+      console.log('[DEBUG] TTS enabled state - signalREnabled:', signalREnabledRef.current, 'enabled:', enabled);
+
+      if (signalREnabledRef.current && enabled) {
+        // Create a notification message from the broadcast data
+        // Handle both camelCase and PascalCase from backend
+        const broadcastMessage: NotifyMessage = {
+          id: `broadcast-${data.notificationId || data.NotificationId}`,
+          message: data.content || data.Content,
+          title: data.title || data.Title,
+          createdAt: data.broadcastAt || data.BroadcastAt || new Date().toISOString(),
+          priority: (data.priority || data.Priority) === 1 ? 'high' : (data.priority || data.Priority) === 3 ? 'low' : 'normal',
+          repeatCount: data.repeatCount || data.RepeatCount || 1
+        };
+
+        // Play the broadcast immediately
+        manualReplayActiveRef.current = true;
+        speakWithRepeat(humanizeMessage(broadcastMessage), broadcastMessage.repeatCount || 1);
+
+        // Reset flag after playing
+        setTimeout(() => {
+          manualReplayActiveRef.current = false;
+        }, 2000 + ((broadcastMessage.repeatCount || 1) * 3000));
+
+        // Show notification
+        toast.success(`📢 Phát thanh: ${data.Title || 'Thông báo mới'}`);
+      }
+    },
+    onConnectionStateChange: (state) => {
+      console.log('[SignalR] Connection state changed:', state);
+    }
+  });
 
   const playedIdsRef = useRef<Set<string | number>>(new Set());
   const speakingRef = useRef(false);
@@ -409,6 +460,70 @@ export default function NotifyMockPage() {
     }
   });
 
+  // Get user role from JWT token
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        try {
+          const decoded = require('jwt-decode').jwtDecode(token) as any;
+          // Check both old format ('role') and new format (ClaimTypes.Role)
+          const role = decoded?.role || decoded?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+          setUserRole(role || null);
+          console.log('[DEBUG] User role detected:', role);
+        } catch (error) {
+          console.error('Error decoding token:', error);
+        }
+      }
+    }
+  }, []);
+
+  // Automatically connect SignalR and enable TTS for Noticer (NO) role users
+  useEffect(() => {
+    if (userRole === 'NO' && !signalREnabled) {
+      console.log('[DEBUG] NO role detected - automatically enabling SignalR connection and TTS');
+      setSignalREnabled(true);
+      setEnabled(true); // Also enable TTS for automatic playback
+
+      // Delay to ensure state is set before connection
+      setTimeout(() => {
+        console.log('[DEBUG] Starting SignalR connection for NO role user');
+        startConnection();
+      }, 100);
+    }
+  }, [userRole]); // Remove startConnection from dependencies to avoid loop
+
+  // Auto-join Noticer group when SignalR connects for NO role users
+  useEffect(() => {
+    if (userRole === 'NO' && isConnected) {
+      console.log('[DEBUG] NO role user connected to SignalR - joining NO group');
+      joinNoticerGroup();
+    }
+  }, [userRole, isConnected, joinNoticerGroup]);
+
+  // Mutation to broadcast notification to Noticers
+  const broadcastNotificationMutation = useMutation({
+    mutationFn: (id: number) => {
+      // Use different API based on user role
+      if (userRole === 'MN') {
+        // Manager uses /broadcast endpoint (no status check)
+        return notificationAPI.broadcast(id);
+      } else {
+        // Noticer uses /start-broadcast endpoint (requires PENDING status)
+        return notificationAPI.startBroadcast(id);
+      }
+    },
+    onSuccess: (response) => {
+      toast.success(response.data.message || 'Thông báo đã được phát đến hệ thống âm thanh!');
+    },
+    onError: (error: any) => {
+      console.error('Error broadcasting notification:', error);
+      toast.error('Lỗi khi phát thông báo: ' + (error.response?.data?.message || error.message));
+    }
+  });
+
   const addMessage = (immediateSpeak = true) => {
     if (!msg.trim()) return;
 
@@ -455,6 +570,14 @@ export default function NotifyMockPage() {
       // Convert ID to number as API expects number
       const numericId = typeof id === 'string' ? parseInt(id) : id;
       deleteNotificationMutation.mutate(numericId);
+    }
+  };
+
+  const broadcastNotification = (id: string | number) => {
+    if (confirm('Bạn có muốn phát thông báo này đến hệ thống âm thanh không?')) {
+      // Convert ID to number as API expects number
+      const numericId = typeof id === 'string' ? parseInt(id) : id;
+      broadcastNotificationMutation.mutate(numericId);
     }
   };
 
@@ -516,6 +639,29 @@ export default function NotifyMockPage() {
                 disabled={audioInitialized}
               >
                 {audioInitialized ? '✓ Audio Ready' : 'Init Audio'}
+              </Button>
+            </div>
+
+            {/* SignalR Connection Control */}
+            <div className='w-40'>
+              <label className='text-xs text-muted-foreground'>
+                SignalR ({connectionState})
+              </label>
+              <Button
+                variant={isConnected ? 'default' : 'outline'}
+                size='sm'
+                onClick={() => {
+                  if (!isConnected) {
+                    setSignalREnabled(true);
+                    startConnection();
+                  } else {
+                    setSignalREnabled(false);
+                    stopConnection();
+                  }
+                }}
+                className='mt-1 w-full'
+              >
+                {isConnected ? '📡 Connected' : '📡 Connect'}
               </Button>
             </div>
 
@@ -769,6 +915,24 @@ export default function NotifyMockPage() {
               </Button>
             </div>
           </div>
+
+          {/* SignalR Status and Info */}
+          {signalREnabled && (
+            <div className='mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200'>
+              <div className='flex items-center gap-2 mb-2'>
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className='text-sm font-medium'>
+                  {isConnected ? '🔊 Đã kết nối hệ thống phát thanh' : '🔇 Chưa kết nối hệ thống phát thanh'}
+                </span>
+              </div>
+              <p className='text-xs text-muted-foreground'>
+                {isConnected
+                  ? 'Máy này sẽ tự động phát các thông báo được gửi từ Manager. Trạng thái: ' + connectionState
+                  : 'Nhấn "Connect" để kết nối với hệ thống phát thanh của trường.'
+                }
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -925,6 +1089,15 @@ export default function NotifyMockPage() {
                       }}
                     >
                       Đọc lại {m.repeatCount && m.repeatCount > 1 ? `(${m.repeatCount}x)` : ''}
+                    </Button>
+                    <Button
+                      variant='default'
+                      size='sm'
+                      className='bg-green-600 hover:bg-green-700 text-white'
+                      onClick={() => broadcastNotification(m.id)}
+                      disabled={broadcastNotificationMutation.isPending}
+                    >
+                      📢 {userRole === 'MN' ? 'Phát đến Noticer' : 'Bắt đầu phát'}
                     </Button>
                     <Button
                       variant='outline'
