@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
             similarity_boost: 0.75, // 75%
             style: 0, // Giữ tự nhiên
             use_speaker_boost: true,
-            speed: 0.95, // Chậm nhẹ, dễ nghe hơn
+            speed: 0.8, // Chậm nhẹ, dễ nghe hơn
           },
           // (tuỳ chọn) tinh chỉnh chất giọng
           // voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
