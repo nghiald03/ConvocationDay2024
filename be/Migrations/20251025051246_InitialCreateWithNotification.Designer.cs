@@ -4,6 +4,7 @@ using FA23_Convocation2023_API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FA23_Convocation2023_API.Migrations
 {
     [DbContext(typeof(Convo24Context))]
-    partial class Convo24ContextModelSnapshot : ModelSnapshot
+    [Migration("20251025051246_InitialCreateWithNotification")]
+    partial class InitialCreateWithNotification
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -190,11 +193,6 @@ namespace FA23_Convocation2023_API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasDefaultValue(2);
-
-                    b.Property<int>("RepeatCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
 
                     b.Property<DateTime?>("ScheduledAt")
                         .HasColumnType("datetime");

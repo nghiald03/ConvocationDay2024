@@ -18,35 +18,36 @@ namespace FA23_Convocation2023_API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-
             var builder = WebApplication.CreateBuilder(args);
-            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+            // Configure logging
             var loggerFactory = LoggerFactory.Create(logging => logging.AddConsole());
             var logger = loggerFactory.CreateLogger<Program>();
 
-            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-            logger.LogInformation("Enviroment: {Environment}", environment);
-            if (environment != null&&!environment.Equals("Development") ){
-                logger.LogInformation("Connection String: {ConnectionString}", connectionString);
-                try
+            // Get connection string (will automatically use DefaultConnection from config/env)
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+            var environment = builder.Environment.EnvironmentName;
+
+            logger.LogInformation("Environment: {Environment}", environment);
+            logger.LogInformation("Connection String: {ConnectionString}", connectionString);
+
+            // Configure DbContext with proper error handling
+            try
             {
                 builder.Services.AddDbContext<Convo24Context>(options =>
-                    options.UseSqlServer(connectionString));
+                    options.UseSqlServer(connectionString, sqlOptions =>
+                    {
+                        sqlOptions.EnableRetryOnFailure(maxRetryCount: 3, maxRetryDelay: TimeSpan.FromSeconds(5), errorNumbersToAdd: null);
+                    }));
 
-                logger.LogInformation("Convo24Context has been configured successfully.");
+                logger.LogInformation("Convo24Context configured successfully.");
             }
             catch (Exception ex)
             {
-                // Log any exceptions that occur during the setup
-                logger.LogError(ex, "An error occurred while configuring the DbContext.");
-            }
-            }
-            else
-            {
-                builder.Services.AddDbContext<Convo24Context>();
+                logger.LogError(ex, "Failed to configure DbContext.");
+                throw; // Re-throw to prevent startup with bad configuration
             }
 
             //var connectionString = builder.Configuration.GetConnectionString("Convocation2023DB");
@@ -105,11 +106,19 @@ namespace FA23_Convocation2023_API
 
             // Add chức năng phân quyền nè, 1 dòng :)))
             builder.Services.AddAuthorization();
+            // Register services
             builder.Services.AddScoped<BachelorService>()
                 .AddScoped<CheckInService>()
                 .AddScoped<HallService>()
                 .AddScoped<SessionService>()
-                .AddScoped<StatisticsService>();
+                .AddScoped<StatisticsService>()
+                .AddScoped<NotificationService>();
+
+            // Add health checks
+            builder.Services.AddHealthChecks();
+
+            // Add memory cache for performance
+            builder.Services.AddMemoryCache();
 
             // Nhớ là nếu cái gì liên quan tới config builder như builder.Services. gì á,
             // thì nhớ là phải bỏ trên dòng này nha, tại từ dòng này trở xuống là 
@@ -118,8 +127,12 @@ namespace FA23_Convocation2023_API
 
             // Khúc này trở xuống đơn giản là project có gì lấy ra xài thoi
             // Configure the HTTP request pipeline.
+            // Always enable Swagger for API documentation
             app.UseSwagger();
             app.UseSwaggerUI();
+
+            // Add health check endpoint
+            app.MapHealthChecks("/health");
 
             // Add Cors 1 dòng :))))
             app.UseCors("CORSPolicy");
@@ -135,38 +148,56 @@ namespace FA23_Convocation2023_API
             app.MapHub<MessageHub>("chat-hub");
 
             app.MapControllers();
-            if (environment != null && !environment.Equals("Development"))
-            {
-                using (var scope = app.Services.CreateScope())
-                {
-                    var dbContext = scope.ServiceProvider.GetRequiredService<Convo24Context>();
+            // TODO: Initialize database for all environments
+             await InitializeDatabaseAsync(app, logger);
 
-                    try
-                    {
-                        // Kiểm tra nếu database không tồn tại, tạo mới
-                        if (dbContext.Database.EnsureCreated())
-                        {
-                            dbContext.Database.Migrate();
-                            logger.LogInformation("Database created successfully.");
-                        }
-                        else
-                        {
-                            logger.LogInformation("Database already exists.");
-                        }
-
-
-
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "An error occurred while ensuring database creation or applying migrations.");
-                    }
-                }
-            }
+            logger.LogInformation("Application starting...");
 
             app.Run();
+        }
 
+        private static async Task InitializeDatabaseAsync(WebApplication app, ILogger logger)
+        {
+            using var scope = app.Services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<Convo24Context>();
 
+            try
+            {
+                logger.LogInformation("Checking database connection...");
+
+                // Test database connection
+                await dbContext.Database.CanConnectAsync();
+                logger.LogInformation("Database connection successful.");
+
+                // Apply pending migrations
+                var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+                if (pendingMigrations.Any())
+                {
+                    logger.LogInformation("Applying {Count} pending migrations...", pendingMigrations.Count());
+                    await dbContext.Database.MigrateAsync();
+                    logger.LogInformation("Migrations applied successfully.");
+                }
+                else
+                {
+                    logger.LogInformation("Database is up to date.");
+                }
+
+                // Verify data seeding
+                if (!await dbContext.Users.AnyAsync())
+                {
+                    logger.LogWarning("No users found. Database may not be properly seeded.");
+                }
+                else
+                {
+                    var userCount = await dbContext.Users.CountAsync();
+                    logger.LogInformation("Found {UserCount} users in database.", userCount);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Database initialization failed!");
+                throw; // Re-throw to prevent startup with failed database
+            }
         }
     }
 }

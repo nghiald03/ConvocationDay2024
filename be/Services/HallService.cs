@@ -6,7 +6,12 @@ namespace FA23_Convocation2023_API.Services
 {
     public class HallService
     {
-        private readonly Convo24Context _context = new Convo24Context();
+        private readonly Convo24Context _context;
+
+        public HallService(Convo24Context context)
+        {
+            _context = context;
+        }
 
         //check if hall is existed
         public Task<bool> HallExist(string HallName)

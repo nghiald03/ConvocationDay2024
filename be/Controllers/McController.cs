@@ -17,12 +17,14 @@ namespace FA23_Convocation2023_API.Controllers
     [ApiController]
     public class McController : ControllerBase
     {
-        private IHubContext<MessageHub> messageHub;
-        public McController(IHubContext<MessageHub> _messageHub)
+        private readonly IHubContext<MessageHub> messageHub;
+        private readonly Convo24Context _context;
+
+        public McController(IHubContext<MessageHub> _messageHub, Convo24Context context)
         {
             messageHub = _messageHub;
+            _context = context;
         }
-        private readonly Convo24Context _context = new Convo24Context();
         [HttpGet("GetLocationBachelor")]
         public async Task<IActionResult> GetLocationBachelor([FromQuery] string studentCode)
         {

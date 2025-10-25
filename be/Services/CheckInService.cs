@@ -7,7 +7,12 @@ namespace FA23_Convocation2023_API.Services
 {
     public class CheckInService
     {
-        private readonly Convo24Context _context = new Convo24Context();
+        private readonly Convo24Context _context;
+
+        public CheckInService(Convo24Context context)
+        {
+            _context = context;
+        }
 
         //update checkin status
         public async Task<string> UpdateCheckinAsync(CheckinRequest checkinRequest)

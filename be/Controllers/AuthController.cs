@@ -16,11 +16,12 @@ namespace FA23_Convocation2023_API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly Convo24Context _context = new Convo24Context();
+        private readonly Convo24Context _context;
         private readonly IConfiguration _configuration;
-        
-        public AuthController(IConfiguration configuration)
+
+        public AuthController(Convo24Context context, IConfiguration configuration)
         {
+            _context = context;
             _configuration = configuration;
         }
 
