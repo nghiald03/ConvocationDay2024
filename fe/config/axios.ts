@@ -7,7 +7,7 @@ import axios from 'axios';
 // console.log('env', process.env.NEXT_PUBLIC_SITE_URL);
 // console.log('base', process.env.API_URL);
 
-const BASE_URL = 'http://localhost:85/api';
+const BASE_URL = 'http://143.198.84.82:85/api';
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
 });
