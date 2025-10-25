@@ -293,33 +293,64 @@ export default function NotifyMockPage() {
   const [editPriority, setEditPriority] = useState<'high' | 'normal' | 'low'>('normal');
   const [editRepeatCount, setEditRepeatCount] = useState<number>(1);
 
-  // Mutation to create new notification
+  // Mutation to create new notification with TTS
   const createNotificationMutation = useMutation({
-    mutationFn: (request: CreateNotificationRequest) => notificationAPI.create(request),
-    onSuccess: async (response) => {
+    mutationFn: ({ request, shouldSpeak }: { request: CreateNotificationRequest; shouldSpeak: boolean }) => {
+      if (shouldSpeak) {
+        operationInProgressRef.current = true; // Block auto-play since we'll manually speak
+      } else {
+        operationInProgressRef.current = true; // Block auto-play entirely for silent add
+      }
+      return notificationAPI.create(request);
+    },
+    onSuccess: async (response, { shouldSpeak }) => {
       // Refresh the notifications list
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       toast.success(response.data.message || 'Thông báo đã được tạo thành công!');
 
-      // Get the newly created notification to speak it
-      try {
-        const newNotificationResponse = await notificationAPI.getById(response.data.notificationId);
-        const newNotification = mapApiToLocal(newNotificationResponse.data);
-        playedIdsRef.current.add(newNotification.id);
-        speakWithRepeat(humanizeMessage(newNotification), newNotification.repeatCount || 1);
-      } catch (error) {
-        console.error('Error fetching new notification for TTS:', error);
-        // Create a minimal notification for TTS as fallback
-        const fallbackNotification: NotifyMessage = {
-          id: response.data.notificationId,
-          message: msg.trim(),
-          createdAt: new Date().toISOString(),
-          priority,
-          title: 'Thông báo hội trường',
-          repeatCount
-        };
-        playedIdsRef.current.add(fallbackNotification.id);
-        speakWithRepeat(humanizeMessage(fallbackNotification), repeatCount);
+      if (shouldSpeak) {
+        // Get the newly created notification to speak ONLY this one
+        try {
+          const newNotificationResponse = await notificationAPI.getById(response.data.notificationId);
+          const newNotification = mapApiToLocal(newNotificationResponse.data);
+          playedIdsRef.current.add(newNotification.id);
+
+          // Manually speak this specific notification
+          manualReplayActiveRef.current = true;
+          speakWithRepeat(humanizeMessage(newNotification), newNotification.repeatCount || 1);
+
+          // Reset manual replay flag after speaking
+          setTimeout(() => {
+            manualReplayActiveRef.current = false;
+            operationInProgressRef.current = false;
+          }, 2000 + ((newNotification.repeatCount || 1) * 3000));
+        } catch (error) {
+          console.error('Error fetching new notification for TTS:', error);
+          // Create a minimal notification for TTS as fallback
+          const fallbackNotification: NotifyMessage = {
+            id: response.data.notificationId,
+            message: msg.trim(),
+            createdAt: new Date().toISOString(),
+            priority,
+            title: 'Thông báo hội trường',
+            repeatCount
+          };
+          playedIdsRef.current.add(fallbackNotification.id);
+
+          manualReplayActiveRef.current = true;
+          speakWithRepeat(humanizeMessage(fallbackNotification), repeatCount);
+
+          setTimeout(() => {
+            manualReplayActiveRef.current = false;
+            operationInProgressRef.current = false;
+          }, 2000 + (repeatCount * 3000));
+        }
+      } else {
+        // For silent add, mark as played to prevent auto-play and reset flag
+        playedIdsRef.current.add(response.data.notificationId);
+        setTimeout(() => {
+          operationInProgressRef.current = false;
+        }, 1000);
       }
 
       setMsg('');
@@ -327,6 +358,8 @@ export default function NotifyMockPage() {
     onError: (error: any) => {
       console.error('Error creating notification:', error);
       toast.error('Lỗi khi tạo thông báo: ' + (error.response?.data?.message || error.message));
+      operationInProgressRef.current = false;
+      manualReplayActiveRef.current = false;
     }
   });
 
@@ -385,7 +418,7 @@ export default function NotifyMockPage() {
       repeatCount
     });
 
-    createNotificationMutation.mutate(apiRequest);
+    createNotificationMutation.mutate({ request: apiRequest, shouldSpeak: immediateSpeak });
   };
 
   // Helper functions for edit/delete
@@ -715,7 +748,7 @@ export default function NotifyMockPage() {
                       priority: sample.priority,
                       repeatCount: 1
                     });
-                    createNotificationMutation.mutate(apiRequest);
+                    createNotificationMutation.mutate({ request: apiRequest, shouldSpeak: false });
                   });
                 }}
                 disabled={createNotificationMutation.isPending}
