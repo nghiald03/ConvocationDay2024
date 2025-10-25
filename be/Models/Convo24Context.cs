@@ -10,10 +10,6 @@ namespace FA23_Convocation2023_API.Models
     public partial class Convo24Context : DbContext
     {
 
-        public Convo24Context()
-        {
-            
-        }
         public Convo24Context(DbContextOptions<Convo24Context> options)
             : base(options)
         {
@@ -22,35 +18,12 @@ namespace FA23_Convocation2023_API.Models
         public virtual DbSet<Bachelor> Bachelors { get; set; }
         public virtual DbSet<CheckIn> CheckIns { get; set; }
         public virtual DbSet<Hall> Halls { get; set; }
+        public virtual DbSet<Notification> Notifications { get; set; }
         public virtual DbSet<Role> Roles { get; set; }
         public virtual DbSet<Session> Sessions { get; set; }
         public virtual DbSet<User> Users { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            if (!optionsBuilder.IsConfigured)
-            {
-                var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
-
-                IConfigurationRoot configuration = new ConfigurationBuilder()
-                    .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json")
-                    .Build();
-
-                string connectionString;
-
-                if (environment == "Development")
-                {
-                    connectionString = configuration.GetConnectionString("DbConnection");
-                }
-                else // Production
-                {
-                    connectionString = configuration.GetConnectionString("DefaultConnection");
-                }
-
-                optionsBuilder.UseSqlServer(connectionString);
-            }
-        }
+        // OnConfiguring removed - will use DI configuration from Program.cs
         //        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
         //    => optionsBuilder.UseSqlServer("Data Source=db.fjourney.site;Initial Catalog=Convocation2023;User ID=sa;Password=<YourStrong@Passw0rda>;TrustServerCertificate=true;MultipleActiveResultSets=True");
@@ -65,14 +38,16 @@ namespace FA23_Convocation2023_API.Models
             modelBuilder.Entity<Role>().HasData(
         new Role { RoleId = "1", RoleName = "MN" },
         new Role { RoleId = "2", RoleName = "CK" },
-        new Role { RoleId = "3", RoleName = "US" }
+        new Role { RoleId = "3", RoleName = "US" },
+        new Role { RoleId = "4", RoleName = "NO" }
     );
 
             // Thêm dữ liệu mẫu cho bảng Users
             modelBuilder.Entity<User>().HasData(
                 new User { UserId = "1", FullName = "Mana", Email = "mana@gmail.com", Password = "123456", RoleId = "1" },
                 new User { UserId = "2", FullName = "CheckIn", Email = "checkin@gmail.com", Password = "123456", RoleId = "2" },
-                new User { UserId = "3", FullName = "User", Email = "user@gmail.com", Password = "123456", RoleId = "3" }
+                new User { UserId = "3", FullName = "User", Email = "user@gmail.com", Password = "123456", RoleId = "3" },
+                new User { UserId = "4", FullName = "Noticer", Email = "noticer@gmail.com", Password = "123456", RoleId = "4" }
             );
             modelBuilder.Entity<Bachelor>(entity =>
             {
@@ -208,6 +183,79 @@ namespace FA23_Convocation2023_API.Models
                     .WithMany(p => p.Users)
                     .HasForeignKey(d => d.RoleId)
                     .HasConstraintName("FK__Users__RoleID__49C3F6B7");
+            });
+
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.ToTable("Notification");
+
+                entity.HasIndex(e => e.HallId, "IX_Notification_HallId");
+                entity.HasIndex(e => e.SessionId, "IX_Notification_SessionId");
+
+                entity.Property(e => e.Title)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.Content)
+                    .IsRequired()
+                    .HasMaxLength(1000);
+
+                entity.Property(e => e.Status)
+                    .IsRequired()
+                    .HasMaxLength(20)
+                    .HasDefaultValue("PENDING");
+
+                entity.Property(e => e.Priority)
+                    .HasDefaultValue(2); // Medium priority
+
+                entity.Property(e => e.CreatedAt)
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("GETDATE()");
+
+                entity.Property(e => e.ScheduledAt)
+                    .HasColumnType("datetime");
+
+                entity.Property(e => e.BroadcastAt)
+                    .HasColumnType("datetime");
+
+                entity.Property(e => e.CreatedBy)
+                    .IsRequired()
+                    .HasMaxLength(10)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.BroadcastBy)
+                    .HasMaxLength(10)
+                    .IsUnicode(false);
+
+                entity.Property(e => e.IsAutomatic)
+                    .HasDefaultValue(false);
+
+                entity.Property(e => e.HallId)
+                    .IsRequired(false);
+
+                entity.Property(e => e.SessionId)
+                    .IsRequired(false);
+
+                // Foreign key relationships
+                entity.HasOne(d => d.Hall)
+                    .WithMany()
+                    .HasForeignKey(d => d.HallId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(d => d.Session)
+                    .WithMany()
+                    .HasForeignKey(d => d.SessionId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(d => d.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(d => d.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.BroadcastByUser)
+                    .WithMany()
+                    .HasForeignKey(d => d.BroadcastBy)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             OnModelCreatingPartial(modelBuilder);

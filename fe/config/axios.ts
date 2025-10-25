@@ -1,13 +1,12 @@
 import { Bachelor } from '@/dtos/BachelorDTO';
 import axios from 'axios';
 
-// const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
-//   ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
-//   : 'https://localhost:7105/api';
-// console.log('env', process.env.NEXT_PUBLIC_SITE_URL);
-// console.log('base', process.env.API_URL);
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL
+  ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
+  : 'http://localhost:85/api';
 
-const BASE_URL = 'https://localhost:7105/api';
+console.log('env', process.env.NEXT_PUBLIC_SITE_URL);
+console.log('base url', BASE_URL);
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
 });

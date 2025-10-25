@@ -6,7 +6,12 @@ namespace FA23_Convocation2023_API.Services
 {
     public class SessionService
     {
-        private readonly Convo24Context _context = new Convo24Context();
+        private readonly Convo24Context _context;
+
+        public SessionService(Convo24Context context)
+        {
+            _context = context;
+        }
 
         //check if session is existed
         public Task<bool> SessionExist(int sessionNum)

@@ -7,10 +7,20 @@ services:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=YourStronggg@Passw0rd
     ports:
-      - '1431:1433'
+      - "1431:1433"
     volumes:
       - sql_data:/var/opt/mssql
     restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStronggg@Passw0rd -Q 'SELECT 1' -C",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -22,13 +32,14 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     ports:
-      - '85:80' # Expose ASP.NET Core service
-      - '86:443' # HTTPS port (optional)
+      - "85:80" # Expose ASP.NET Core service
+      - "86:443" # HTTPS port (optional)
     environment:
-      - 'ConnectionStrings:DefaultConnection=Server=database,1433;Database=ConvocationDB;User Id=sa;Password=YourStronggg@Passw0rd;Encrypt=True;TrustServerCertificate=True;'
+      - "ConnectionStrings:DefaultConnection=Server=database,1433;Database=ConvocationDB;User Id=sa;Password=YourStronggg@Passw0rd;Encrypt=True;TrustServerCertificate=True;"
       - ASPNETCORE_ENVIRONMENT=Production
     depends_on:
-      - database
+      database:
+        condition: service_healthy
     restart: unless-stopped
 
   fe:
@@ -37,10 +48,14 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     ports:
-      - '3001:3000' # Cổng frontend\
+      - "3001:3000" # Cổng frontend
     environment:
-      - NEXT_PUBLIC_SITE_URL=http://fjourney.site:85
-      - API_URL=http://fjourney.site:85/api
+      - NEXT_PUBLIC_SITE_URL=http://localhost:85
+      - API_URL=http://localhost:85/api
+      - NEXT_PUBLIC_URL_UPLOAD_IMAGE=http://localhost:3214
+      - NEXT_PUBLIC_SIGNALR_URL=http://localhost:85/chat-hub
+      - ELEVENLABS_API_KEY=sk_572f3059a7d2e53ccb63322315b0e97636a00683073658f4
+      - ELEVENLABS_VOICE_ID=A5w1fw5x0uXded1LDvZp
     restart: unless-stopped
 
   apiimageupload:
@@ -49,7 +64,7 @@ services:
       dockerfile: Dockerfile
     container_name: apiimageupload
     ports:
-      - '3214:3214'
+      - "3214:3214"
     volumes:
       - ./imageAPI/uploads:/app/uploads # Gắn thư mục 'uploads'
     depends_on:

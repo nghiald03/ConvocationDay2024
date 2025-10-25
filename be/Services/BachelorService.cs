@@ -10,7 +10,12 @@ namespace FA23_Convocation2023_API.Services
 {
     public class BachelorService
     {
-        private readonly Convo24Context _context = new Convo24Context();
+        private readonly Convo24Context _context;
+
+        public BachelorService(Convo24Context context)
+        {
+            _context = context;
+        }
 
         public async Task<PagedResult<BachelorDTO>> SearchBachelorsAsync(string keySearch, int pageIndex, int pageSize)
         {
