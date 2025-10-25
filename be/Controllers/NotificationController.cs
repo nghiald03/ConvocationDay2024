@@ -13,10 +13,12 @@ namespace FA23_Convocation2023_API.Controllers
     public class NotificationController : ControllerBase
     {
         private readonly NotificationService _notificationService;
+        private readonly Convo24Context _context;
 
-        public NotificationController(NotificationService notificationService)
+        public NotificationController(NotificationService notificationService, Convo24Context context)
         {
             _notificationService = notificationService;
+            _context = context;
         }
 
         private string GetCurrentUserId()
@@ -38,29 +40,42 @@ namespace FA23_Convocation2023_API.Controllers
         {
             try
             {
+                Console.WriteLine($"[DEBUG] Getting notifications - pageIndex: {pageIndex}, pageSize: {pageSize}, status: {status}");
                 var notifications = await _notificationService.GetAllNotificationsAsync(pageIndex, pageSize, status);
-                var response = notifications.Select(n => new NotificationResponse
+                Console.WriteLine($"[DEBUG] Found {notifications.Count} notifications");
+                var response = new List<NotificationResponse>();
+                foreach (var n in notifications)
                 {
-                    NotificationId = n.NotificationId,
-                    Title = n.Title,
-                    Content = n.Content,
-                    Priority = n.Priority,
-                    PriorityText = GetPriorityText(n.Priority),
-                    HallId = n.HallId,
-                    HallName = n.Hall?.HallName,
-                    SessionId = n.SessionId,
-                    SessionNumber = n.Session?.Session1,
-                    CreatedBy = n.CreatedBy,
-                    CreatedByName = n.CreatedByUser?.FullName ?? "",
-                    BroadcastBy = n.BroadcastBy,
-                    BroadcastByName = n.BroadcastByUser?.FullName,
-                    CreatedAt = n.CreatedAt,
-                    ScheduledAt = n.ScheduledAt,
-                    BroadcastAt = n.BroadcastAt,
-                    Status = n.Status,
-                    IsAutomatic = n.IsAutomatic,
-                    Scope = GetNotificationScope(n)
-                }).ToList();
+                    // Manually load related entities if needed
+                    var hall = n.HallId.HasValue ? await _context.Halls.FindAsync(n.HallId.Value) : null;
+                    var session = n.SessionId.HasValue ? await _context.Sessions.FindAsync(n.SessionId.Value) : null;
+                    var createdByUser = await _context.Users.FindAsync(n.CreatedBy);
+                    var broadcastByUser = !string.IsNullOrEmpty(n.BroadcastBy) ? await _context.Users.FindAsync(n.BroadcastBy) : null;
+
+                    response.Add(new NotificationResponse
+                    {
+                        NotificationId = n.NotificationId,
+                        Title = n.Title,
+                        Content = n.Content,
+                        Priority = n.Priority,
+                        PriorityText = GetPriorityText(n.Priority),
+                        HallId = n.HallId,
+                        HallName = hall?.HallName,
+                        SessionId = n.SessionId,
+                        SessionNumber = session?.Session1,
+                        CreatedBy = n.CreatedBy,
+                        CreatedByName = createdByUser?.FullName ?? "",
+                        BroadcastBy = n.BroadcastBy,
+                        BroadcastByName = broadcastByUser?.FullName,
+                        CreatedAt = n.CreatedAt,
+                        ScheduledAt = n.ScheduledAt,
+                        BroadcastAt = n.BroadcastAt,
+                        Status = n.Status,
+                        IsAutomatic = n.IsAutomatic,
+                        RepeatCount = n.RepeatCount,
+                        Scope = GetNotificationScope(n, hall, session)
+                    });
+                }
 
                 return Ok(new NotificationListResponse
                 {
@@ -109,6 +124,7 @@ namespace FA23_Convocation2023_API.Controllers
                     BroadcastAt = notification.BroadcastAt,
                     Status = notification.Status,
                     IsAutomatic = notification.IsAutomatic,
+                    RepeatCount = notification.RepeatCount,
                     Scope = GetNotificationScope(notification)
                 };
 
@@ -136,6 +152,7 @@ namespace FA23_Convocation2023_API.Controllers
                     SessionId = request.SessionId,
                     ScheduledAt = request.ScheduledAt,
                     IsAutomatic = request.IsAutomatic,
+                    RepeatCount = request.RepeatCount,
                     CreatedBy = GetCurrentUserId()
                 };
 
@@ -168,7 +185,8 @@ namespace FA23_Convocation2023_API.Controllers
                     HallId = request.HallId,
                     SessionId = request.SessionId,
                     ScheduledAt = request.ScheduledAt,
-                    IsAutomatic = request.IsAutomatic
+                    IsAutomatic = request.IsAutomatic,
+                    RepeatCount = request.RepeatCount
                 };
 
                 var result = await _notificationService.UpdateNotificationAsync(id, updatedNotification);
@@ -294,6 +312,7 @@ namespace FA23_Convocation2023_API.Controllers
                     ScheduledAt = n.ScheduledAt,
                     Status = n.Status,
                     IsAutomatic = n.IsAutomatic,
+                    RepeatCount = n.RepeatCount,
                     Scope = GetNotificationScope(n)
                 }).ToList();
 
@@ -316,19 +335,19 @@ namespace FA23_Convocation2023_API.Controllers
             };
         }
 
-        private static string GetNotificationScope(Notification notification)
+        private static string GetNotificationScope(Notification notification, Hall? hall = null, Session? session = null)
         {
             if (notification.HallId == null && notification.SessionId == null)
                 return "Toàn trường";
 
             if (notification.HallId != null && notification.SessionId != null)
-                return $"Hall: {notification.Hall?.HallName}, Session: {notification.Session?.Session1}";
+                return $"Hall: {hall?.HallName}, Session: {session?.Session1}";
 
             if (notification.HallId != null)
-                return $"Hall: {notification.Hall?.HallName}";
+                return $"Hall: {hall?.HallName}";
 
             if (notification.SessionId != null)
-                return $"Session: {notification.Session?.Session1}";
+                return $"Session: {session?.Session1}";
 
             return "Toàn trường";
         }

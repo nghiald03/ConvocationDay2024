@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -29,51 +30,74 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
+import {
+  notificationAPI,
+  CreateNotificationRequest,
+  NotificationResponse,
+  CreateNotificationResponse,
+  ledAPI
+} from '@/config/axios';
 
-// ===== Mock types =====
+// ===== API Integration types =====
 type NotifyMessage = {
   id: string | number;
   message: string;
+  title?: string;
   createdAt: string; // ISO
   priority?: 'high' | 'normal' | 'low';
+  repeatCount?: number;
 };
+
+// Function to map API response to local format
+function mapApiToLocal(apiNotification: NotificationResponse): NotifyMessage {
+  return {
+    id: apiNotification.notificationId,
+    message: apiNotification.content,
+    title: apiNotification.title,
+    createdAt: apiNotification.createdAt,
+    priority: apiNotification.priority === 1 ? 'high' : apiNotification.priority === 3 ? 'low' : 'normal',
+    repeatCount: apiNotification.repeatCount
+  };
+}
+
+// Function to map local format to API request
+function mapLocalToApi(local: { message: string; priority: 'high' | 'normal' | 'low'; repeatCount?: number }): CreateNotificationRequest {
+  return {
+    title: 'Thông báo hội trường',
+    content: local.message,
+    priority: local.priority === 'high' ? 1 : local.priority === 'low' ? 3 : 2,
+    isAutomatic: false,
+    repeatCount: local.repeatCount || 1
+  };
+}
 
 type TTSEngine = 'browser' | 'elevenlabs';
 
 export default function NotifyMockPage() {
   const queryClient = useQueryClient();
-  const QUERY_KEY = ['notify-messages'];
+  const QUERY_KEY = ['notifications'];
 
-  // Seed cache lần đầu (nếu rỗng)
-  useEffect(() => {
-    const existing = queryClient.getQueryData<{
-      data: { data: NotifyMessage[] };
-    }>(QUERY_KEY);
-    if (!existing) {
-      queryClient.setQueryData(QUERY_KEY, {
-        data: { data: [] as NotifyMessage[] },
-      });
-    }
-  }, [queryClient]);
-
-  // Đọc từ cache bằng useQuery
-  const { data, isLoading, isError, refetch, isFetching } = useQuery({
+  // Fetch real notifications from API
+  const { data: apiData, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: QUERY_KEY,
-    queryFn: async () =>
-      queryClient.getQueryData<{ data: { data: NotifyMessage[] } }>(
-        QUERY_KEY
-      ) ?? { data: { data: [] as NotifyMessage[] } },
-    staleTime: Infinity,
-    refetchOnWindowFocus: false,
-    initialData: { data: { data: [] as NotifyMessage[] } },
+    queryFn: async () => {
+      const response = await notificationAPI.getAll(1, 50); // Get first 50 notifications
+      return response.data;
+    },
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
+    refetchOnWindowFocus: true,
   });
 
-  const items: NotifyMessage[] = data?.data?.data ?? [];
+  // Map API data to local format
+  const items: NotifyMessage[] = apiData?.notifications?.map(mapApiToLocal) ?? [];
 
   // ================== TTS state & logic ==================
   const [enabled, setEnabled] = useState(true);
   const [engine, setEngine] = useState<TTSEngine>('elevenlabs'); // mặc định dùng ElevenLabs
+  const [audioInitialized, setAudioInitialized] = useState(false);
   const [repeatCount, setRepeatCount] = useState<number>(1); // NEW: số lần đọc lại
+  const manualReplayActiveRef = useRef(false); // Prevent auto-play during manual replay
+  const operationInProgressRef = useRef(false); // Prevent auto-play during CRUD operations
 
   // Các tham số cho Browser TTS (fallback)
   const [voiceURI, setVoiceURI] = useState<string>('');
@@ -110,19 +134,47 @@ export default function NotifyMockPage() {
   }, [voices, voiceURI]);
 
   const browserSpeak = (text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    console.log('[DEBUG] browserSpeak called with text:', text);
+
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      console.log('[DEBUG] Speech synthesis not available');
+      return;
+    }
+
+    console.log('[DEBUG] Available voices:', voices.length);
+    console.log('[DEBUG] Selected voiceURI:', voiceURI);
+    console.log('[DEBUG] Speech synthesis queue length:', window.speechSynthesis.pending);
+    console.log('[DEBUG] Speech synthesis speaking:', window.speechSynthesis.speaking);
 
     const utter = new SpeechSynthesisUtterance(text);
     const voice = voices.find((v) => v.voiceURI === voiceURI) ?? voices[0];
-    if (voice) utter.voice = voice;
+    if (voice) {
+      utter.voice = voice;
+      console.log('[DEBUG] Using voice:', voice.name, voice.lang);
+    } else {
+      console.log('[DEBUG] No voice found');
+    }
+
     utter.rate = clamp(rate, 0.1, 2);
     utter.pitch = clamp(pitch, 0, 2);
     utter.volume = clamp(volume, 0, 1);
 
-    speakingRef.current = true;
-    utter.onend = () => (speakingRef.current = false);
-    utter.onerror = () => (speakingRef.current = false);
+    console.log('[DEBUG] TTS Settings:', { rate: utter.rate, pitch: utter.pitch, volume: utter.volume });
 
+    speakingRef.current = true;
+    utter.onstart = () => {
+      console.log('[DEBUG] Speech started');
+    };
+    utter.onend = () => {
+      console.log('[DEBUG] Speech ended');
+      speakingRef.current = false;
+    };
+    utter.onerror = (event) => {
+      console.log('[DEBUG] Speech error:', event.error);
+      speakingRef.current = false;
+    };
+
+    console.log('[DEBUG] Calling speechSynthesis.speak()');
     window.speechSynthesis.speak(utter);
   };
 
@@ -156,6 +208,58 @@ export default function NotifyMockPage() {
     }
   };
 
+  // Initialize AudioContext on first user interaction
+  const initializeAudioContext = async () => {
+    if (audioInitialized) return;
+
+    if (typeof window !== 'undefined' && 'AudioContext' in window) {
+      try {
+        // This will help with ElevenLabs TTS AudioContext initialization
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+          console.log('[DEBUG] AudioContext resumed successfully');
+        }
+        setAudioInitialized(true);
+        // Don't close the context, keep it for TTS usage
+      } catch (error) {
+        console.log('[DEBUG] AudioContext initialization failed:', error);
+      }
+    }
+  };
+
+  // Hàm speak với số lần lặp lại cụ thể (cho nút "Đọc lại")
+  const speakWithRepeat = async (text: string, times: number = 1) => {
+    console.log(`[DEBUG] speakWithRepeat called: text="${text}", times=${times}, enabled=${enabled}, engine=${engine}`);
+
+    if (!enabled) {
+      console.log('[DEBUG] TTS is disabled');
+      return;
+    }
+
+    // Initialize AudioContext on first user interaction
+    await initializeAudioContext();
+
+    if (engine === 'elevenlabs') {
+      console.log('[DEBUG] Using ElevenLabs TTS');
+      xiSpeak(text, {
+        repeat: times,
+        chimeUrl: '/sounds/Notification Alert 01.wav',
+        chimeVolume: 1.0,
+        gain: 1.6,
+        fadeInMsChime: 200,
+        fadeInMsTTS: 200,
+      });
+    } else {
+      console.log('[DEBUG] Using Browser TTS');
+      // Browser TTS: lặp N lần
+      for (let i = 0; i < times; i++) {
+        console.log(`[DEBUG] Browser TTS iteration ${i + 1}/${times}`);
+        browserSpeak(text);
+      }
+    }
+  };
+
   // Tự phát message mới (theo id)
   useEffect(() => {
     if (!items.length || !enabled) return;
@@ -165,46 +269,160 @@ export default function NotifyMockPage() {
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
     const unplayed = sorted.filter((m) => !playedIdsRef.current.has(m.id));
-    if (unplayed.length && !speakingRef.current) {
-      const next = unplayed[0];
-      playedIdsRef.current.add(next.id);
-      speak(humanizeMessage(next));
+    // CHỈ auto-play message MỚI NHẤT chưa được nghe, không phải tất cả
+    // VÀ không auto-play khi user đang manual replay HOẶC đang thực hiện CRUD operations
+    if (unplayed.length && !speakingRef.current && !manualReplayActiveRef.current && !operationInProgressRef.current) {
+      const newest = unplayed[unplayed.length - 1]; // Lấy newest thay vì oldest
+      console.log('[DEBUG] Auto-playing newest unplayed message:', newest.id);
+      playedIdsRef.current.add(newest.id);
+      speakWithRepeat(humanizeMessage(newest), newest.repeatCount || 1);
     }
   }, [
-    items,
+    items.length, // CHỈ trigger khi số lượng messages thay đổi
     enabled,
-    voices,
-    voiceURI,
-    rate,
-    pitch,
-    volume,
-    engine,
-    repeatCount,
+    // Remove manualReplayActive from dependencies to prevent recursive triggering
   ]);
 
-  // ================== Form mock input ==================
+  // ================== Real API form input ==================
   const [msg, setMsg] = useState('');
   const [priority, setPriority] = useState<'high' | 'normal' | 'low'>('normal');
-  const [idPrefix, setIdPrefix] = useState('TEST'); // optional
+
+  // ================== Edit/Update state ==================
+  const [editingId, setEditingId] = useState<string | number | null>(null);
+  const [editMsg, setEditMsg] = useState('');
+  const [editPriority, setEditPriority] = useState<'high' | 'normal' | 'low'>('normal');
+  const [editRepeatCount, setEditRepeatCount] = useState<number>(1);
+
+  // Mutation to create new notification
+  const createNotificationMutation = useMutation({
+    mutationFn: (request: CreateNotificationRequest) => notificationAPI.create(request),
+    onSuccess: async (response) => {
+      // Refresh the notifications list
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast.success(response.data.message || 'Thông báo đã được tạo thành công!');
+
+      // Get the newly created notification to speak it
+      try {
+        const newNotificationResponse = await notificationAPI.getById(response.data.notificationId);
+        const newNotification = mapApiToLocal(newNotificationResponse.data);
+        playedIdsRef.current.add(newNotification.id);
+        speakWithRepeat(humanizeMessage(newNotification), newNotification.repeatCount || 1);
+      } catch (error) {
+        console.error('Error fetching new notification for TTS:', error);
+        // Create a minimal notification for TTS as fallback
+        const fallbackNotification: NotifyMessage = {
+          id: response.data.notificationId,
+          message: msg.trim(),
+          createdAt: new Date().toISOString(),
+          priority,
+          title: 'Thông báo hội trường',
+          repeatCount
+        };
+        playedIdsRef.current.add(fallbackNotification.id);
+        speakWithRepeat(humanizeMessage(fallbackNotification), repeatCount);
+      }
+
+      setMsg('');
+    },
+    onError: (error: any) => {
+      console.error('Error creating notification:', error);
+      toast.error('Lỗi khi tạo thông báo: ' + (error.response?.data?.message || error.message));
+    }
+  });
+
+  // Mutation to update notification
+  const updateNotificationMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CreateNotificationRequest }) => {
+      operationInProgressRef.current = true; // Block auto-play during update
+      return notificationAPI.update(id, data);
+    },
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast.success(response.data.message || 'Thông báo đã được cập nhật thành công!');
+      setEditingId(null);
+      setEditMsg('');
+      setEditPriority('normal');
+      setEditRepeatCount(1);
+      // Reset flag after a delay to allow data to settle
+      setTimeout(() => {
+        operationInProgressRef.current = false;
+      }, 1000);
+    },
+    onError: (error: any) => {
+      console.error('Error updating notification:', error);
+      toast.error('Lỗi khi cập nhật thông báo: ' + (error.response?.data?.message || error.message));
+      operationInProgressRef.current = false; // Reset flag on error
+    }
+  });
+
+  // Mutation to delete notification
+  const deleteNotificationMutation = useMutation({
+    mutationFn: (id: number) => {
+      operationInProgressRef.current = true; // Block auto-play during delete
+      return notificationAPI.delete(id);
+    },
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      toast.success(response.data.message || 'Thông báo đã được xóa thành công!');
+      // Reset flag after a delay to allow data to settle
+      setTimeout(() => {
+        operationInProgressRef.current = false;
+      }, 1000);
+    },
+    onError: (error: any) => {
+      console.error('Error deleting notification:', error);
+      toast.error('Lỗi khi xóa thông báo: ' + (error.response?.data?.message || error.message));
+      operationInProgressRef.current = false; // Reset flag on error
+    }
+  });
 
   const addMessage = (immediateSpeak = true) => {
     if (!msg.trim()) return;
-    const newItem: NotifyMessage = {
-      id: `${idPrefix}-${Date.now()}`,
-      message: msg.trim(),
-      createdAt: new Date().toISOString(),
-      priority,
-    };
 
-    queryClient.setQueryData(QUERY_KEY, (prev: any) => {
-      const current: NotifyMessage[] = prev?.data?.data ?? [];
-      return { data: { data: [...current, newItem] } };
+    const apiRequest = mapLocalToApi({
+      message: msg.trim(),
+      priority,
+      repeatCount
     });
 
-    playedIdsRef.current.add(newItem.id);
-    if (immediateSpeak) speak(humanizeMessage(newItem));
+    createNotificationMutation.mutate(apiRequest);
+  };
 
-    setMsg('');
+  // Helper functions for edit/delete
+  const startEdit = (notification: NotifyMessage) => {
+    setEditingId(notification.id);
+    setEditMsg(notification.message);
+    setEditPriority(notification.priority || 'normal');
+    setEditRepeatCount(notification.repeatCount || 1);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditMsg('');
+    setEditPriority('normal');
+    setEditRepeatCount(1);
+  };
+
+  const saveEdit = () => {
+    if (!editMsg.trim() || !editingId) return;
+
+    const apiRequest = mapLocalToApi({
+      message: editMsg.trim(),
+      priority: editPriority,
+      repeatCount: editRepeatCount
+    });
+
+    // Convert ID to number as API expects number
+    const numericId = typeof editingId === 'string' ? parseInt(editingId) : editingId;
+    updateNotificationMutation.mutate({ id: numericId, data: apiRequest });
+  };
+
+  const deleteNotification = (id: string | number) => {
+    if (confirm('Bạn có chắc chắn muốn xóa thông báo này?')) {
+      // Convert ID to number as API expects number
+      const numericId = typeof id === 'string' ? parseInt(id) : id;
+      deleteNotificationMutation.mutate(numericId);
+    }
   };
 
   const hallName = 'Notify (Mock)';
@@ -221,7 +439,7 @@ export default function NotifyMockPage() {
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbPage>
-                  Notify (Tự phát âm thanh) — Mock
+                  Notify (Tự phát âm thanh) — Real API
                 </BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
@@ -252,6 +470,46 @@ export default function NotifyMockPage() {
                   <SelectItem value='browser'>Browser TTS</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Initialize Audio Context */}
+            <div className='w-40'>
+              <label className='text-xs text-muted-foreground'>Audio Setup</label>
+              <Button
+                variant={audioInitialized ? 'default' : 'outline'}
+                size='sm'
+                onClick={initializeAudioContext}
+                className='mt-1 w-full'
+                disabled={audioInitialized}
+              >
+                {audioInitialized ? '✓ Audio Ready' : 'Init Audio'}
+              </Button>
+            </div>
+
+            {/* Test TTS Button */}
+            <div className='w-40'>
+              <label className='text-xs text-muted-foreground'>Test Audio</label>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => {
+                  console.log('[DEBUG] Test TTS button clicked');
+                  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance('Xin chào, test âm thanh');
+                    utterance.lang = 'vi-VN';
+                    utterance.rate = 1;
+                    utterance.volume = 1;
+                    console.log('[DEBUG] Starting speech synthesis test');
+                    window.speechSynthesis.speak(utterance);
+                  } else {
+                    console.log('[DEBUG] Speech synthesis not supported');
+                    alert('Browser không hỗ trợ TTS');
+                  }
+                }}
+                className='mt-1 w-full'
+              >
+                Test TTS
+              </Button>
             </div>
 
             {/* NEW: Số lần đọc lại */}
@@ -374,12 +632,15 @@ export default function NotifyMockPage() {
           <div className='border-t pt-4 grid gap-3 md:grid-cols-6'>
             <div className='md:col-span-2'>
               <label className='text-xs text-muted-foreground'>
-                Prefix ID (tùy chọn)
+                Số lần lặp lại API
               </label>
               <Input
-                value={idPrefix}
-                onChange={(e) => setIdPrefix(e.target.value)}
-                placeholder='VD: TEST'
+                type='number'
+                min={1}
+                max={10}
+                value={repeatCount}
+                onChange={(e) => setRepeatCount(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                placeholder='1-10'
                 className='mt-1'
               />
             </div>
@@ -417,65 +678,61 @@ export default function NotifyMockPage() {
             </div>
 
             <div className='md:col-span-6 flex gap-2'>
-              <Button onClick={() => addMessage(true)} disabled={!msg.trim()}>
-                Thêm & đọc thử
+              <Button
+                onClick={() => addMessage(true)}
+                disabled={!msg.trim() || createNotificationMutation.isPending}
+              >
+                {createNotificationMutation.isPending ? 'Đang tạo...' : 'Thêm & đọc thử'}
               </Button>
               <Button
                 variant='outline'
                 onClick={() => addMessage(false)}
-                disabled={!msg.trim()}
+                disabled={!msg.trim() || createNotificationMutation.isPending}
               >
                 Chỉ thêm (không đọc)
               </Button>
               <Button
                 variant='outline'
                 onClick={() => {
-                  const samples: Array<
-                    Pick<NotifyMessage, 'message' | 'priority'>
-                  > = [
+                  const samples = [
                     {
-                      message:
-                        'Mời tân cử nhân kế tiếp di chuyển về vị trí chụp hình.',
-                      priority: 'normal',
+                      message: 'Mời tân cử nhân kế tiếp di chuyển về vị trí chụp hình.',
+                      priority: 'normal' as const,
                     },
                     {
-                      message:
-                        'Cảnh báo: Vui lòng giữ trật tự trong hội trường.',
-                      priority: 'high',
+                      message: 'Cảnh báo: Vui lòng giữ trật tự trong hội trường.',
+                      priority: 'high' as const,
                     },
                     {
                       message: 'Xin mời quý phụ huynh ổn định chỗ ngồi.',
-                      priority: 'low',
+                      priority: 'low' as const,
                     },
                   ];
-                  samples.forEach((s, idx) => {
-                    const newItem: NotifyMessage = {
-                      id: `SAMPLE-${Date.now()}-${idx}`,
-                      message: s.message,
-                      createdAt: new Date().toISOString(),
-                      priority: s.priority,
-                    };
-                    queryClient.setQueryData(QUERY_KEY, (prev: any) => {
-                      const current: NotifyMessage[] = prev?.data?.data ?? [];
-                      return { data: { data: [...current, newItem] } };
+
+                  samples.forEach((sample) => {
+                    const apiRequest = mapLocalToApi({
+                      message: sample.message,
+                      priority: sample.priority,
+                      repeatCount: 1
                     });
+                    createNotificationMutation.mutate(apiRequest);
                   });
                 }}
+                disabled={createNotificationMutation.isPending}
               >
                 Thêm 3 mẫu nhanh
               </Button>
               <Button
-                variant={'default'}
-                color='destructive'
+                variant='outline'
                 onClick={() => {
-                  queryClient.setQueryData(QUERY_KEY, {
-                    data: { data: [] as NotifyMessage[] },
-                  });
+                  // Clear played messages and stop TTS
                   playedIdsRef.current.clear();
                   stopAll();
+                  // Refresh data to get latest from API
+                  refetch();
                 }}
               >
-                Xóa danh sách
+                Làm mới & xóa trạng thái
               </Button>
             </div>
           </div>
@@ -518,42 +775,153 @@ export default function NotifyMockPage() {
         {items.map((m) => (
           <Card key={m.id} className='animate-fade-up'>
             <CardContent className='p-4 space-y-2'>
-              <div className='flex items-center justify-between'>
-                <h3 className='font-semibold'>Thông báo</h3>
-                {m.priority && (
-                  <Badge
-                    className={cn(
-                      m.priority === 'high' && 'bg-destructive text-white',
-                      m.priority === 'normal' && 'bg-primary text-white',
-                      m.priority === 'low' && 'bg-muted text-foreground'
-                    )}
-                  >
-                    {m.priority}
-                  </Badge>
-                )}
-              </div>
-              <p className='text-sm whitespace-pre-wrap'>{m.message}</p>
-              <p className='text-[11px] text-muted-foreground'>
-                {formatTime(m.createdAt)}
-              </p>
-              <div className='flex gap-2 pt-2'>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => speak(humanizeMessage(m))}
-                >
-                  Đọc lại
-                </Button>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => {
-                    playedIdsRef.current.add(m.id);
-                  }}
-                >
-                  Đánh dấu đã nghe
-                </Button>
-              </div>
+              {editingId === m.id ? (
+                // Edit Mode
+                <>
+                  <div className='flex items-center justify-between'>
+                    <h3 className='font-semibold'>Chỉnh sửa thông báo</h3>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={cancelEdit}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+
+                  <div className='space-y-3'>
+                    <textarea
+                      className='w-full p-2 border rounded-md text-sm resize-none'
+                      rows={3}
+                      value={editMsg}
+                      onChange={(e) => setEditMsg(e.target.value)}
+                      placeholder='Nhập nội dung thông báo...'
+                    />
+
+                    <div className='flex gap-2 items-center'>
+                      <select
+                        className='px-2 py-1 border rounded text-sm'
+                        value={editPriority}
+                        onChange={(e) => setEditPriority(e.target.value as 'high' | 'normal' | 'low')}
+                      >
+                        <option value='low'>Low</option>
+                        <option value='normal'>Normal</option>
+                        <option value='high'>High</option>
+                      </select>
+
+                      <input
+                        type='number'
+                        min='1'
+                        max='10'
+                        className='w-16 px-2 py-1 border rounded text-sm'
+                        value={editRepeatCount}
+                        onChange={(e) => setEditRepeatCount(Number(e.target.value))}
+                      />
+                      <span className='text-xs text-muted-foreground'>lần</span>
+                    </div>
+
+                    <div className='flex gap-2'>
+                      <Button
+                        size='sm'
+                        onClick={saveEdit}
+                        disabled={updateNotificationMutation.isPending || !editMsg.trim()}
+                      >
+                        {updateNotificationMutation.isPending ? 'Đang lưu...' : 'Lưu'}
+                      </Button>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={cancelEdit}
+                      >
+                        Hủy
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                // View Mode
+                <>
+                  <div className='flex items-center justify-between'>
+                    <h3 className='font-semibold'>Thông báo</h3>
+                    <div className='flex gap-2'>
+                      {m.repeatCount && m.repeatCount > 1 && (
+                        <Badge className="bg-blue-100 text-blue-800 text-xs">
+                          {m.repeatCount}x
+                        </Badge>
+                      )}
+                      {m.priority && (
+                        <Badge
+                          className={cn(
+                            m.priority === 'high' && 'bg-destructive text-white',
+                            m.priority === 'normal' && 'bg-primary text-white',
+                            m.priority === 'low' && 'bg-muted text-foreground'
+                          )}
+                        >
+                          {m.priority}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <p className='text-sm whitespace-pre-wrap'>{m.message}</p>
+                  <p className='text-[11px] text-muted-foreground'>
+                    {formatTime(m.createdAt)}
+                  </p>
+                  <div className='flex gap-2 pt-2 flex-wrap'>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => {
+                        console.log('[DEBUG] Read again button clicked for message:', m);
+                        const times = m.repeatCount || 1;
+                        const text = humanizeMessage(m);
+                        console.log(`[DEBUG] Calling speakWithRepeat with text="${text}" and times=${times}`);
+
+                        // Set manual replay flag to prevent auto-play interference
+                        manualReplayActiveRef.current = true;
+
+                        // Stop any current speech first
+                        stopAll();
+
+                        // Speak only this specific message
+                        speakWithRepeat(text, times);
+
+                        // Reset flag after a delay
+                        setTimeout(() => {
+                          manualReplayActiveRef.current = false;
+                        }, 2000 + (times * 3000)); // Estimate time needed based on repeat count
+                      }}
+                    >
+                      Đọc lại {m.repeatCount && m.repeatCount > 1 ? `(${m.repeatCount}x)` : ''}
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => {
+                        playedIdsRef.current.add(m.id);
+                      }}
+                    >
+                      Đánh dấu đã nghe
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => startEdit(m)}
+                      disabled={updateNotificationMutation.isPending}
+                    >
+                      Sửa
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      className='border-red-500 text-red-500 hover:bg-red-50'
+                      onClick={() => deleteNotification(m.id)}
+                      disabled={deleteNotificationMutation.isPending}
+                    >
+                      Xóa
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         ))}

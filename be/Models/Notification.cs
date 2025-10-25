@@ -18,6 +18,7 @@ namespace FA23_Convocation2023_API.Models
         public DateTime? BroadcastAt { get; set; } // Thời gian phát thực tế
         public string Status { get; set; } // PENDING, BROADCASTING, COMPLETED, CANCELLED
         public bool IsAutomatic { get; set; } // true = tự động theo session, false = manual
+        public int RepeatCount { get; set; } = 1; // Số lần lặp lại thông báo (mặc định = 1)
 
         // Navigation properties
         public virtual Hall Hall { get; set; }

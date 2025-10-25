@@ -15,23 +15,29 @@ namespace FA23_Convocation2023_API.Services
         // Get all notifications with pagination
         public async Task<List<Notification>> GetAllNotificationsAsync(int pageIndex = 1, int pageSize = 10, string? status = null)
         {
+            Console.WriteLine($"[DEBUG SERVICE] Getting notifications from database - pageIndex: {pageIndex}, pageSize: {pageSize}, status: {status}");
+
+            // First, try to get total count to see if table has any data
+            var totalCount = await _context.Notifications.CountAsync();
+            Console.WriteLine($"[DEBUG SERVICE] Total notifications in database: {totalCount}");
+
             var query = _context.Notifications
-                .Include(n => n.Hall)
-                .Include(n => n.Session)
-                .Include(n => n.CreatedByUser)
-                .Include(n => n.BroadcastByUser)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(status))
             {
+                Console.WriteLine($"[DEBUG SERVICE] Filtering by status: {status}");
                 query = query.Where(n => n.Status == status);
             }
 
-            return await query
+            var result = await query
                 .OrderByDescending(n => n.CreatedAt)
                 .Skip((pageIndex - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            Console.WriteLine($"[DEBUG SERVICE] Query returned {result.Count} notifications");
+            return result;
         }
 
         // Get notification by ID
@@ -69,6 +75,7 @@ namespace FA23_Convocation2023_API.Services
             notification.SessionId = updatedNotification.SessionId;
             notification.ScheduledAt = updatedNotification.ScheduledAt;
             notification.IsAutomatic = updatedNotification.IsAutomatic;
+            notification.RepeatCount = updatedNotification.RepeatCount;
 
             await _context.SaveChangesAsync();
             return notification;

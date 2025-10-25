@@ -230,6 +230,9 @@ namespace FA23_Convocation2023_API.Models
                 entity.Property(e => e.IsAutomatic)
                     .HasDefaultValue(false);
 
+                entity.Property(e => e.RepeatCount)
+                    .HasDefaultValue(1); // Mặc định lặp lại 1 lần
+
                 entity.Property(e => e.HallId)
                     .IsRequired(false);
 

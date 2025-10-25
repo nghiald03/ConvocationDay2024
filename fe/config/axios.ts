@@ -165,3 +165,100 @@ export const statisticsAPI = {
     }>('/Statistics/hall-overview');
   },
 };
+
+// Notification API types (matching backend DTOs)
+export type CreateNotificationRequest = {
+  title: string;
+  content: string;
+  priority: number; // 1=High, 2=Medium, 3=Low
+  hallId?: number;
+  sessionId?: number;
+  scheduledAt?: string; // ISO date string
+  isAutomatic?: boolean;
+  repeatCount?: number;
+};
+
+export type NotificationResponse = {
+  notificationId: number;
+  title: string;
+  content: string;
+  priority: number;
+  priorityText: string; // "High", "Medium", "Low"
+  hallId?: number;
+  hallName?: string;
+  sessionId?: number;
+  sessionNumber?: number;
+  createdBy: string;
+  createdByName: string;
+  broadcastBy?: string;
+  broadcastByName?: string;
+  createdAt: string; // ISO date string
+  scheduledAt?: string;
+  broadcastAt?: string;
+  status: string;
+  isAutomatic: boolean;
+  repeatCount: number;
+  scope: string;
+};
+
+export type NotificationListResponse = {
+  notifications: NotificationResponse[];
+  totalCount: number;
+  pageIndex: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type CreateNotificationResponse = {
+  message: string;
+  notificationId: number;
+};
+
+// Notification APIs (matching backend controller routes)
+export const notificationAPI = {
+  getAll: async (pageIndex: number = 1, pageSize: number = 50, status?: string) => {
+    const params = new URLSearchParams({
+      pageIndex: pageIndex.toString(),
+      pageSize: pageSize.toString(),
+    });
+    if (status) params.append('status', status);
+
+    return await axiosInstance.get<NotificationListResponse>(`/Notification?${params.toString()}`);
+  },
+
+  getById: async (id: number) => {
+    return await axiosInstance.get<NotificationResponse>(`/Notification/${id}`);
+  },
+
+  create: async (data: CreateNotificationRequest) => {
+    return await axiosInstance.post<CreateNotificationResponse>('/Notification', data);
+  },
+
+  update: async (id: number, data: CreateNotificationRequest) => {
+    return await axiosInstance.put<{ message: string }>(`/Notification/${id}`, data);
+  },
+
+  delete: async (id: number) => {
+    return await axiosInstance.delete<{ message: string }>(`/Notification/${id}`);
+  },
+
+  getPending: async (hallId?: number, sessionId?: number) => {
+    const params = new URLSearchParams();
+    if (hallId) params.append('hallId', hallId.toString());
+    if (sessionId) params.append('sessionId', sessionId.toString());
+
+    return await axiosInstance.get<NotificationResponse[]>(`/Notification/pending?${params.toString()}`);
+  },
+
+  startBroadcast: async (id: number) => {
+    return await axiosInstance.post<{ message: string }>(`/Notification/${id}/broadcast`);
+  },
+
+  completeBroadcast: async (id: number) => {
+    return await axiosInstance.post<{ message: string }>(`/Notification/${id}/complete`);
+  },
+
+  cancelNotification: async (id: number) => {
+    return await axiosInstance.post<{ message: string }>(`/Notification/${id}/cancel`);
+  },
+};

@@ -22,6 +22,9 @@ namespace FA23_Convocation2023_API.DTO
         public DateTime? ScheduledAt { get; set; } // Null = immediate
 
         public bool IsAutomatic { get; set; } = false;
+
+        [Range(1, 10)]
+        public int RepeatCount { get; set; } = 1; // Số lần lặp lại (1-10)
     }
 
     public class UpdateNotificationRequest
@@ -44,6 +47,9 @@ namespace FA23_Convocation2023_API.DTO
         public DateTime? ScheduledAt { get; set; }
 
         public bool IsAutomatic { get; set; }
+
+        [Range(1, 10)]
+        public int RepeatCount { get; set; } = 1; // Số lần lặp lại (1-10)
     }
 
     public class NotificationResponse
@@ -66,6 +72,7 @@ namespace FA23_Convocation2023_API.DTO
         public DateTime? BroadcastAt { get; set; }
         public string Status { get; set; }
         public bool IsAutomatic { get; set; }
+        public int RepeatCount { get; set; } // Số lần lặp lại
         public string Scope { get; set; } // "Toàn trường", "Hall: {name}", "Session: {number}"
     }
 
