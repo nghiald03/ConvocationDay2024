@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -29,6 +29,8 @@ import { cn } from '@/lib/utils';
 
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { useSignalR } from '@/hooks/useSignalR';
+import { CreateNotificationRequest, notificationAPI } from '@/config/axios';
+import toast from 'react-hot-toast';
 
 // ===== Types =====
 // ===== Types =====
@@ -52,6 +54,7 @@ type NotifyMessage = {
   createdAt: string; // ISO
   priority?: 'high' | 'normal' | 'low';
   repeatCount?: number;
+
   scope?: string;
   hallName?: string | null;
   originalData?: BackendNotification;
@@ -77,6 +80,20 @@ function transformBackendNotification(
     scope: data.scope,
     hallName: data.hallName,
     originalData: data, // Keep original for debugging/reference
+  };
+}
+
+function mapLocalToApi(local: {
+  message: string;
+  priority: 'high' | 'normal' | 'low';
+  repeatCount?: number;
+}): CreateNotificationRequest {
+  return {
+    title: 'Thông báo hội trường',
+    content: local.message,
+    priority: local.priority === 'high' ? 1 : local.priority === 'low' ? 3 : 2,
+    isAutomatic: false,
+    repeatCount: local.repeatCount || 1,
   };
 }
 
@@ -249,20 +266,36 @@ export default function NotifyMockPage() {
 
   const addMessage = (immediateSpeak = true) => {
     if (!msg.trim()) return;
-    const newItem: NotifyMessage = {
-      id: `${idPrefix}-${Date.now()}`,
+
+    const request = mapLocalToApi({
       message: msg.trim(),
-      createdAt: new Date().toISOString(),
       priority,
-    };
+      repeatCount,
+    });
+
+    createNotificationMutation.mutate({
+      request,
+      shouldSpeak: immediateSpeak,
+      rawInputForSpeak: {
+        message: msg.trim(),
+        priority,
+        repeatCount,
+      },
+    });
 
     queryClient.setQueryData(QUERY_KEY, (prev: any) => {
       const current: NotifyMessage[] = prev?.data?.data ?? [];
-      return { data: { data: [...current, newItem] } };
+      const echoItem: NotifyMessage = {
+        id: `LOCAL-${Date.now()}`,
+        message: msg.trim(),
+        createdAt: new Date().toISOString(),
+        priority,
+        repeatCount,
+      };
+      return { data: { data: [...current, echoItem] } };
     });
 
-    playedIdsRef.current.add(newItem.id);
-    if (immediateSpeak) speak(humanizeMessage(newItem));
+    // clear input sau khi bấm
     setMsg('');
   };
 
@@ -360,6 +393,45 @@ export default function NotifyMockPage() {
     setCurrentNumber(null);
     setEditCurrent('');
   };
+
+  const createNotificationMutation = useMutation({
+    mutationFn: async (params: {
+      request: CreateNotificationRequest;
+      shouldSpeak: boolean;
+      rawInputForSpeak: {
+        message: string;
+        priority: 'high' | 'normal' | 'low';
+        repeatCount: number;
+      };
+    }) => {
+      // gọi API tạo notice
+      return notificationAPI.create(params.request);
+    },
+    onSuccess: async (response, { shouldSpeak, rawInputForSpeak }) => {
+      // refresh list nếu anh có query khác; ở mock mình đang lưu cache cục bộ nên không bắt buộc
+      toast.success(response?.data?.message || 'Tạo thông báo thành công!');
+
+      // NẾU muốn đọc thử ngay (không tốn token ElevenLabs do anh đã cache/gộp lặp trong hook)
+      if (shouldSpeak) {
+        const temp: NotifyMessage = {
+          id: response?.data?.notificationId ?? `POST-${Date.now()}`,
+          message: rawInputForSpeak.message,
+          createdAt: new Date().toISOString(),
+          priority: rawInputForSpeak.priority,
+          repeatCount: rawInputForSpeak.repeatCount,
+        };
+        // đánh dấu & speak
+        playedIdsRef.current.add(temp.id);
+        speak(humanizeMessage(temp));
+      }
+    },
+    onError: (error: any) => {
+      toast.error(
+        'Lỗi khi tạo thông báo: ' +
+          (error?.response?.data?.message || error?.message)
+      );
+    },
+  });
 
   const hallName = 'Notify (Mock)';
 
