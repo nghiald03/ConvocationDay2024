@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -30,15 +29,13 @@ import { cn } from '@/lib/utils';
 
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 
-// ===== Mock types =====
+// ===== Types =====
 type NotifyMessage = {
   id: string | number;
   message: string;
   createdAt: string; // ISO
   priority?: 'high' | 'normal' | 'low';
 };
-
-type TTSEngine = 'browser' | 'elevenlabs';
 
 export default function NotifyMockPage() {
   const queryClient = useQueryClient();
@@ -70,90 +67,30 @@ export default function NotifyMockPage() {
 
   const items: NotifyMessage[] = data?.data?.data ?? [];
 
-  // ================== TTS state & logic ==================
+  // ================== TTS state & logic (ElevenLabs ONLY) ==================
   const [enabled, setEnabled] = useState(true);
-  const [engine, setEngine] = useState<TTSEngine>('elevenlabs'); // mặc định dùng ElevenLabs
   const [repeatCount, setRepeatCount] = useState<number>(1); // số lần đọc lại
-
-  // Các tham số cho Browser TTS (fallback)
-  const [voiceURI, setVoiceURI] = useState<string>('');
-  const [rate, setRate] = useState(1);
-  const [pitch, setPitch] = useState(1);
-  const [volume, setVolume] = useState(1);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   // ElevenLabs TTS hook (đã hỗ trợ chime, fade-in, repeat không tốn token)
   const { speak: xiSpeak, stop: xiStop } = useElevenLabsTTS();
 
   const playedIdsRef = useRef<Set<string | number>>(new Set());
-  const speakingRef = useRef(false);
-
-  // Load voices (chỉ cho Browser TTS)
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    const loadVoices = () => setVoices(window.speechSynthesis.getVoices());
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-    return () => {
-      if (window.speechSynthesis.onvoiceschanged === loadVoices) {
-        (window.speechSynthesis as any).onvoiceschanged = null;
-      }
-    };
-  }, []);
-
-  // Chọn voice mặc định ưu tiên vi-VN (Browser TTS)
-  useEffect(() => {
-    if (!voices.length || voiceURI) return;
-    const viVN = voices.find((v) => v.lang?.toLowerCase() === 'vi-vn');
-    const viAny = voices.find((v) => v.lang?.toLowerCase().startsWith('vi'));
-    setVoiceURI((viVN ?? viAny ?? voices[0])?.voiceURI ?? '');
-  }, [voices, voiceURI]);
-
-  const browserSpeak = (text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
-    const utter = new SpeechSynthesisUtterance(text);
-    const voice = voices.find((v) => v.voiceURI === voiceURI) ?? voices[0];
-    if (voice) utter.voice = voice;
-    utter.rate = clamp(rate, 0.1, 2);
-    utter.pitch = clamp(pitch, 0, 2);
-    utter.volume = clamp(volume, 0, 1);
-
-    speakingRef.current = true;
-    utter.onend = () => (speakingRef.current = false);
-    utter.onerror = () => (speakingRef.current = false);
-
-    window.speechSynthesis.speak(utter);
-  };
 
   const stopAll = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
     xiStop();
-    speakingRef.current = false;
   };
 
-  // Hàm speak chung (ưu tiên ElevenLabs) + repeat
+  // Hàm speak chung (ElevenLabs)
   const speak = (text: string) => {
     if (!enabled) return;
-
-    if (engine === 'elevenlabs') {
-      // XI: repeat không gọi lại API nhờ cache trong hook; có thể thêm chime nếu muốn
-      xiSpeak(text, {
-        repeat: repeatCount,
-        chimeUrl: '/sounds/Notification Alert 01.wav', // bật nếu muốn âm báo mở đầu
-        chimeVolume: 0.5,
-        gain: 2.3,
-        fadeInMsChime: 200,
-        fadeInMsTTS: 200,
-      });
-    } else {
-      // Browser TTS: queue N lần
-      for (let i = 0; i < repeatCount; i++) {
-        browserSpeak(text);
-      }
-    }
+    xiSpeak(text, {
+      repeat: repeatCount,
+      chimeUrl: '/sounds/Notification Alert 01.wav',
+      chimeVolume: 0.5,
+      gain: 2.3,
+      fadeInMsChime: 200,
+      fadeInMsTTS: 200,
+    });
   };
 
   // Tự phát message mới (theo id)
@@ -165,22 +102,12 @@ export default function NotifyMockPage() {
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
     const unplayed = sorted.filter((m) => !playedIdsRef.current.has(m.id));
-    if (unplayed.length && !speakingRef.current) {
+    if (unplayed.length) {
       const next = unplayed[0];
       playedIdsRef.current.add(next.id);
       speak(humanizeMessage(next));
     }
-  }, [
-    items,
-    enabled,
-    voices,
-    voiceURI,
-    rate,
-    pitch,
-    volume,
-    engine,
-    repeatCount,
-  ]);
+  }, [items, enabled, repeatCount]);
 
   // ================== Form mock input ==================
   const [msg, setMsg] = useState('');
@@ -404,22 +331,6 @@ export default function NotifyMockPage() {
               <Switch checked={enabled} onCheckedChange={setEnabled} />
             </div>
 
-            {/* Chọn engine TTS */}
-            <div className='w-40'>
-              <label className='text-xs text-muted-foreground'>Engine</label>
-              <Select value={engine} onValueChange={(v: any) => setEngine(v)}>
-                <SelectTrigger className='mt-1'>
-                  <SelectValue placeholder='Chọn engine' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='elevenlabs'>
-                    ElevenLabs (khuyên dùng)
-                  </SelectItem>
-                  <SelectItem value='browser'>Browser TTS</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Số lần đọc lại */}
             <div className='w-40'>
               <label className='text-xs text-muted-foreground'>
@@ -436,82 +347,6 @@ export default function NotifyMockPage() {
                   )
                 }
                 className='mt-1'
-              />
-            </div>
-
-            {/* Các tham số cho Browser TTS */}
-            <div
-              className={cn(
-                'w-64',
-                engine !== 'browser' && 'opacity-50 pointer-events-none'
-              )}
-            >
-              <label className='text-xs text-muted-foreground'>Giọng đọc</label>
-              <Select value={voiceURI} onValueChange={setVoiceURI}>
-                <SelectTrigger className='mt-1'>
-                  <SelectValue placeholder='Chọn giọng (ưu tiên tiếng Việt)' />
-                </SelectTrigger>
-                <SelectContent>
-                  {voices.map((v) => (
-                    <SelectItem key={v.voiceURI} value={v.voiceURI}>
-                      {v.name} — {v.lang}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div
-              className={cn(
-                'w-56',
-                engine !== 'browser' && 'opacity-50 pointer-events-none'
-              )}
-            >
-              <label className='text-xs text-muted-foreground'>
-                Tốc độ (rate): {rate.toFixed(2)}
-              </label>
-              <Slider
-                min={0.1}
-                max={2}
-                step={0.1}
-                value={[rate]}
-                onValueChange={(v) => setRate(v[0] ?? 1)}
-              />
-            </div>
-
-            <div
-              className={cn(
-                'w-56',
-                engine !== 'browser' && 'opacity-50 pointer-events-none'
-              )}
-            >
-              <label className='text-xs text-muted-foreground'>
-                Cao độ (pitch): {pitch.toFixed(2)}
-              </label>
-              <Slider
-                min={0}
-                max={2}
-                step={0.1}
-                value={[pitch]}
-                onValueChange={(v) => setPitch(v[0] ?? 1)}
-              />
-            </div>
-
-            <div
-              className={cn(
-                'w-56',
-                engine !== 'browser' && 'opacity-50 pointer-events-none'
-              )}
-            >
-              <label className='text-xs text-muted-foreground'>
-                Âm lượng (volume): {volume.toFixed(2)}
-              </label>
-              <Slider
-                min={0}
-                max={1}
-                step={0.05}
-                value={[volume]}
-                onValueChange={(v) => setVolume(v[0] ?? 1)}
               />
             </div>
 
@@ -777,24 +612,20 @@ export default function NotifyMockPage() {
 }
 
 // ===== Helpers =====
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
-
 function formatTime(iso?: string) {
   if (!iso) return '—';
   try {
     const d = new Date(iso);
     return d.toLocaleString('vi-VN');
   } catch {
-    return iso;
+    return iso!;
   }
 }
 
 function humanizeMessage(m: NotifyMessage) {
   const prefix =
     m.priority === 'high'
-      ? 'Thông báo: ' // giữ thống nhất theo bản anh gửi
+      ? 'Thông báo: '
       : m.priority === 'low'
       ? 'Ghi chú: '
       : 'Thông báo: ';
