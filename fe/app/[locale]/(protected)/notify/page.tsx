@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
+import { useSignalR } from '@/hooks/useSignalR';
 
 // ===== Types =====
 type NotifyMessage = {
@@ -59,7 +60,9 @@ export default function NotifyMockPage() {
     queryFn: async () =>
       queryClient.getQueryData<{ data: { data: NotifyMessage[] } }>(
         QUERY_KEY
-      ) ?? { data: { data: [] as NotifyMessage[] } },
+      ) ?? {
+        data: { data: [] as NotifyMessage[] },
+      },
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     initialData: { data: { data: [] as NotifyMessage[] } },
@@ -69,20 +72,23 @@ export default function NotifyMockPage() {
 
   // ================== TTS state & logic (ElevenLabs ONLY) ==================
   const [enabled, setEnabled] = useState(true);
-  const [repeatCount, setRepeatCount] = useState<number>(1); // số lần đọc lại
+  const [repeatCount, setRepeatCount] = useState<number>(1);
+  const [consoleOnly, setConsoleOnly] = useState<boolean>(true);
 
-  // ElevenLabs TTS hook (đã hỗ trợ chime, fade-in, repeat không tốn token)
   const { speak: xiSpeak, stop: xiStop } = useElevenLabsTTS();
-
   const playedIdsRef = useRef<Set<string | number>>(new Set());
 
   const stopAll = () => {
     xiStop();
   };
 
-  // Hàm speak chung (ElevenLabs)
   const speak = (text: string) => {
     if (!enabled) return;
+    if (consoleOnly) {
+      // eslint-disable-next-line no-console
+      console.log('[TTS][DEBUG]', text);
+      return;
+    }
     xiSpeak(text, {
       repeat: repeatCount,
       chimeUrl: '/sounds/Notification Alert 01.wav',
@@ -93,10 +99,9 @@ export default function NotifyMockPage() {
     });
   };
 
-  // Tự phát message mới (theo id)
+  // Tự phát message mới
   useEffect(() => {
     if (!items.length || !enabled) return;
-
     const sorted = [...items].sort(
       (a, b) =>
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -107,12 +112,65 @@ export default function NotifyMockPage() {
       playedIdsRef.current.add(next.id);
       speak(humanizeMessage(next));
     }
-  }, [items, enabled, repeatCount]);
+  }, [items, enabled, repeatCount, consoleOnly]);
+
+  // ================== SignalR (tự connect + tự join group trong hook) ==================
+  const { connection, connectionState, isConnected } = useSignalR({
+    hubUrl: 'http://143.198.84.82:85/chat-hub', // TODO: đổi theo BE của anh
+    autoConnect: true, // tự connect khi mount
+    forceWebsockets: true,
+    stopDelayMs: 3000,
+    // accessToken: '...optional...',  // nếu hub cần auth
+    onTTSBroadcast: (data) => {
+      // Nếu server có bắn ReceiveTTSBroadcast, gom vào UI luôn
+      const msg: NotifyMessage = {
+        id: data?.id ?? `TTS-${Date.now()}`,
+        message: data?.message ?? String(data ?? ''),
+        createdAt: data?.createdAt ?? new Date().toISOString(),
+        priority: (data?.priority as NotifyMessage['priority']) ?? 'normal',
+      };
+      // eslint-disable-next-line no-console
+      console.log('[SignalR] ReceiveTTSBroadcast', msg);
+      queryClient.setQueryData(QUERY_KEY, (prev: any) => {
+        const current: NotifyMessage[] = prev?.data?.data ?? [];
+        return { data: { data: [...current, msg] } };
+      });
+    },
+    onConnectionStateChange: (s) => {
+      // eslint-disable-next-line no-console
+      console.log('[SignalR] state:', s);
+    },
+  });
+
+  // Lắng nghe ReceiveNotify (tên event chính từ BE)
+  useEffect(() => {
+    if (!connection) return;
+
+    const handler = (payload: any) => {
+      const msg: NotifyMessage = {
+        id: payload?.id ?? `SR-${Date.now()}`,
+        message: payload?.message ?? String(payload ?? ''),
+        createdAt: payload?.createdAt ?? new Date().toISOString(),
+        priority: (payload?.priority as NotifyMessage['priority']) ?? 'normal',
+      };
+      // eslint-disable-next-line no-console
+      console.log('[SignalR] ReceiveNotify', msg);
+      queryClient.setQueryData(QUERY_KEY, (prev: any) => {
+        const current: NotifyMessage[] = prev?.data?.data ?? [];
+        return { data: { data: [...current, msg] } };
+      });
+    };
+
+    connection.on('ReceiveNotify', handler);
+    return () => {
+      connection.off('ReceiveNotify', handler);
+    };
+  }, [connection, queryClient]);
 
   // ================== Form mock input ==================
   const [msg, setMsg] = useState('');
   const [priority, setPriority] = useState<'high' | 'normal' | 'low'>('normal');
-  const [idPrefix, setIdPrefix] = useState('TEST'); // optional
+  const [idPrefix, setIdPrefix] = useState('TEST');
 
   const addMessage = (immediateSpeak = true) => {
     if (!msg.trim()) return;
@@ -130,14 +188,12 @@ export default function NotifyMockPage() {
 
     playedIdsRef.current.add(newItem.id);
     if (immediateSpeak) speak(humanizeMessage(newItem));
-
     setMsg('');
   };
 
   // ================== QUICK ACTIONS ==================
-  const [callNumber, setCallNumber] = useState<number | ''>(''); // input gọi số nhanh
+  const [callNumber, setCallNumber] = useState<number | ''>('');
 
-  /** Thêm message từ text (không đụng form msg hiện tại) */
   const addMessageFromText = (
     text: string,
     level: 'high' | 'normal' | 'low' = 'normal',
@@ -160,7 +216,6 @@ export default function NotifyMockPage() {
   const handleCallNumber = () => {
     if (callNumber === '' || Number.isNaN(Number(callNumber))) return;
     const n = Number(callNumber);
-    // cập nhật số đang gọi (state + session)
     setCurrentNumber(n);
     addMessageFromText(`Số ${n} chuẩn bị lên chụp hình.`, 'high', true);
     setCallNumber('');
@@ -174,12 +229,11 @@ export default function NotifyMockPage() {
     );
   };
 
-  // ================== CURRENT NUMBER (persist to sessionStorage) ==================
+  // ================== CURRENT NUMBER (sessionStorage) ==================
   const CURRENT_NUMBER_KEY = 'notify-current-number';
   const [currentNumber, setCurrentNumber] = useState<number | null>(null);
   const [editCurrent, setEditCurrent] = useState<string>('');
 
-  // Load from sessionStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const raw = sessionStorage.getItem(CURRENT_NUMBER_KEY);
@@ -192,7 +246,6 @@ export default function NotifyMockPage() {
     }
   }, []);
 
-  // Persist whenever currentNumber changes
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (currentNumber === null) {
@@ -252,6 +305,13 @@ export default function NotifyMockPage() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+
+          {/* Optional: trạng thái kết nối */}
+          <div className='mt-2 text-xs'>
+            Trạng thái SignalR:{' '}
+            <span className='font-medium'>{connectionState}</span>{' '}
+            {isConnected ? '✅' : '❌'}
+          </div>
         </CardContent>
       </Card>
 
@@ -331,7 +391,6 @@ export default function NotifyMockPage() {
               <Switch checked={enabled} onCheckedChange={setEnabled} />
             </div>
 
-            {/* Số lần đọc lại */}
             <div className='w-40'>
               <label className='text-xs text-muted-foreground'>
                 Số lần đọc lại
@@ -348,6 +407,11 @@ export default function NotifyMockPage() {
                 }
                 className='mt-1'
               />
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <span className='text-sm'>Console log only</span>
+              <Switch checked={consoleOnly} onCheckedChange={setConsoleOnly} />
             </div>
 
             <div className='ml-auto flex gap-2'>
