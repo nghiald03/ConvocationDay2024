@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useRouter } from '@/components/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { loginAPI } from '@/config/axios';
+import { jwtDecode } from 'jwt-decode';
 
 const schema = z.object({
   email: z.string().email({ message: 'Email bạn nhập không hợp lệ' }),
@@ -160,7 +161,23 @@ const LoginForm = () => {
     onSuccess: (res) => {
       toast.success('Đăng nhập thành công', { position: 'top-right' });
       localStorage.setItem('accessToken', res.data.accessToken);
-      router.push('/tutorial');
+
+      // Role-based redirect
+      try {
+        const decodedToken = jwtDecode(res.data.accessToken) as any;
+        // Check both old format ('role') and new format (ClaimTypes.Role)
+        const userRole = decodedToken?.role || decodedToken?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+        // Redirect Noticer users to notification page, others to tutorial
+        if (userRole === 'NO') {
+          router.push('/notify');
+        } else {
+          router.push('/tutorial');
+        }
+      } catch (error) {
+        // Fallback to tutorial if token decode fails
+        router.push('/tutorial');
+      }
     },
     onError: (error: any) => {
       const parsed = parseAxiosError(error);

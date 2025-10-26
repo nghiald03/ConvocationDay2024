@@ -102,6 +102,25 @@ namespace FA23_Convocation2023_API
                     ValidateIssuer = false,
                     ValidateAudience = false
                 };
+
+                // IMPORTANT: Configure JWT authentication for SignalR
+                o.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+
+                        // If the request is for our SignalR hub...
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chat-hub"))
+                        {
+                            // Read the token out of the query string
+                            context.Token = accessToken;
+                            Console.WriteLine($"[SignalR Auth] Token extracted from query string for hub connection");
+                        }
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             // Add chức năng phân quyền nè, 1 dòng :)))

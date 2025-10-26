@@ -266,9 +266,17 @@ export const notificationAPI = {
   },
 
   startBroadcast: async (id: number) => {
+<<<<<<< HEAD
     return await axiosInstance.post<{ message: string }>(
       `/Notification/${id}/broadcast`
     );
+=======
+    return await axiosInstance.post<{ message: string }>(`/Notification/${id}/start-broadcast`);
+  },
+
+  broadcast: async (id: number) => {
+    return await axiosInstance.post<{ message: string; data: any }>(`/Notification/${id}/broadcast`);
+>>>>>>> origin/fea/add_notification
   },
 
   completeBroadcast: async (id: number) => {

@@ -18,10 +18,12 @@ import { User } from '@/dtos/userDTO';
 
 import { Link } from '@/i18n/routing';
 import { jwtDecode } from 'jwt-decode';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const ProfileInfo = () => {
   const [user, setUser] = useState<User>();
+  const router = useRouter();
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const accessToken = localStorage.getItem('accessToken');
@@ -56,23 +58,24 @@ const ProfileInfo = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent className='w-56 p-0' align='end'>
           <DropdownMenuSeparator className='mb-0 dark:bg-background' />
-          <DropdownMenuItem className='flex items-center gap-2 text-sm font-medium text-default-600 capitalize my-1 px-3 cursor-pointer'>
-            <div>
-              <form
-                onSubmit={() => {
-                  localStorage.clear();
-                  window.location.href = '/login';
-                }}
-              >
-                <button
-                  type='submit'
-                  className=' w-full  flex  items-center gap-2'
-                >
-                  <Icon icon='heroicons:power' className='w-4 h-4' />
-                  Log out
-                </button>
-              </form>
-            </div>
+          <DropdownMenuItem
+            className='flex items-center gap-2 text-sm font-medium text-default-600 capitalize my-1 px-3 cursor-pointer'
+            onClick={async (e) => {
+              e.preventDefault();
+              console.log('[DEBUG] Logout clicked!');
+
+              // Clear localStorage
+              localStorage.clear();
+              console.log('[DEBUG] LocalStorage cleared');
+
+              // Force page reload to login page
+              console.log('[DEBUG] Reloading to /en');
+              window.location.replace('/en');
+              console.log('[DEBUG] Window.location.replace called');
+            }}
+          >
+            <Icon icon='heroicons:power' className='w-4 h-4' />
+            Log out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
