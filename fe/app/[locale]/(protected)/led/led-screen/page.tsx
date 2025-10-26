@@ -33,12 +33,10 @@ import { Bachelor } from '@/dtos/BachelorDTO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  HubConnectionBuilder,
-  HubConnection,
-  LogLevel,
-} from '@microsoft/signalr';
 import { toast } from 'sonner';
+
+// === NEW: import hook
+import { useSignalR } from '@/hooks/useSignalR';
 
 export default function LedScreen() {
   const queryClient = useQueryClient();
@@ -64,7 +62,7 @@ export default function LedScreen() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // ========= Fetch lists =========
-  const { data: hallData, error: hallError } = useQuery({
+  const { data: hallData } = useQuery({
     queryKey: ['listHall'],
     queryFn: async () => {
       const res = await ledAPI.getHallList();
@@ -83,7 +81,7 @@ export default function LedScreen() {
     }
   }, [hallData]);
 
-  const { data: sessionData, error: sessionError } = useQuery({
+  const { data: sessionData } = useQuery({
     queryKey: ['listSession'],
     queryFn: async () => {
       const res = await ledAPI.getSessionList();
@@ -110,96 +108,96 @@ export default function LedScreen() {
     if (session) window.localStorage.setItem('session', session);
   }, [session]);
 
-  // ========= Fetch CURRENT on initial load & when hall/session changes =========
-  const {
-    data: bachelorCurrentData,
-    isFetching: isFetchingCurrent,
-    error: currentError,
-  } = useQuery({
-    queryKey: ['bachelorCurrent', hall, session],
-    queryFn: async () => {
-      const res = await ledAPI.getBachelorCurrent(hall, session);
-      // BE expected to return { data: { ...Bachelor } } or null
-      return res?.data?.data ?? null;
-    },
-    enabled: Boolean(hall && session),
-    // We get live updates via SignalR; avoid noisy refetches
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-  });
+  // ========= Fetch CURRENT once (initial & when hall/session changes) =========
+  const { data: bachelorCurrentData, isFetching: isFetchingCurrent } = useQuery(
+    {
+      queryKey: ['bachelorCurrent', hall, session],
+      queryFn: async () => {
+        const res = await ledAPI.getBachelorCurrent(hall, session);
+        return res?.data?.data ?? null;
+      },
+      enabled: Boolean(hall && session),
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    }
+  );
 
   useEffect(() => {
     if (bachelorCurrentData !== undefined) {
-      setBachelorCurrent(bachelorCurrentData.bachelor2 || null);
+      setBachelorCurrent(bachelorCurrentData?.bachelor2 || null);
     }
   }, [bachelorCurrentData]);
 
-  // ========= SignalR (stable, single connection) =========
+  // ========= SignalR via hook (NO GROUP JOIN) =========
+  const { connection, isConnected, connectionState, startConnection } =
+    useSignalR({
+      hubUrl: process.env.NEXT_PUBLIC_SIGNALR_URL?.toString() || '',
+      autoConnect: false, // << quan trọng: không autoConnect để khỏi auto-join
+      forceWebsockets: true, // tuỳ server; để ổn định có thể bật WS
+      onConnectionStateChange: (s) => {
+        // optional: log state changes
+        // console.log('[SignalR] state:', s);
+      },
+    });
+
   useEffect(() => {
-    let connection: HubConnection | null = null;
-
-    async function startSignalR() {
-      try {
-        const url = process.env.NEXT_PUBLIC_SIGNALR_URL?.toString() || '';
-        if (!url) return;
-
-        connection = new HubConnectionBuilder()
-          .withUrl(url)
-          .withAutomaticReconnect()
-          .configureLogging(LogLevel.Error)
-          .build();
-
-        // Handler must be registered BEFORE start()
-        connection.on('SendMessage', (message: string) => {
-          // some producers prefix with "CurrentBachelor" and add escape quotes
-          const cleaned = message.replace(/^CurrentBachelor\s*/, '').trim();
-          const normalized = cleaned
-            .replace(/\\?"/g, '"')
-            .replace(/,? *\}$/, '}');
-          try {
-            const parsed = JSON.parse(normalized);
-            const bachelorData: Bachelor = {
-              image: parsed.Image,
-              fullName: parsed.FullName,
-              major: parsed.Major,
-              studentCode: parsed.StudentCode,
-              mail: parsed.Mail,
-              hallName: parsed.HallName,
-              sessionNum: parsed.SessionNum,
-              chair: parsed.Chair ?? null,
-              chairParent: parsed.ChairParent ?? null,
-            };
-
-            // Only accept updates matching current hall/session and with a valid image
-            if (
-              String(bachelorData.hallName) === String(hall) &&
-              String(bachelorData.sessionNum) === String(session) &&
-              bachelorData.image
-            ) {
-              setBachelorCurrent(bachelorData);
-            }
-          } catch (e) {
-            console.error('Error parsing SignalR payload', e, { message });
-          }
-        });
-
-        await connection.start();
-        // Optional: you could invoke a method to join a group by hall+session if BE supports
-        // await connection.invoke("JoinGroup", `${hall}:${session}`)
-      } catch (err) {
-        console.error('SignalR start failed', err);
-      }
-    }
-
-    startSignalR();
-
+    const url = process.env.NEXT_PUBLIC_SIGNALR_URL;
+    if (!url) return;
+    let mounted = true;
+    (async () => {
+      if (mounted) await startConnection();
+    })();
     return () => {
-      if (connection) {
-        connection.stop().catch(() => {});
-        connection = null;
+      mounted = false; /* KHÔNG gọi stopConnection() ở đây */
+    };
+  }, [startConnection]);
+
+  // Register the SendMessage handler; no group join
+  const queryKey = ['bachelorCurrent', hall, session];
+
+  useEffect(() => {
+    if (!connection) return;
+
+    const handler = (message: string) => {
+      const cleaned = message.replace(/^CurrentBachelor\s*/, '').trim();
+      const normalized = cleaned.replace(/\\?"/g, '"').replace(/,? *\}$/, '}');
+
+      try {
+        const parsed = JSON.parse(normalized);
+        const bachelorData: Bachelor = {
+          image: parsed.Image,
+          fullName: parsed.FullName,
+          major: parsed.Major,
+          studentCode: parsed.StudentCode,
+          mail: parsed.Mail,
+          hallName: parsed.HallName,
+          sessionNum: parsed.SessionNum,
+          chair: parsed.Chair ?? null,
+          chairParent: parsed.ChairParent ?? null,
+        };
+
+        if (
+          String(bachelorData.hallName) === String(hall) &&
+          String(bachelorData.sessionNum) === String(session) &&
+          bachelorData.image
+        ) {
+          // 🧠 Cập nhật cache — chỉ re-render nếu khác
+          queryClient.setQueryData(queryKey, (old: any) => {
+            if (JSON.stringify(old) === JSON.stringify(bachelorData))
+              return old;
+            return { bachelor2: bachelorData };
+          });
+        }
+      } catch (e) {
+        console.error('Error parsing SignalR payload', e, { message });
       }
     };
-  }, [hall, session]);
+
+    connection.on('SendMessage', handler);
+    return () => {
+      connection.off('SendMessage', handler);
+    };
+  }, [connection, hall, session, queryClient]);
 
   // ========= UI helpers =========
   const handleDoubleClick = () => {
@@ -213,19 +211,18 @@ export default function LedScreen() {
     setIsFullscreen((v) => !v);
   };
 
-  const hallLabel = useMemo(() => {
-    return (
+  const hallLabel = useMemo(
+    () =>
       hallList.find((i) => i.value.toString() === hall.toString())?.label ||
-      'Chưa chọn'
-    );
-  }, [hallList, hall]);
-
-  const sessionLabel = useMemo(() => {
-    return (
+      'Chưa chọn',
+    [hallList, hall]
+  );
+  const sessionLabel = useMemo(
+    () =>
       sessionList.find((i) => i.value.toString() === session.toString())
-        ?.label || 'Chưa chọn'
-    );
-  }, [sessionList, session]);
+        ?.label || 'Chưa chọn',
+    [sessionList, session]
+  );
 
   // ========= Render =========
   return (
@@ -328,6 +325,11 @@ export default function LedScreen() {
               )}
             </AlertDescription>
           </Alert>
+
+          {/* Optional: hiển thị trạng thái kết nối */}
+          <div className='mt-2 text-xs text-muted-foreground'>
+            SignalR: {connectionState} {isConnected ? '✅' : '⛔'}
+          </div>
         </CardContent>
       </Card>
 
@@ -352,7 +354,6 @@ export default function LedScreen() {
           </Card>
         </div>
       ) : bachelorCurrent?.image ? (
-        // Normal card
         <Card
           className='mt-3 animate-fade-up animate-duration-1000'
           onDoubleClick={handleDoubleClick}
@@ -368,7 +369,6 @@ export default function LedScreen() {
           </CardContent>
         </Card>
       ) : (
-        // Placeholder when no data or still fetching
         <Card className='mt-3'>
           <CardContent className='p-6 text-sm text-muted-foreground'>
             {(!hall || !session) && 'Hãy chọn hall & session để bắt đầu.'}

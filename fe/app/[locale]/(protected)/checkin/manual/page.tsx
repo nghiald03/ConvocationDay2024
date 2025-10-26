@@ -31,7 +31,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { checkinAPI, ledAPI } from '@/config/axios';
+import {
+  checkinAPI,
+  CreateNotificationRequest,
+  ledAPI,
+  notificationAPI,
+} from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
@@ -240,6 +245,43 @@ export default function Page() {
     }
   }, [error]);
 
+  const sendNotifyMutation = useMutation({
+    mutationFn: async (payload: { message: string }) => {
+      const req: CreateNotificationRequest = {
+        title: 'Thông báo hội trường',
+        content: payload.message,
+        // priority: 2 => normal (giữ đồng bộ với mock trang Notify của anh)
+        priority: 2,
+        isAutomatic: false,
+        repeatCount: 1,
+      };
+      return notificationAPI.create(req);
+    },
+    onSuccess: (res) => {
+      toast.success(res?.data?.message ?? 'Đã gửi thông báo!', {
+        duration: 3000,
+        position: 'top-right',
+      });
+    },
+    onError: (err: any) => {
+      toast.error(
+        'Gửi thông báo thất bại: ' +
+          (err?.response?.data?.message ||
+            err?.message ||
+            'Lỗi không xác định'),
+        { duration: 4000, position: 'top-right' }
+      );
+    },
+  });
+
+  const handleSendNotify = (row: any) => {
+    const hallLabel =
+      row.hallName != null && row.hallName !== '' ? row.hallName : 'hội trường';
+    const message = `Xin mời Tân cử nhân ${row.fullName} với mã số sinh viên ${row.studentCode} tới hội trường ${hallLabel} thuộc phiên ${row.sessionNum} để làm thủ tục checkin trước khi cổng checkin đóng lại.`;
+
+    sendNotifyMutation.mutate({ message });
+  };
+
   const columns: ColumnDef<any>[] = useMemo(
     () => [
       { accessorKey: 'id', header: 'ID' },
@@ -281,8 +323,26 @@ export default function Page() {
           );
         },
       },
+      {
+        id: 'notify',
+        header: 'Thông báo',
+        cell: ({ row }) => (
+          <Button
+            size='sm'
+            variant='outline'
+            onClick={() => handleSendNotify(row.original)}
+            disabled={sendNotifyMutation.isPending}
+          >
+            {sendNotifyMutation.isPending ? 'Đang gửi...' : 'Gửi thông báo'}
+          </Button>
+        ),
+      },
     ],
-    [processingIds, updateBachelorMissingSession.isPending]
+    [
+      processingIds,
+      updateBachelorMissingSession.isPending,
+      sendNotifyMutation.isPending,
+    ]
   );
 
   if (isLoading) {
