@@ -311,8 +311,15 @@ export default function NotifyMockPage() {
     }
   };
 
-  // Tự phát message mới (theo id)
+  // Tự phát message mới (theo id) - Disabled for all roles
+  // All notifications will be played via SignalR broadcast
   useEffect(() => {
+    // Disable auto-play from polling - all TTS should come from SignalR broadcast
+    console.log('[DEBUG] Auto-play from polling is disabled - notifications will be broadcasted via SignalR');
+    return;
+
+    // Keep the rest of the code commented in case we need to re-enable it later
+    /*
     if (!items.length || !enabled) return;
 
     const sorted = [...items].sort(
@@ -320,17 +327,17 @@ export default function NotifyMockPage() {
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
     const unplayed = sorted.filter((m) => !playedIdsRef.current.has(m.id));
-    // CHỈ auto-play message MỚI NHẤT chưa được nghe, không phải tất cả
-    // VÀ không auto-play khi user đang manual replay HOẶC đang thực hiện CRUD operations
     if (unplayed.length && !speakingRef.current && !manualReplayActiveRef.current && !operationInProgressRef.current) {
-      const newest = unplayed[unplayed.length - 1]; // Lấy newest thay vì oldest
+      const newest = unplayed[unplayed.length - 1];
       console.log('[DEBUG] Auto-playing newest unplayed message:', newest.id);
       playedIdsRef.current.add(newest.id);
       speakWithRepeat(humanizeMessage(newest), newest.repeatCount || 1);
     }
+    */
   }, [
     items.length, // CHỈ trigger khi số lượng messages thay đổi
     enabled,
+    // userRole, // Removed - not needed since auto-play is disabled
     // Remove manualReplayActive from dependencies to prevent recursive triggering
   ]);
 

@@ -1,15 +1,19 @@
 using FA23_Convocation2023_API.Models;
+using FA23_Convocation2023_API.Hubs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 
 namespace FA23_Convocation2023_API.Services
 {
     public class NotificationService
     {
         private readonly Convo24Context _context;
+        private readonly IHubContext<MessageHub> _hubContext;
 
-        public NotificationService(Convo24Context context)
+        public NotificationService(Convo24Context context, IHubContext<MessageHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
         // Get all notifications with pagination
@@ -55,7 +59,73 @@ namespace FA23_Convocation2023_API.Services
 
             _context.Notifications.Add(notification);
             await _context.SaveChangesAsync();
+
+            // Broadcast new notification to NO group via SignalR
+            await BroadcastNotificationToNoticers(notification, true);
+
             return notification;
+        }
+
+        // Helper method to broadcast notification to NO group
+        private async Task BroadcastNotificationToNoticers(Notification notification, bool isNewNotification = false)
+        {
+            Console.WriteLine($"[SERVICE] Broadcasting notification {notification.NotificationId} to NO group");
+
+            // Get hall and session info if available
+            var hall = notification.HallId.HasValue ? await _context.Halls.FindAsync(notification.HallId.Value) : null;
+            var session = notification.SessionId.HasValue ? await _context.Sessions.FindAsync(notification.SessionId.Value) : null;
+
+            var broadcastData = new
+            {
+                NotificationId = notification.NotificationId,
+                Title = notification.Title,
+                Content = notification.Content,
+                Priority = notification.Priority,
+                PriorityText = GetPriorityText(notification.Priority),
+                RepeatCount = notification.RepeatCount,
+                HallName = hall?.HallName,
+                SessionNumber = session?.Session1,
+                Scope = GetNotificationScope(notification, hall, session),
+                BroadcastAt = DateTime.UtcNow,
+                IsNewNotification = isNewNotification // Flag to indicate if this is a new notification
+            };
+
+            Console.WriteLine($"[SERVICE DEBUG] Broadcasting data: {System.Text.Json.JsonSerializer.Serialize(broadcastData)}");
+            await _hubContext.Clients.Group("NO").SendAsync("ReceiveTTSBroadcast", broadcastData);
+            Console.WriteLine($"[SERVICE] Notification {notification.NotificationId} broadcasted to NO group successfully");
+        }
+
+        // Helper method to get priority text
+        private string GetPriorityText(int priority)
+        {
+            return priority switch
+            {
+                1 => "High",
+                2 => "Medium",
+                3 => "Low",
+                _ => "Normal"
+            };
+        }
+
+        // Helper method to get notification scope
+        private string GetNotificationScope(Notification notification, Hall? hall, Session? session)
+        {
+            if (notification.HallId.HasValue && notification.SessionId.HasValue)
+            {
+                return $"Hội trường {hall?.HallName} - Đợt {session?.Session1}";
+            }
+            else if (notification.HallId.HasValue)
+            {
+                return $"Hội trường {hall?.HallName}";
+            }
+            else if (notification.SessionId.HasValue)
+            {
+                return $"Đợt {session?.Session1}";
+            }
+            else
+            {
+                return "Toàn trường";
+            }
         }
 
         // Update notification

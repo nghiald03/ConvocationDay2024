@@ -16,11 +16,13 @@ namespace FA23_Convocation2023_API.Controllers
     {
         private readonly NotificationService _notificationService;
         private readonly Convo24Context _context;
+        private readonly IHubContext<MessageHub> _hubContext;
 
-        public NotificationController(NotificationService notificationService, Convo24Context context)
+        public NotificationController(NotificationService notificationService, Convo24Context context, IHubContext<MessageHub> hubContext)
         {
             _notificationService = notificationService;
             _context = context;
+            _hubContext = hubContext;
         }
 
         private string GetCurrentUserId()
