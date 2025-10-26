@@ -68,9 +68,19 @@ export const useSignalR = (options: UseSignalROptions) => {
     let entry = registry[hubUrl];
     if (!entry) {
       const builder = new HubConnectionBuilder();
-
+      console.log('[SignalR] Building connection to', hubUrl);
       const urlOpts: any = {
-        accessTokenFactory: () => accessToken || '',
+        // Always read the latest token directly from localStorage at call time.
+        // Fallback to provided accessToken prop if localStorage is unavailable.
+        accessTokenFactory: () => {
+          try {
+            if (typeof window !== 'undefined') {
+              const tk = localStorage.getItem('accessToken');
+              if (tk) return tk;
+            }
+          } catch {}
+          return accessToken || '';
+        },
         withCredentials: false,
       };
       if (forceWebsockets) {
