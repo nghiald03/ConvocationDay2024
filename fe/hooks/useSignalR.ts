@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 // useSignalR.ts
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {
@@ -7,10 +6,6 @@ import {
   HubConnectionState,
   HttpTransportType,
 } from '@microsoft/signalr';
-=======
-import { useEffect, useState, useRef } from 'react';
-import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
->>>>>>> origin/fea/add_notification
 
 interface UseSignalROptions {
   hubUrl: string;
@@ -18,7 +13,6 @@ interface UseSignalROptions {
   autoConnect?: boolean;
   onTTSBroadcast?: (data: any) => void;
   onConnectionStateChange?: (state: string) => void;
-<<<<<<< HEAD
   /** Ép dùng WebSockets + skipNegotiation (server phải bật WS) */
   forceWebsockets?: boolean;
   /** Trì hoãn stop khi refCount=0 để né Strict Mode cleanup (ms). Mặc định 3000. */
@@ -45,10 +39,6 @@ const getRegistry = () => {
   return globalThis.__SR_REG__;
 };
 
-=======
-}
-
->>>>>>> origin/fea/add_notification
 export const useSignalR = (options: UseSignalROptions) => {
   const {
     hubUrl,
@@ -56,7 +46,6 @@ export const useSignalR = (options: UseSignalROptions) => {
     autoConnect = true,
     onTTSBroadcast,
     onConnectionStateChange,
-<<<<<<< HEAD
     forceWebsockets = false,
     stopDelayMs = 3000,
   } = options;
@@ -129,55 +118,10 @@ export const useSignalR = (options: UseSignalROptions) => {
       if (onTTSBroadcast) {
         conn.on('ReceiveTTSBroadcast', (data) => {
           console.log('[SignalR] ReceiveTTSBroadcast:', data);
-=======
-  } = options;
-
-  const [connection, setConnection] = useState<HubConnection | null>(null);
-  const [connectionState, setConnectionState] = useState<string>('Disconnected');
-  const [isConnected, setIsConnected] = useState(false);
-  const connectionRef = useRef<HubConnection | null>(null);
-
-  useEffect(() => {
-    const createConnection = () => {
-      const newConnection = new HubConnectionBuilder()
-        .withUrl(hubUrl, {
-          accessTokenFactory: () => accessToken || '',
-        })
-        .withAutomaticReconnect()
-        .build();
-
-      // Connection state change handler
-      newConnection.onreconnecting(() => {
-        console.log('[SignalR] Reconnecting...');
-        setConnectionState('Reconnecting');
-        setIsConnected(false);
-        onConnectionStateChange?.('Reconnecting');
-      });
-
-      newConnection.onreconnected(() => {
-        console.log('[SignalR] Reconnected successfully');
-        setConnectionState('Connected');
-        setIsConnected(true);
-        onConnectionStateChange?.('Connected');
-      });
-
-      newConnection.onclose(() => {
-        console.log('[SignalR] Connection closed');
-        setConnectionState('Disconnected');
-        setIsConnected(false);
-        onConnectionStateChange?.('Disconnected');
-      });
-
-      // Register event handlers
-      if (onTTSBroadcast) {
-        newConnection.on('ReceiveTTSBroadcast', (data) => {
-          console.log('[SignalR] Received TTS broadcast:', data);
->>>>>>> origin/fea/add_notification
           onTTSBroadcast(data);
         });
       }
 
-<<<<<<< HEAD
       // NOTE: Page/screen tự đăng ký ReceiveNotify riêng để quản lý lifecycle handler theo UI.
     }
     return entry;
@@ -374,112 +318,11 @@ export const useSignalR = (options: UseSignalROptions) => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hubUrl, accessToken, autoConnect, forceWebsockets, stopDelayMs]);
-=======
-      newConnection.on('ReceiveMessage', (message) => {
-        console.log('[SignalR] Received message:', message);
-      });
-
-      setConnection(newConnection);
-      connectionRef.current = newConnection;
-
-      if (autoConnect) {
-        startConnection(newConnection);
-      }
-    };
-
-    if (!connection) {
-      createConnection();
-    }
-
-    return () => {
-      if (connectionRef.current) {
-        connectionRef.current.stop().catch(console.error);
-      }
-    };
-  }, [hubUrl, accessToken, autoConnect]);
-
-  const startConnection = async (conn?: HubConnection) => {
-    const targetConnection = conn || connection;
-    if (!targetConnection) {
-      console.log('[SignalR DEBUG] No connection available to start');
-      return;
-    }
-
-    // Check if already connecting or connected
-    if (targetConnection.state !== 'Disconnected') {
-      console.log('[SignalR DEBUG] Connection already in progress or connected, state:', targetConnection.state);
-      return;
-    }
-
-    try {
-      console.log('[SignalR DEBUG] Starting connection to:', hubUrl);
-      console.log('[SignalR DEBUG] Using access token:', accessToken ? `${accessToken.substring(0, 10)}...` : 'none');
-      setConnectionState('Connecting');
-      await targetConnection.start();
-      console.log('[SignalR SUCCESS] Connected successfully to SignalR hub');
-      setConnectionState('Connected');
-      setIsConnected(true);
-      onConnectionStateChange?.('Connected');
-    } catch (error: any) {
-      console.error('[SignalR ERROR] Connection failed:', error);
-      console.error('[SignalR ERROR] Error details:', error?.message || error);
-      setConnectionState('Disconnected');
-      setIsConnected(false);
-      onConnectionStateChange?.('Disconnected');
-    }
-  };
-
-  const stopConnection = async () => {
-    if (connection) {
-      try {
-        console.log('[SignalR] Stopping connection...');
-        await connection.stop();
-        console.log('[SignalR] Connection stopped');
-      } catch (error) {
-        console.error('[SignalR] Error stopping connection:', error);
-      }
-    }
-  };
-
-  const joinNoticerGroup = async () => {
-    if (connection && isConnected) {
-      try {
-        await connection.invoke('JoinNoticerGroup');
-        console.log('[SignalR] Joined Noticer group');
-      } catch (error) {
-        console.error('[SignalR] Error joining Noticer group:', error);
-      }
-    }
-  };
-
-  const leaveNoticerGroup = async () => {
-    if (connection && isConnected) {
-      try {
-        await connection.invoke('LeaveNoticerGroup');
-        console.log('[SignalR] Left Noticer group');
-      } catch (error) {
-        console.error('[SignalR] Error leaving Noticer group:', error);
-      }
-    }
-  };
-
-  const sendMessage = async (methodName: string, data: any) => {
-    if (connection && isConnected) {
-      try {
-        await connection.invoke('SendMessage', methodName, data);
-        console.log('[SignalR] Message sent:', { methodName, data });
-      } catch (error) {
-        console.error('[SignalR] Error sending message:', error);
-      }
-    }
-  };
->>>>>>> origin/fea/add_notification
 
   return {
     connection,
     connectionState,
     isConnected,
-<<<<<<< HEAD
     startConnection,
     stopConnection: async () => {
       const entry = entryRef.current;
@@ -490,16 +333,8 @@ export const useSignalR = (options: UseSignalROptions) => {
       }
       await immediateStop(entry);
     },
-=======
-    startConnection: () => startConnection(),
-    stopConnection,
->>>>>>> origin/fea/add_notification
     joinNoticerGroup,
     leaveNoticerGroup,
     sendMessage,
   };
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> origin/fea/add_notification
