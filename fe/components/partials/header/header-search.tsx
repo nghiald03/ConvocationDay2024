@@ -20,13 +20,12 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Button } from '@/components/ui/button';
-import { Link } from '@/i18n/routing';
+import Link from "next/link";
 import { Icon } from '@/components/ui/icon';
 import { useConfig } from '@/hooks/use-config';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useMutation } from '@tanstack/react-query';
-import test from 'node:test';
 import { testing } from '@/config/axios';
 import toast from 'react-hot-toast';
 

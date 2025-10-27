@@ -11,7 +11,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 
-import TablePagination from '@/app/[locale]/(protected)/table/react-table/example2/table-pagination';
+import TablePagination from '@/app/(protected)/table/react-table/example2/table-pagination';
 import {
   Table,
   TableBody,

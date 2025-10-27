@@ -1,9 +1,7 @@
-import createNextIntlPlugin from 'next-intl/plugin';
 import nextra from 'nextra';
+import { hostname } from 'os';
 
 /** @type {import('next').NextConfig} */
-
-const withNextIntl = createNextIntlPlugin();
 
 const withNextra = nextra({
   theme: 'nextra-theme-docs',
@@ -61,4 +59,4 @@ const nextConfig = {
   output: 'standalone',
 };
 
-export default withNextIntl(withNextra(nextConfig));
+export default withNextra(nextConfig);

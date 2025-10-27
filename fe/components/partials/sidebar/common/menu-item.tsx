@@ -3,7 +3,7 @@ import React, { CSSProperties } from 'react';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { type Menu } from '@/lib/menus';
-import { Link } from '@/i18n/routing';
+
 import { cn } from '@/lib/utils';
 import { GripVertical } from 'lucide-react';
 
@@ -29,6 +29,7 @@ import { useConfig } from '@/hooks/use-config';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useMobileMenuConfig } from '@/hooks/use-mobile-menu';
 import { useMenuHoverConfig } from '@/hooks/use-menu-hover';
+import Link from 'next/link';
 const MenuItem = ({
   href,
   label,
@@ -66,7 +67,7 @@ const MenuItem = ({
         ref={setNodeRef}
         style={style}
         variant={active ? 'default' : 'ghost'}
-        color={active ? 'primary' : 'secondary'}
+        color={active ? 'default' : 'secondary'}
         fullWidth
         className={cn('', {
           'justify-start text-sm font-medium capitalize group hover:md:px-8 h-auto py-3 md:px-3 px-3':
@@ -111,7 +112,7 @@ const MenuItem = ({
       <Button
         variant={active ? 'default' : 'ghost'}
         fullWidth
-        color={active ? 'primary' : 'secondary'}
+        color={active ? 'default' : 'secondary'}
         className='flex-col h-auto py-1.5 px-3.5 capitalize font-semibold'
         asChild
       >
@@ -130,7 +131,7 @@ const MenuItem = ({
       }
       variant={active ? 'default' : 'ghost'}
       fullWidth
-      color={active ? 'primary' : 'secondary'}
+      color={active ? 'default' : 'secondary'}
       className={cn('', {
         'justify-start text-sm font-medium capitalize h-auto py-3 md:px-3 px-3':
           !collapsed || hovered,

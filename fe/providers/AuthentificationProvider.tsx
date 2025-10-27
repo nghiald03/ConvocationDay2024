@@ -4,10 +4,10 @@ import { User } from '@/dtos/userDTO';
 import { getMenuList } from '@/lib/menus';
 import { isAccessTokenValid } from '@/utils/isLogin';
 import { jwtDecode } from 'jwt-decode';
-import { useTranslations } from 'next-intl';
-import { redirect } from 'next/navigation';
+
+import { redirect, usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import { usePathname } from '@/components/navigation';
+
 import toast from 'react-hot-toast';
 export default function AuthentificationProvider({
   children,
@@ -15,9 +15,9 @@ export default function AuthentificationProvider({
   children: React.ReactNode;
 }) {
   const [user, setUser] = useState<User>();
-  const t = useTranslations('Menu');
-  const pathname = usePathname();
-  const menuList = getMenuList(pathname, t);
+
+  const pathname = usePathname() ?? '/';
+  const menuList = getMenuList(pathname);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const accessToken = localStorage.getItem('accessToken');
@@ -51,7 +51,7 @@ export default function AuthentificationProvider({
           position: 'top-right',
           duration: 5000,
         });
-        redirect('/en/tutorial');
+        redirect('/tutorial');
       }
     }
   }, [pathname, user]);

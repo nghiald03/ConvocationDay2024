@@ -1,5 +1,5 @@
 'use client';
-import { Link } from '@/i18n/routing';
+
 import { MenuIcon, PanelsTopLeft } from 'lucide-react';
 import { Icon } from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import DashCodeLogo from '@/components/dascode-logo';
 import { useMobileMenuConfig } from '@/hooks/use-mobile-menu';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useConfig } from '@/hooks/use-config';
+import Link from 'next/link';
 
 export function SheetMenu() {
   const [mobileMenuConfig, setMobileMenuConfig] = useMobileMenuConfig();

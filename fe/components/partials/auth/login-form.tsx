@@ -10,10 +10,11 @@ import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRouter } from '@/components/navigation';
+
 import { useMutation } from '@tanstack/react-query';
 import { loginAPI } from '@/config/axios';
 import { jwtDecode } from 'jwt-decode';
+import { useRouter } from 'next/navigation';
 
 const schema = z.object({
   email: z.string().email({ message: 'Email bạn nhập không hợp lệ' }),
@@ -166,7 +167,11 @@ const LoginForm = () => {
       try {
         const decodedToken = jwtDecode(res.data.accessToken) as any;
         // Check both old format ('role') and new format (ClaimTypes.Role)
-        const userRole = decodedToken?.role || decodedToken?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+        const userRole =
+          decodedToken?.role ||
+          decodedToken?.[
+            'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+          ];
 
         // Redirect Noticer users to notification page, others to tutorial
         if (userRole === 'NO') {

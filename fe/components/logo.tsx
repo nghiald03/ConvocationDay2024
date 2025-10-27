@@ -1,10 +1,11 @@
 'use client';
 import React from 'react';
 import DashCodeLogo from './dascode-logo';
-import { Link } from '@/i18n/routing';
+
 import { useConfig } from '@/hooks/use-config';
 import { useMenuHoverConfig } from '@/hooks/use-menu-hover';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import Link from 'next/link';
 
 const Logo = () => {
   const [config] = useConfig();
@@ -29,7 +30,7 @@ const Logo = () => {
       <DashCodeLogo className='  text-default-900 h-8 w-8 [&>path:nth-child(3)]:text-background [&>path:nth-child(2)]:text-background' />
       {(!config?.collapsed || hovered) && (
         <h1 className='text-xl font-semibold text-default-900 '>
-          COVOCATION DAY
+          CONVOCATION DAY
         </h1>
       )}
     </Link>

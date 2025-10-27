@@ -16,7 +16,7 @@ import {
 import { Icon } from '@/components/ui/icon';
 import { User } from '@/dtos/userDTO';
 
-import { Link } from '@/i18n/routing';
+import Link from "next/link";
 import { jwtDecode } from 'jwt-decode';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
