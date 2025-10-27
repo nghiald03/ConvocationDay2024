@@ -90,6 +90,12 @@ export const checkinAPI = {
 
     return await axiosInstance.get('/Bachelor/GetAll?' + params.toString());
   },
+  // Get bachelors by hall and session
+  getByHallSession: async (hallId: number, sessionId: number) => {
+    return await axiosInstance.get(
+      `/Bachelor/GetByHallSession/${hallId}/${sessionId}`
+    );
+  },
   checkin: async (data: any) => {
     return await axiosInstance.put('/Checkin/UpdateCheckin', data);
   },
@@ -163,6 +169,24 @@ export const statisticsAPI = {
       data: HallOverview[];
     }>('/Statistics/hall-overview');
   },
+  // New endpoint for active halls summary (flat list by session)
+  getActiveHallsSummary: async () => {
+    return await axiosInstance.get<{
+      status: number;
+      message: string;
+      data: ActiveHallSummary[];
+    }>('/Statistics/active-halls-summary');
+  },
+};
+
+// Type matches /Statistics/active-halls-summary response
+export type ActiveHallSummary = {
+  sessionId: number;
+  sessionNumber: number;
+  hallId: number;
+  hallName: string;
+  totalStudents: number;
+  checkedInCount: number;
 };
 
 // Notification API types (matching backend DTOs)
