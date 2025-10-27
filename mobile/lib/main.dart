@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/app.dart';
-import 'package:mobile/config/dio_client.dart';
+import 'package:mobile/src/auth/viewmodels/auth_viewmodel.dart';
+import 'package:provider/provider.dart';
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  DioClient.init();
-  runApp(const MyApp());
+  final authVM = AuthViewModel();
+  await authVM.loadToken();
+
+  runApp(ChangeNotifierProvider(create: (_) => authVM, child: MyApp()));
 }
