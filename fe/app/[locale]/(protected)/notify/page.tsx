@@ -31,6 +31,7 @@ import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { useSignalR } from '@/hooks/useSignalR';
 import { CreateNotificationRequest, notificationAPI } from '@/config/axios';
 import toast from 'react-hot-toast';
+import { InputNumber } from '@/components/ui/input-number';
 
 // ===== Types =====
 // ===== Types =====
@@ -509,13 +510,13 @@ export default function NotifyMockPage() {
               >
                 Đọc lại số
               </Button>
-              <Button
+              {/* <Button
                 variant={'default'}
                 color='destructive'
                 onClick={resetCurrent}
               >
                 Reset
-              </Button>
+              </Button> */}
             </div>
           </div>
 
@@ -525,19 +526,22 @@ export default function NotifyMockPage() {
                 Cập nhật “số đang gọi”
               </label>
               <div className='flex gap-2 mt-1'>
-                <Input
-                  type='number'
-                  inputMode='numeric'
-                  placeholder='Nhập số (vd: 11)'
-                  value={editCurrent}
-                  onChange={(e) => setEditCurrent(e.target.value)}
+                <InputNumber
+                  min={0}
+                  step={1}
+                  defaultValue={currentNumber ?? 0}
+                  onChange={(v) => setEditCurrent(String(v))} // giữ logic tạm vào editCurrent
+                  className='flex-1 h-full'
                 />
-                <Button onClick={applyEditCurrent}>Cập nhật</Button>
+                <Button onClick={applyEditCurrent} size='md'>
+                  Cập nhật
+                </Button>
               </div>
             </div>
             <div className='flex items-end'>
               <Button
                 className='w-full'
+                size='md'
                 variant='outline'
                 onClick={handleQueueNotice}
               >

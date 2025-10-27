@@ -1,73 +1,96 @@
-import * as React from "react";
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "@/lib/utils";
-import { InputColor } from "@/lib/type";
+import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
+import { InputColor } from '@/lib/type';
 
 export const inputVariants = cva(
-  " w-full  bg-background  rounded py-2 px-3 h-9 border text-sm font-normal border border-solid border-default-200 outline-none focus:outline-none  file:border-0 file:bg-transparent file:text-sm file:font-medium read-only:bg-default-200 disabled:cursor-not-allowed disabled:opacity-50  transition-all duration-300 ",
+  ' w-full  bg-background  rounded py-2 px-3 h-9 border text-sm font-normal border border-solid border-default-200 outline-none focus:outline-none  file:border-0 file:bg-transparent file:text-sm file:font-medium read-only:bg-default-200 disabled:cursor-not-allowed disabled:opacity-50  transition-all duration-300 ',
   {
     variants: {
       color: {
         default:
-          "border-default-200 text-default-500 focus:outline-none focus:border-default dark:focus:border-default-500 disabled:bg-default-200  dark:disabled:bg-default-500  placeholder:text-accent-foreground/50",
+          'border-default-200 text-default-500 focus:outline-none focus:border-default dark:focus:border-default-500 disabled:bg-default-200  dark:disabled:bg-default-500  placeholder:text-accent-foreground/50',
         primary:
-          "border-primary/50 text-primary focus:border-primary disabled:bg-primary/30 disabled:placeholder:text-primary  placeholder:text-primary/70",
+          'border-primary/50 text-primary focus:border-primary disabled:bg-primary/30 disabled:placeholder:text-primary  placeholder:text-primary/70',
         secondary:
-          "border-default-300 text-default-700  focus:border-secondary  disabled:bg-secondary/30 disabled:placeholder:text-secondary  placeholder:text-default-600",
-        info: "border-info/50 text-info focus:border-info  disabled:bg-info/30 disabled:placeholder:text-info  placeholder:text-info/70",
+          'border-default-300 text-default-700  focus:border-secondary  disabled:bg-secondary/30 disabled:placeholder:text-secondary  placeholder:text-default-600',
+        info: 'border-info/50 text-info focus:border-info  disabled:bg-info/30 disabled:placeholder:text-info  placeholder:text-info/70',
         warning:
-          "border-warning/50 text-warning  focus:border-warning disabled:bg-warning/30 disabled:placeholder:text-info  placeholder:text-warning/70",
+          'border-warning/50 text-warning  focus:border-warning disabled:bg-warning/30 disabled:placeholder:text-info  placeholder:text-warning/70',
         success:
-          "border-success/50 text-success focus:border-success   disabled:bg-success/30 disabled:placeholder:text-info  placeholder:text-success/70",
+          'border-success/50 text-success focus:border-success   disabled:bg-success/30 disabled:placeholder:text-info  placeholder:text-success/70',
         destructive:
-          "border-destructive/50 text-destructive focus:border-destructive  disabled:bg-destructive/30 disabled:placeholder:text-destructive  placeholder:text-destructive/70",
+          'border-destructive/50 text-destructive focus:border-destructive  disabled:bg-destructive/30 disabled:placeholder:text-destructive  placeholder:text-destructive/70',
       },
 
       size: {
-        sm: "h-8 text-xs read-only:leading-8",
-        default: "h-9 text-xs read-only:leading-none",
-        md: "h-10 text-sm read-only:leading-10",
-        lg: "h-12  text-sm read-only:leading-[48px]",
+        sm: 'h-8 text-xs read-only:leading-8',
+        default: 'h-9 text-xs read-only:leading-none',
+        md: 'h-10 text-sm read-only:leading-10',
+        lg: 'h-12  text-sm read-only:leading-[48px]',
       },
     },
 
     defaultVariants: {
-      color: "default",
-      size: "default",
+      color: 'default',
+      size: 'default',
     },
   }
 );
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement>,
-  VariantProps<typeof inputVariants> {
-  color?: InputColor
-  size?: any
+    VariantProps<typeof inputVariants> {
+  color?: InputColor;
+  size?: any;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  (
-    {
-      className,
-      type,
-      size,
-      color,
-      ...props
-    },
-    ref
-  ) =>
-    <div className="flex-1 w-full">
+  ({ className, type, size, color, onChange, ...props }, ref) => {
+    // Handle number input to remove leading zeros
+    const handleNumberInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (type === 'number') {
+        // Get the current value
+        const value = e.target.value;
+
+        // Remove leading zeros but preserve single zero and decimals
+        if (
+          value.length > 1 &&
+          value.startsWith('0') &&
+          !value.startsWith('0.')
+        ) {
+          // Remove leading zeros (but keep decimal part if present)
+          const parts = value.split('.');
+          const integerPart = parts[0].replace(/^0+/, '') || '0';
+
+          // Set the new value (with or without decimal part)
+          e.target.value =
+            parts.length > 1 ? `${integerPart}.${parts[1]}` : integerPart;
+        }
+      }
+
+      // Call the original onChange handler if provided
+      if (onChange) {
+        onChange(e);
+      }
+    };
+
+    return (
       <input
         type={type}
         className={cn(
           inputVariants({ color, size }),
-          className
+          className,
+          'flex  w-full rounded-md border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
         )}
         ref={ref}
+        onChange={handleNumberInput}
         {...props}
       />
-    </div>
+    );
+  }
 );
-Input.displayName = "Input";
+
+Input.displayName = 'Input';
 
 export { Input };

@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
 
     const VOICE_ID =
       voiceId || process.env.ELEVENLABS_VOICE_ID || 'A5w1fw5x0uXded1LDvZp';
-    const MODEL_ID = modelId || 'eleven_v3';
+    // const MODEL_ID = modelId || 'eleven_v3';
+    const MODEL_ID = modelId || 'eleven_flash_v2_5';
     const FORMAT = outputFormat || 'mp3_44100_128';
 
     // Helper utils for caching and mime detection
