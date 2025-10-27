@@ -39,8 +39,8 @@ namespace FA23_Convocation2023_API.Services
                 var totalStudents = await _context.Bachelors.CountAsync(b =>
                     b.SessionId == pair.SessionId && b.HallId == pair.HallId);
 
-                var checkedInCount = activeCheckIns.Count(c =>
-                    c.SessionId == pair.SessionId && c.HallId == pair.HallId && c.Status == true);
+                var checkedInCount = await _context.Bachelors.CountAsync(b =>
+                    b.SessionId == pair.SessionId && b.HallId == pair.HallId && b.CheckIn == true);
 
                 result.Add(new SessionHallSummaryDto
                 {
