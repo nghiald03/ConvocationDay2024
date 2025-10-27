@@ -149,6 +149,14 @@ export function getMenuList(pathname: string, t: any): Group[] {
           submenus: [],
         },
         {
+          id: 'stastistics',
+          href: '/statistics/hall-overview',
+          label: 'Thống kê',
+          active: pathname.includes('/statistics/hall-overview'),
+          icon: 'mdi:chart-bar',
+          submenus: [],
+        },
+        {
           id: 'hall',
           href: '/manage/hall',
           label: 'Quản lí DS Hội trường',
