@@ -13,6 +13,7 @@ const DashCodeFooter = async () => {
         <div className='text-center ltr:md:text-start rtl:md:text-right text-sm'>
           COPYRIGHT &copy; {new Date().getFullYear()} ConvocationDay, All rights
           Reserved | Powered by Chals HauNguyenDev BaoThien ThinhNguyen
+          MaiNhanKiet
         </div>
       </div>
     </FooterContent>
