@@ -59,6 +59,14 @@ export function getMenuList(pathname: string): Group[] {
           icon: 'heroicons-outline:bell',
           submenus: [],
         },
+        {
+          id: 'notification-display',
+          href: '/notification-display',
+          label: 'Hiển thị thông báo',
+          active: pathname.includes('/notification-display'),
+          icon: 'heroicons-outline:speaker-wave',
+          submenus: [],
+        },
       ],
     },
 

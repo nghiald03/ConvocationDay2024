@@ -65,6 +65,11 @@ export const useSignalR = (options: UseSignalROptions) => {
 
   // Tạo (hoặc lấy) 1 connection duy nhất theo hubUrl
   const ensureEntry = useCallback(() => {
+    if (!hubUrl || hubUrl.trim() === '') {
+      console.warn('[SignalR] No hubUrl provided or empty, skipping connection');
+      return null;
+    }
+
     let entry = registry[hubUrl];
     if (!entry) {
       const builder = new HubConnectionBuilder();
@@ -78,7 +83,7 @@ export const useSignalR = (options: UseSignalROptions) => {
               const tk = localStorage.getItem('accessToken');
               if (tk) return tk;
             }
-          } catch {}
+          } catch { }
           return accessToken || '';
         },
         withCredentials: false,
@@ -153,6 +158,10 @@ export const useSignalR = (options: UseSignalROptions) => {
 
   const startConnection = useCallback(async (): Promise<boolean> => {
     const entry = entryRef.current || ensureEntry();
+    if (!entry) {
+      console.warn('[SignalR] Cannot start connection: no valid entry');
+      return false;
+    }
     entryRef.current = entry;
     setConnection(entry.conn);
 
@@ -254,12 +263,20 @@ export const useSignalR = (options: UseSignalROptions) => {
 
   const joinNoticerGroup = useCallback(async () => {
     const entry = entryRef.current || ensureEntry();
+    if (!entry) {
+      console.warn('[SignalR] Cannot join noticer group: no valid entry');
+      return false;
+    }
     entryRef.current = entry;
     return joinNoticerGroupInternal(entry);
   }, [ensureEntry, joinNoticerGroupInternal]);
 
   const leaveNoticerGroup = useCallback(async () => {
     const entry = entryRef.current || ensureEntry();
+    if (!entry) {
+      console.warn('[SignalR] Cannot leave noticer group: no valid entry');
+      return;
+    }
     entryRef.current = entry;
     const ok = await waitForConnected(entry);
     if (!ok) return;
@@ -277,6 +294,9 @@ export const useSignalR = (options: UseSignalROptions) => {
   const sendMessage = useCallback(
     async (methodName: string, data: any) => {
       const entry = entryRef.current || ensureEntry();
+      if (!entry) {
+        throw new Error('SignalR: no valid entry');
+      }
       entryRef.current = entry;
       const ok = await waitForConnected(entry);
       if (!ok) throw new Error('SignalR: not connected');
@@ -290,6 +310,10 @@ export const useSignalR = (options: UseSignalROptions) => {
 
   useEffect(() => {
     const entry = ensureEntry();
+    if (!entry) {
+      console.warn('[SignalR] Cannot initialize: no valid entry');
+      return;
+    }
     entryRef.current = entry;
     entry.refCount += 1;
     setConnection(entry.conn);

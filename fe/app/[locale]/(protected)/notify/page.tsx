@@ -218,7 +218,7 @@ export default function NotifyMockPage() {
     forceWebsockets: true, // BE đã hỗ trợ WS → tránh negotiate
     stopDelayMs: 3000,
     accessToken, // <-- QUAN TRỌNG: truyền token thô (KHÔNG kèm "Bearer ")
-    onTTSBroadcast: (data: any) => {
+    onTTSBroadcast: (data) => {
       const msg = transformBackendNotification(data);
       console.log('[SignalR] Transformed TTS message', msg);
       // eslint-disable-next-line no-console
@@ -228,7 +228,7 @@ export default function NotifyMockPage() {
         return { data: { data: [...current, msg] } };
       });
     },
-    onConnectionStateChange: (s: any) => {
+    onConnectionStateChange: (s) => {
       // eslint-disable-next-line no-console
       console.log('[SignalR] state:', s);
     },
