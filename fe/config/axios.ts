@@ -141,18 +141,13 @@ export const manageAPI = {
 };
 
 // Statistics APIs
-export type HallOverview = {
+export type ActiveHallSummary = {
+  sessionId: number;
+  sessionNumber: number;
   hallId: number;
   hallName: string;
-  totalSessions: number;
-  sessions: Array<{
-    sessionId: number;
-    sessionNumber: number;
-    totalStudents: number;
-    checkedInCount: number;
-  }>;
-  currentSessionId: number | null;
-  currentSessionNumber: number | null;
+  totalStudents: number;
+  checkedInCount: number;
 };
 
 export const statisticsAPI = {
@@ -160,8 +155,8 @@ export const statisticsAPI = {
     return await axiosInstance.get<{
       status: number;
       message: string;
-      data: HallOverview[];
-    }>('/Statistics/hall-overview');
+      data: ActiveHallSummary[];
+    }>('/Statistics/active-halls-summary');
   },
 };
 

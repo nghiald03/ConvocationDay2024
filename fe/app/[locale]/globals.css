@@ -158,15 +158,19 @@
 .dashcode-app-codeVmapInfo path .svg-map__location[aria-checked='true'] {
   @apply fill-info;
 }
+
 .dashcode-app-codeVmapWarning path {
   @apply fill-warning;
 }
+
 .dashcode-app-codeVmapWarning path .svg-map__location[aria-checked='true'] {
   @apply fill-warning;
 }
+
 .dashcode-app-codeVmapSuccess path {
   @apply fill-success;
 }
+
 .dashcode-app-codeVmapSuccess path .svg-map__location[aria-checked='true'] {
   @apply fill-success;
 }
@@ -221,19 +225,13 @@
   position: absolute;
   z-index: -10;
   --tw-backdrop-blur: blur(12px);
-  backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness)
-    var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale)
-    var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert)
-    var(--tw-backdrop-opacity) var(--tw-backdrop-saturate)
-    var(--tw-backdrop-sepia);
+  backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
   --tw-content: '';
   content: var(--tw-content);
-  background: linear-gradient(
-    180deg,
-    rgba(var(--v-theme-background)) 44%,
-    rgba(var(--v-theme-background)) 73%,
-    rgba(var(--v-theme-background))
-  );
+  background: linear-gradient(180deg,
+      rgba(var(--v-theme-background)) 44%,
+      rgba(var(--v-theme-background)) 73%,
+      rgba(var(--v-theme-background)));
   background-repeat: repeat;
   block-size: 5.5rem;
   inset-block-start: -2.5rem;
@@ -242,23 +240,18 @@
   -webkit-mask: linear-gradient(black, black 18%, transparent 100%);
   mask: linear-gradient(black, black 18%, transparent 100%);
 }
+
 .has-sticky-footer::after {
   position: absolute;
   z-index: -10;
   --tw-backdrop-blur: blur(12px);
-  backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness)
-    var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale)
-    var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert)
-    var(--tw-backdrop-opacity) var(--tw-backdrop-saturate)
-    var(--tw-backdrop-sepia);
+  backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
   --tw-content: '';
   content: var(--tw-content);
-  background: linear-gradient(
-    180deg,
-    rgba(var(--v-theme-background)) 44%,
-    rgba(var(--v-theme-background)) 73%,
-    rgba(var(--v-theme-background))
-  );
+  background: linear-gradient(180deg,
+      rgba(var(--v-theme-background)) 44%,
+      rgba(var(--v-theme-background)) 73%,
+      rgba(var(--v-theme-background)));
   background-repeat: repeat;
   block-size: 5.5rem;
   inset-block-start: 1.5rem;
@@ -372,7 +365,7 @@
   @apply hidden;
 }
 
-.dashcode-app-calendar .fc .fc-list-sticky .fc-list-day > * {
+.dashcode-app-calendar .fc .fc-list-sticky .fc-list-day>* {
   @apply bg-default-50;
 }
 
@@ -380,11 +373,12 @@
   @apply pt-0;
 }
 
-.dashcode-app-calendar .fc-timegrid-event-harness > .fc-timegrid-event {
+.dashcode-app-calendar .fc-timegrid-event-harness>.fc-timegrid-event {
   @apply static;
 }
 
 @media (max-width: 981px) {
+
   .dashcode-app-calendar .fc-button-group,
   .dashcode-app-calendar .fc .fc-toolbar {
     display: block !important;
@@ -481,10 +475,7 @@
   @apply hover:bg-default/10;
 }
 
-.dashcode-app
-  .react-select
-  .select__menu
-  .select__option.select__option--is-selected {
+.dashcode-app .react-select .select__menu .select__option.select__option--is-selected {
   @apply bg-default dark:bg-default-200;
 }
 
@@ -500,16 +491,11 @@
   @apply text-default-500;
 }
 
-.dashcode-app
-  .react-select
-  .react-select__control.select__control--is-disabled {
+.dashcode-app .react-select .react-select__control.select__control--is-disabled {
   @apply cursor-not-allowed;
 }
 
-.dashcode-app
-  .react-select
-  .react-select__control
-  .select__indicator-separator {
+.dashcode-app .react-select .react-select__control .select__indicator-separator {
   @apply bg-default-50 text-default-800 placeholder:text-opacity-60;
 }
 
@@ -517,17 +503,12 @@
   @apply cursor-pointer text-default-600;
 }
 
-.dashcode-app
-  .react-select
-  .has-error
-  .react-select__control
-  .select__indicator
-  svg {
+.dashcode-app .react-select .has-error .react-select__control .select__indicator svg {
   @apply text-destructive;
 }
 
 .dashcode-app .react-select .select__multi-value__label {
-  @apply text-xs bg-default  text-default-foreground rounded-none ltr:rounded-l rtl:rounded-r;
+  @apply text-xs bg-default text-default-foreground rounded-none ltr:rounded-l rtl:rounded-r;
 }
 
 .dashcode-app .react-select .select__multi-value__remove {
@@ -556,4 +537,386 @@ html[dir='rtl'] .react-select .select__loading-indicator {
   flex: 1;
   overflow-y: auto;
   width: 100%;
+}
+
+/* Custom animations for notification display */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes gradient {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(147, 51, 234, 0.6), 0 0 60px rgba(59, 130, 246, 0.3);
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-left {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  70% {
+    transform: scale(0.9);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@keyframes typing {
+  from {
+    width: 0;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes blink-caret {
+
+  from,
+  to {
+    border-color: transparent;
+  }
+
+  50% {
+    border-color: currentColor;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.6s ease-out;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.5s ease-out;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.8s ease-out;
+}
+
+.animate-ripple {
+  animation: ripple 0.6s linear;
+}
+
+.animate-typing {
+  overflow: hidden;
+  border-right: 2px solid;
+  white-space: nowrap;
+  animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+}
+
+/* Custom scrollbar for notification queue */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, rgba(147, 51, 234, 0.8), rgba(59, 130, 246, 0.8));
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, rgba(147, 51, 234, 1), rgba(59, 130, 246, 1));
+}
+
+/* Slow spin animation for reconnect button */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 2s linear infinite;
+}
+
+/* Professional notification display styles */
+.notification-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(147, 51, 234, 0.2);
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(147, 51, 234, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.notification-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 35px 60px -12px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(147, 51, 234, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.queue-item {
+  background: linear-gradient(135deg, rgba(51, 65, 85, 0.8) 0%, rgba(30, 41, 59, 0.9) 100%);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(147, 51, 234, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.queue-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.queue-item:hover::before {
+  left: 100%;
+}
+
+.queue-item:hover {
+  transform: translateX(4px) scale(1.02);
+  border-color: rgba(147, 51, 234, 0.4);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(147, 51, 234, 0.2);
+}
+
+.priority-badge {
+  position: relative;
+  overflow: hidden;
+}
+
+.priority-badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px 0 rgba(31, 38, 135, 0.37),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.text-glow {
+  text-shadow:
+    0 0 10px rgba(147, 51, 234, 0.5),
+    0 0 20px rgba(147, 51, 234, 0.3),
+    0 0 30px rgba(147, 51, 234, 0.1);
+}
+
+.button-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.button-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.button-glow:hover::before {
+  left: 100%;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+  .notification-card {
+    margin: 0.5rem;
+    border-radius: 1rem;
+  }
+
+  .queue-item {
+    margin-bottom: 0.75rem;
+  }
+
+  .text-glow {
+    text-shadow:
+      0 0 5px rgba(147, 51, 234, 0.3),
+      0 0 10px rgba(147, 51, 234, 0.2);
+  }
+}
+
+/* Dark theme enhancements */
+.dark .notification-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(2, 6, 23, 0.98) 100%);
+  border-color: rgba(147, 51, 234, 0.3);
+}
+
+.dark .queue-item {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border-color: rgba(147, 51, 234, 0.2);
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.1) 25%,
+      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0.1) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Focus states for accessibility */
+.notification-card:focus-visible,
+.queue-item:focus-visible,
+.button-glow:focus-visible {
+  outline: 2px solid rgba(147, 51, 234, 0.6);
+  outline-offset: 2px;
 }
