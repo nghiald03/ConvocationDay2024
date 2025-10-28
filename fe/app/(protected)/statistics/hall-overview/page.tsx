@@ -18,7 +18,6 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   statisticsAPI,
   type ActiveHallSummary,
-  type HallOverview,
   notificationAPI,
   type CreateNotificationRequest,
   checkinAPI,
@@ -55,7 +54,7 @@ export default function HallOverviewPage() {
     refetchInterval: 10000,
     refetchIntervalInBackground: true,
   });
-  const overview: HallOverview[] = overallData?.data?.data ?? [];
+  const overview: any[] = overallData?.data?.data ?? [];
   const totalHalls = overview.length;
   const totalSessions = overview.reduce(
     (sum, h) => sum + (h.totalSessions ?? 0),
@@ -265,44 +264,47 @@ export default function HallOverviewPage() {
                   <CardDescription>Tổng quan tất cả các phiên</CardDescription>
                 </CardHeader>
                 <CardContent className='space-y-3'>
-                  {hall.sessions.map((s) => {
-                    const pct = s.totalStudents
-                      ? Math.min(
-                          100,
-                          Math.round((s.checkedInCount / s.totalStudents) * 100)
-                        )
-                      : 0;
-                    const isCur = s.sessionId === hall.currentSessionId;
-                    return (
-                      <div
-                        key={s.sessionId}
-                        className={`rounded-lg border p-4 transition-colors bg-card border-border`}
-                      >
-                        <div className='flex items-center justify-between mb-3'>
-                          <div className='flex items-center gap-2'>
-                            <span className='font-semibold'>
-                              Session {s.sessionNumber}
-                            </span>
+                  {hall.sessions &&
+                    hall.sessions.map((s: any) => {
+                      const pct = s.totalStudents
+                        ? Math.min(
+                            100,
+                            Math.round(
+                              (s.checkedInCount / s.totalStudents) * 100
+                            )
+                          )
+                        : 0;
+                      const isCur = s.sessionId === hall.currentSessionId;
+                      return (
+                        <div
+                          key={s.sessionId}
+                          className={`rounded-lg border p-4 transition-colors bg-card border-border`}
+                        >
+                          <div className='flex items-center justify-between mb-3'>
+                            <div className='flex items-center gap-2'>
+                              <span className='font-semibold'>
+                                Session {s.sessionNumber}
+                              </span>
+                            </div>
+                            <div className='flex items-center gap-2 text-sm'>
+                              <CheckCircle2 className='h-4 w-4 text-muted-foreground' />
+                              <span className='font-medium'>
+                                {s.checkedInCount}/{s.totalStudents}
+                              </span>
+                            </div>
                           </div>
-                          <div className='flex items-center gap-2 text-sm'>
-                            <CheckCircle2 className='h-4 w-4 text-muted-foreground' />
-                            <span className='font-medium'>
-                              {s.checkedInCount}/{s.totalStudents}
-                            </span>
+                          <div className='space-y-2'>
+                            <Progress value={pct} className='h-2' />
+                            <div className='flex items-center justify-between text-xs text-muted-foreground'>
+                              <span>{pct}% đã check-in</span>
+                              <span>
+                                {s.totalStudents - s.checkedInCount} còn lại
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <div className='space-y-2'>
-                          <Progress value={pct} className='h-2' />
-                          <div className='flex items-center justify-between text-xs text-muted-foreground'>
-                            <span>{pct}% đã check-in</span>
-                            <span>
-                              {s.totalStudents - s.checkedInCount} còn lại
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </CardContent>
               </Card>
             ))}

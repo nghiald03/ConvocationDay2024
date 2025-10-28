@@ -45,7 +45,7 @@ import toast from 'react-hot-toast';
 import swal from 'sweetalert';
 import { useDebounce } from 'use-debounce';
 
-export default function Page() {
+export default function ManualCheckinPage() {
   const queryClient = useQueryClient();
 
   const DEFAULT_PAGE_SIZE = 20;
