@@ -91,33 +91,41 @@ export function getMenuList(pathname: string): Group[] {
           icon: 'material-symbols-light:media-link-outline',
           submenus: [],
         },
-      ],
-    },
-    {
-      groupLabel: 'Điều phối chỗ ngồi',
-      id: 'seatingArrangement',
-      roleAccess: ['MN', 'US', 'CK'],
-      menus: [
         {
-          id: 'bachlorMissingSession',
-          href: '/seatingArrangement/bachelorMissingSession',
-          label: 'Tra cứu chỗ ngồi TCN tham gia bù',
-          active: pathname.includes(
-            '/seatingArrangement/bachelorMissingSession'
-          ),
-          icon: 'icon-park-twotone:bachelor-cap-one',
-          submenus: [],
-        },
-        {
-          id: 'location',
-          href: '/seatingArrangement/seatLocation',
-          label: 'Tra cứu vị trí chỗ ngồi',
-          active: pathname.includes('/seatingArrangement/seatLocation'),
+          id: 'seat-map',
+          href: '/seatingArrangement/seat-map',
+          label: 'Sơ đồ chỗ ngồi',
+          active: pathname.includes('/seatingArrangement/seat-map'),
           icon: 'mdi:seat-outline',
           submenus: [],
         },
       ],
     },
+    // {
+    //   groupLabel: 'Điều phối chỗ ngồi',
+    //   id: 'seatingArrangement',
+    //   roleAccess: ['MN', 'US', 'CK'],
+    //   menus: [
+    //     {
+    //       id: 'bachlorMissingSession',
+    //       href: '/seatingArrangement/bachelorMissingSession',
+    //       label: 'Tra cứu chỗ ngồi TCN tham gia bù',
+    //       active: pathname.includes(
+    //         '/seatingArrangement/bachelorMissingSession'
+    //       ),
+    //       icon: 'icon-park-twotone:bachelor-cap-one',
+    //       submenus: [],
+    //     },
+    //     {
+    //       id: 'location',
+    //       href: '/seatingArrangement/seatLocation',
+    //       label: 'Tra cứu vị trí chỗ ngồi',
+    //       active: pathname.includes('/seatingArrangement/seatLocation'),
+    //       icon: 'mdi:seat-outline',
+    //       submenus: [],
+    //     },
+    //   ],
+    // },
 
     {
       groupLabel: 'Check in',
@@ -132,14 +140,14 @@ export function getMenuList(pathname: string): Group[] {
           icon: 'mdi:user-check-outline',
           submenus: [],
         },
-        {
-          id: 'smart-checkin',
-          href: '/checkin/checkinWithQR',
-          label: 'Checkin với QR',
-          active: pathname.includes('/checkinWithQR'),
-          icon: 'gg:qr',
-          submenus: [],
-        },
+        // {
+        //   id: 'smart-checkin',
+        //   href: '/checkin/checkinWithQR',
+        //   label: 'Checkin với QR',
+        //   active: pathname.includes('/checkinWithQR'),
+        //   icon: 'gg:qr',
+        //   submenus: [],
+        // },
       ],
     },
 
@@ -164,22 +172,22 @@ export function getMenuList(pathname: string): Group[] {
           icon: 'mdi:chart-bar',
           submenus: [],
         },
-        {
-          id: 'hall',
-          href: '/manage/hall',
-          label: 'Quản lí DS Hội trường',
-          active: pathname.includes('/manage/hall'),
-          icon: 'fluent-mdl2:settings',
-          submenus: [],
-        },
-        {
-          id: 'session',
-          href: '/app/session',
-          label: 'Quản lí DS Session',
-          active: pathname.includes('/manage/session'),
-          icon: 'carbon:prompt-session',
-          submenus: [],
-        },
+        // {
+        //   id: 'hall',
+        //   href: '/manage/hall',
+        //   label: 'Quản lí DS Hội trường',
+        //   active: pathname.includes('/manage/hall'),
+        //   icon: 'fluent-mdl2:settings',
+        //   submenus: [],
+        // },
+        // {
+        //   id: 'session',
+        //   href: '/app/session',
+        //   label: 'Quản lí DS Session',
+        //   active: pathname.includes('/manage/session'),
+        //   icon: 'carbon:prompt-session',
+        //   submenus: [],
+        // },
         {
           id: 'checkinManagement',
           href: '/manage/checkin-management',

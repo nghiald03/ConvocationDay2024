@@ -21,18 +21,12 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import HallSessionPicker from '@/components/hallSessionPicker';
 import { ledAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 // === NEW: import hook
@@ -52,53 +46,12 @@ export default function LedScreen() {
       : ''
   );
 
-  const [hallList, setHallList] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
-  const [sessionList, setSessionList] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
+  const [hallLabel, setHallLabel] = useState<string>('Chưa chọn');
+  const [sessionLabel, setSessionLabel] = useState<string>('Chưa chọn');
   const [bachelorCurrent, setBachelorCurrent] = useState<Bachelor | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // ========= Fetch lists =========
-  const { data: hallData } = useQuery({
-    queryKey: ['listHall'],
-    queryFn: async () => {
-      const res = await ledAPI.getHallList();
-      return res.data;
-    },
-  });
-
-  useEffect(() => {
-    if (hallData?.data?.length) {
-      setHallList(
-        hallData.data.map((item: any) => ({
-          value: String(item.hallId),
-          label: item.hallName,
-        }))
-      );
-    }
-  }, [hallData]);
-
-  const { data: sessionData } = useQuery({
-    queryKey: ['listSession'],
-    queryFn: async () => {
-      const res = await ledAPI.getSessionList();
-      return res.data;
-    },
-  });
-
-  useEffect(() => {
-    if (sessionData?.data?.length) {
-      setSessionList(
-        sessionData.data.map((item: any) => ({
-          value: String(item.sessionId),
-          label: item.session1,
-        }))
-      );
-    }
-  }, [sessionData]);
+  // Hall/session selection now handled by HallSessionPicker
 
   // Persist selection
   useEffect(() => {
@@ -211,19 +164,6 @@ export default function LedScreen() {
     setIsFullscreen((v) => !v);
   };
 
-  const hallLabel = useMemo(
-    () =>
-      hallList.find((i) => i.value.toString() === hall.toString())?.label ||
-      'Chưa chọn',
-    [hallList, hall]
-  );
-  const sessionLabel = useMemo(
-    () =>
-      sessionList.find((i) => i.value.toString() === session.toString())
-        ?.label || 'Chưa chọn',
-    [sessionList, session]
-  );
-
   // ========= Render =========
   return (
     <>
@@ -244,7 +184,7 @@ export default function LedScreen() {
       </Card>
 
       <Card className='mt-3'>
-        <CardContent className='p-3'>
+        <CardContent className='p-3 gap-3 flex flex-col'>
           <Alert variant='soft' color='primary'>
             <AlertDescription>
               <Icon icon='heroicons-outline:support' className='w-5 h-5' /> Nếu
@@ -252,62 +192,15 @@ export default function LedScreen() {
             </AlertDescription>
           </Alert>
 
-          <Dialog>
-            <DialogTrigger asChild>
-              <Alert variant='soft' color='success' className='mt-3'>
-                <AlertDescription key={hall + session}>
-                  <Icon icon='akar-icons:double-check' className='w-5 h-5' />{' '}
-                  Cài đặt hall và session bằng cách click tại đây [ hall:{' '}
-                  {hallLabel} & session: {sessionLabel} ]
-                </AlertDescription>
-              </Alert>
-            </DialogTrigger>
-            <DialogContent className='sm:max-w-[425px]'>
-              <DialogHeader>
-                <DialogTitle>Cài đặt hall và session</DialogTitle>
-                <DialogDescription>
-                  Chọn hall và session để trình chiếu LED rồi bấm lưu
-                </DialogDescription>
-              </DialogHeader>
-              <div className='grid gap-4 py-4'>
-                <div className='flex w-full items-center gap-4'>
-                  <Select onValueChange={setHall} value={hall}>
-                    <SelectTrigger className='w-full'>
-                      <SelectValue placeholder='Chọn Hall' />
-                    </SelectTrigger>
-                    <SelectContent position='item-aligned'>
-                      {hallList.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className='flex w-full items-center gap-4'>
-                  <Select onValueChange={setSession} value={session}>
-                    <SelectTrigger className='w-full'>
-                      <SelectValue placeholder='Chọn session' />
-                    </SelectTrigger>
-                    <SelectContent position='item-aligned'>
-                      {sessionList.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose>
-                  <Button>Lưu</Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <HallSessionPicker
+            storageKey='seatmap'
+            onChange={(v) => {
+              setHall(v.hallId);
+              setSession(v.sessionId);
+            }}
+          />
 
-          <Alert variant='soft' color='primary' className='mt-3'>
+          <Alert variant='soft' color='primary' className=''>
             <AlertDescription>
               <Icon icon='gridicons:fullscreen' className='w-5 h-5' />
               {bachelorCurrent ? (
@@ -325,11 +218,6 @@ export default function LedScreen() {
               )}
             </AlertDescription>
           </Alert>
-
-          {/* Optional: hiển thị trạng thái kết nối */}
-          <div className='mt-2 text-xs text-muted-foreground'>
-            SignalR: {connectionState} {isConnected ? '✅' : '⛔'}
-          </div>
         </CardContent>
       </Card>
 

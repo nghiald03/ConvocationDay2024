@@ -413,6 +413,7 @@ export default function ManualCheckinPage() {
                 <Input
                   className='w-[400px] h-full'
                   placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
+                  defaultValue={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
                 <Select onValueChange={setHall}>

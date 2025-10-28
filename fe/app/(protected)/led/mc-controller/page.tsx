@@ -1,5 +1,6 @@
 'use client';
 
+import HallSessionPicker from '@/components/hallSessionPicker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Breadcrumb,
@@ -40,7 +41,7 @@ import { Icon } from '@iconify/react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import React, { useEffect, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 // ====== Helpers cho ảnh ======
 const isValidImageSrc = (src?: string | null) => {
@@ -134,7 +135,10 @@ export default function Page() {
 
   useEffect(() => {
     if (hallError) {
-      toast.error('Lỗi lấy danh sách hall');
+      toast.error('Lỗi lấy danh sách hall', {
+        duration: 3000,
+        position: 'top-right',
+      });
     }
   }, [hallError]);
 
@@ -163,7 +167,10 @@ export default function Page() {
 
   useEffect(() => {
     if (sessionError) {
-      toast.error('Lỗi lấy danh sách session');
+      toast.error('Lỗi lấy danh sách session', {
+        duration: 3000,
+        position: 'top-right',
+      });
     }
   }, [sessionError]);
 
@@ -240,6 +247,7 @@ export default function Page() {
     onError: () => {
       toast.error('Có lỗi khi lấy dữ liệu. Vui lòng chọn hall/session khác!', {
         duration: 3000,
+        position: 'top-right',
       });
     },
   });
@@ -323,7 +331,7 @@ export default function Page() {
       </Card>
 
       <Card className='mt-3'>
-        <CardContent className='p-3'>
+        <CardContent className='p-3 gap-3 flex flex-col'>
           <Alert variant='soft' color='primary'>
             <AlertDescription>
               <Icon icon='heroicons-outline:support' className='w-5 h-5' /> Nếu
@@ -331,68 +339,13 @@ export default function Page() {
             </AlertDescription>
           </Alert>
 
-          <Dialog>
-            <DialogTrigger asChild>
-              <Alert
-                variant='soft'
-                color='success'
-                className='mt-3 cursor-pointer'
-              >
-                <AlertDescription key={hall + session}>
-                  <Icon icon='akar-icons:double-check' className='w-5 h-5' />{' '}
-                  Cài đặt hall và session bằng cách click tại đây [ hall:{' '}
-                  {hallLabel} và session: {sessionLabel} ]
-                </AlertDescription>
-              </Alert>
-            </DialogTrigger>
-
-            <DialogContent className='sm:max-w-[425px]'>
-              <DialogHeader>
-                <DialogTitle>Cài đặt hall và session</DialogTitle>
-                <DialogDescription>
-                  Chọn hall và session để trình chiếu LED rồi bấm lưu
-                </DialogDescription>
-              </DialogHeader>
-
-              <div className='grid gap-4 py-4'>
-                <div className='flex w-full items-center gap-4'>
-                  <Select onValueChange={setHall} value={hall}>
-                    <SelectTrigger className='w-full'>
-                      <SelectValue placeholder='Chọn Hall' />
-                    </SelectTrigger>
-                    <SelectContent position='item-aligned'>
-                      {hallList.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className='flex w-full items-center gap-4'>
-                  <Select onValueChange={setSession} value={session}>
-                    <SelectTrigger className='w-full'>
-                      <SelectValue placeholder='Chọn session' />
-                    </SelectTrigger>
-                    <SelectContent position='item-aligned'>
-                      {sessionList.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <DialogClose>
-                  <Button>Lưu</Button>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <HallSessionPicker
+            storageKey='seatmap'
+            onChange={(v) => {
+              setHall(v.hallId);
+              setSession(v.sessionId);
+            }}
+          />
         </CardContent>
       </Card>
 

@@ -174,16 +174,6 @@ export const statisticsAPI = {
   },
 };
 
-// Type matches /Statistics/active-halls-summary response
-export type ActiveHallSummary = {
-  sessionId: number;
-  sessionNumber: number;
-  hallId: number;
-  hallName: string;
-  totalStudents: number;
-  checkedInCount: number;
-};
-
 // Notification API types (matching backend DTOs)
 export type CreateNotificationRequest = {
   title: string;

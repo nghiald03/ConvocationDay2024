@@ -49,6 +49,7 @@ services:
     container_name: frontend
     ports:
       - '3001:3000' # Cổng frontend
+
     environment:
       - NEXT_PUBLIC_SITE_URL=http://localhost:85
       - API_URL=http://localhost:85/api
@@ -56,6 +57,11 @@ services:
       - NEXT_PUBLIC_SIGNALR_URL=http://localhost:85/chat-hub
       - ELEVENLABS_API_KEY=sk_572f3059a7d2e53ccb63322315b0e97636a00683073658f4
       - ELEVENLABS_VOICE_ID=A5w1fw5x0uXded1LDvZp
+
+    volumes:
+      - fe_uploads:/app/uploads
+      - fe_cache:/.cache
+
     restart: unless-stopped
 
   # apiimageupload:
@@ -72,3 +78,5 @@ services:
   #   restart: unless-stopped
 volumes:
   sql_data:
+  fe_uploads:
+  fe_cache:

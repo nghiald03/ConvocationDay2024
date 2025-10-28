@@ -8,18 +8,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { ledAPI, checkinAPI } from '@/config/axios';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -30,15 +20,17 @@ import {
   Users,
   User,
   Camera,
-  Sparkles,
   CheckCircle2,
   XCircle,
 } from 'lucide-react';
+import { checkinAPI } from '@/config/axios';
+import HallSessionPicker from '@/components/hallSessionPicker';
 
-const SEATS_PER_SIDE = 72;
+// ====== Cấu hình lưới ======
+const SEATS_PER_SIDE = 70;
 const COLS = 6;
 
-// Chỉ hiển thị tên (lấy từ cuối cùng)
+// Chỉ hiển thị tên (lấy từ cuối)
 const getGivenName = (full?: string | null) => {
   if (!full) return '';
   const parts = full.trim().split(/\s+/);
@@ -50,6 +42,7 @@ type SeatCellProps = {
   occupant?: Bachelor | null;
   variant: 'student' | 'parent' | 'empty';
   showDetails?: boolean;
+  oneLine?: boolean;
 };
 
 function SeatCell({
@@ -57,6 +50,7 @@ function SeatCell({
   occupant,
   variant,
   showDetails = false,
+  oneLine = false,
 }: SeatCellProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -104,19 +98,25 @@ function SeatCell({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Trạng thái checkin: luôn hiển thị (dot ở compact, icon ở detail) */}
       {statusDot}
       {statusIcon}
 
       {showDetails ? (
-        <div className='leading-tight font-semibold flex items-center justify-center gap-2 flex-wrap text-center'>
-          <span>{label}</span>
+        <div
+          className={[
+            'leading-tight font-semibold flex items-center justify-center gap-1 sm:gap-2 text-center',
+            oneLine ? 'flex-row whitespace-nowrap' : 'flex-wrap',
+          ].join(' ')}
+        >
+          <span className='shrink-0'>{label}</span>
           {occupant ? (
             <>
-              <span className='truncate max-w-[140px]'>
+              <span className='truncate max-w-[140px] sm:max-w-[160px]'>
                 {getGivenName(occupant.fullName)}
               </span>
-              <span className='opacity-80'>{occupant.studentCode}</span>
+              <span className='opacity-80 shrink-0'>
+                {occupant.studentCode}
+              </span>
             </>
           ) : (
             <span className='opacity-60'>Trống</span>
@@ -137,36 +137,25 @@ function SeatCell({
 }
 
 export default function SeatMapPage() {
+  // ==== Nhận lựa chọn từ HallSessionPicker ====
   const [hall, setHall] = useState<string>('');
   const [session, setSession] = useState<string>('');
+  const [selectedHallName, setSelectedHallName] = useState<string>('');
+
+  // ==== Hiển thị ====
   const [showFullInfo, setShowFullInfo] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  const { data: hallList, error: hallErr } = useQuery({
-    queryKey: ['hallList'],
-    queryFn: () => ledAPI.getHallList(),
-    staleTime: 5 * 60 * 1000,
-  });
-  const { data: sessionList } = useQuery({
-    queryKey: ['sessionList'],
-    queryFn: () => ledAPI.getSessionList(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  useEffect(() => {
-    if (hallErr) {
-      toast.error('Lỗi khi lấy danh sách hội trường', {
-        duration: 4000,
-        position: 'top-right',
-      });
-    }
-  }, [hallErr]);
-
+  // ==== Fetch danh sách ghế theo Hall/Session ====
   const enabled = !!hall && !!session;
 
-  const { data: listRes, isFetching } = useQuery({
+  const {
+    data: listRes,
+    isFetching,
+    error: listErr,
+  } = useQuery({
     queryKey: ['seat-map', hall, session],
     queryFn: () =>
       checkinAPI.getBachelorList({
@@ -178,6 +167,12 @@ export default function SeatMapPage() {
     enabled,
     refetchOnWindowFocus: false,
   });
+
+  useEffect(() => {
+    if (listErr) {
+      toast.error('Lỗi khi tải danh sách chỗ ngồi');
+    }
+  }, [listErr]);
 
   const bachelors: Bachelor[] = useMemo(() => {
     const raw = listRes?.data;
@@ -210,43 +205,38 @@ export default function SeatMapPage() {
     return map;
   }, [bachelors]);
 
-  const selectedHall = useMemo(() => {
-    const list = hallList?.data?.data || [];
-    return list.find((h: any) => String(h.hallId) === String(hall));
-  }, [hall, hallList]);
-
+  // Xác định Hall B để hoán đổi nhãn/dãy
   const isHallB = useMemo(() => {
-    const name: string = (selectedHall?.hallName || '').toString();
+    const name = (selectedHallName || '').toString();
     const n = name.trim().toLowerCase();
     return /(^|\s)b($|\s)/i.test(name) || n.endsWith(' b');
-  }, [selectedHall]);
+  }, [selectedHallName]);
 
-  const stats = useMemo(() => {
-    const totalStudents = studentMap.size;
-    const totalParents = parentMap.size;
-    return { totalStudents, totalParents };
-  }, [studentMap, parentMap]);
-
-  // Cập nhật kích thước khi vào/ra fullscreen và khi resize
+  // ==== Theo dõi fullscreen + resize (ESC đồng bộ layout) ====
   useEffect(() => {
+    const updateDims = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
+      }
+    };
     const handleFull = () => {
       const isFull = !!document.fullscreenElement;
       setIsFullscreen(isFull);
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
+      setShowFullInfo(isFull);
+      if (isFull) {
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
       }
+      updateDims();
     };
-    const handleResize = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
-      }
-    };
+    const handleResize = () => updateDims();
+
     document.addEventListener('fullscreenchange', handleFull);
     window.addEventListener('resize', handleResize);
     return () => {
@@ -255,38 +245,64 @@ export default function SeatMapPage() {
     };
   }, []);
 
-  // Tính kích thước ghế theo viewport (đảm bảo khít màn ở fullscreen)
+  // ==== Kích thước ghế cơ sở (trước khi scale) ====
   const seatSize = useMemo(() => {
     if (!isFullscreen || !dimensions.width || !dimensions.height) {
-      return { width: 56, height: 48, gap: 8, fontSize: 'xs' };
+      return { width: 56, height: 48, gap: 8, fontSize: 'xs' as const };
     }
     const rows = Math.ceil(SEATS_PER_SIDE / COLS);
-    const middleWidth = 200;
-    const header = 120;
+    const middleWidthFS = Math.max(
+      140,
+      Math.min(240, Math.floor(dimensions.width * 0.06))
+    );
+    const availableWidth = (dimensions.width - middleWidthFS) / 2;
+    const availableHeight = dimensions.height - 48;
 
-    const availableWidth = (dimensions.width - middleWidth) / 2;
-    const availableHeight = dimensions.height - header;
+    const maxWidthPerSeat = (availableWidth - (COLS - 1) * 10) / COLS;
+    const maxHeightPerSeat = (availableHeight - (rows - 1) * 10) / rows;
 
-    const maxWidthPerSeat = (availableWidth - (COLS - 1) * 16) / COLS;
-    const maxHeightPerSeat = (availableHeight - (rows - 1) * 16) / rows;
-
-    const size = Math.min(maxWidthPerSeat, maxHeightPerSeat, 140);
-
+    const size = Math.min(maxWidthPerSeat, maxHeightPerSeat, 130);
     return {
       width: Math.floor(size),
-      height: Math.floor(size * 1.2),
-      gap: size > 100 ? 16 : 12,
-      fontSize: size > 100 ? 'base' : size > 80 ? 'sm' : 'xs',
+      height: Math.floor(size * 1.12),
+      gap: size > 100 ? 12 : 10,
+      fontSize:
+        size > 96
+          ? ('base' as const)
+          : size > 80
+          ? ('sm' as const)
+          : ('xs' as const),
     };
   }, [isFullscreen, dimensions]);
+
+  // ==== Tính kích thước bố cục & scale-to-fit (ưu tiên sát 2 lề ngang) ====
+  const scaleData = useMemo(() => {
+    const rows = Math.ceil(SEATS_PER_SIDE / COLS);
+    const sideWidth = COLS * seatSize.width + (COLS - 1) * seatSize.gap;
+    const middleWidth = isFullscreen
+      ? Math.max(140, Math.min(240, Math.floor(dimensions.width * 0.06)))
+      : 200;
+
+    // >>> CHUẨN: 2 dãy + lối giữa
+    const contentWidth = sideWidth * 3.5 + middleWidth;
+    const gridsHeight = rows * seatSize.height + (rows - 1) * seatSize.gap;
+    const contentHeight = gridsHeight + (isFullscreen ? 32 : 96);
+
+    let scale = 1;
+    if (isFullscreen && dimensions.width && dimensions.height) {
+      const sx = dimensions.width / contentWidth; // ép sát trái/phải
+      const sy = dimensions.height / contentHeight;
+      scale = Math.min(sx, sy);
+      scale = Math.min(scale, 1.25);
+    }
+    return { contentWidth, contentHeight, middleWidth, scale };
+  }, [seatSize, isFullscreen, dimensions]);
 
   const enterFull = async () => {
     try {
       setShowFullInfo(true);
       await containerRef.current?.requestFullscreen?.();
-      // khoá cuộn body khi fullscreen
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
+      // overflow sẽ do fullscreenchange xử lý
     } catch {}
   };
 
@@ -294,31 +310,59 @@ export default function SeatMapPage() {
     try {
       await document.exitFullscreen();
     } catch {}
-    setShowFullInfo(false);
-    // mở lại cuộn body
-    document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
+    // fullscreenchange sẽ đồng bộ lại state
   };
 
-  // style lưới theo seatSize
+  // style lưới theo seatSize (trước khi scale)
   const gridSeatStyle = {
     gridTemplateColumns: `repeat(${COLS}, minmax(${
-      isFullscreen || showFullInfo ? Math.max(seatSize.width, 48) : 48
+      isFullscreen || showFullInfo ? Math.max(seatSize.width, 44) : 48
     }px, 1fr))`,
     gap: isFullscreen || showFullInfo ? Math.max(seatSize.gap, 8) : 8,
   } as React.CSSProperties;
 
+  const HeaderLabel = ({ type }: { type: 'left' | 'right' }) => {
+    const leftIsStudent = isHallB; // Hall B: bên trái là Tân cử nhân
+    const rightIsStudent = !isHallB;
+
+    const showStudent =
+      (type === 'left' && leftIsStudent) ||
+      (type === 'right' && rightIsStudent);
+
+    return showStudent ? (
+      <div className='flex items-center gap-2'>
+        <User className='w-5 h-5 text-rose-600' />
+        <span className='text-sm font-bold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200'>
+          Dãy Tân cử nhân
+        </span>
+      </div>
+    ) : (
+      <div className='flex items-center gap-2'>
+        <Users className='w-5 h-5 text-sky-600' />
+        <span className='text-sm font-bold text-sky-700 bg-sky-50 px-3 py-1.5 rounded-full border border-sky-200'>
+          Dãy Phụ huynh
+        </span>
+      </div>
+    );
+  };
+
+  const stats = useMemo(() => {
+    const totalStudents = studentMap.size;
+    const totalParents = parentMap.size;
+    return { totalStudents, totalParents };
+  }, [studentMap, parentMap]);
+
   return (
     <div className='space-y-5 pb-8'>
-      {/* Breadcrumb */}
-      <Card className='shadow-sm border-0 bg-gradient-to-r from-blue-50 to-purple-50'>
+      {/* Breadcrumb cam */}
+      <Card className='shadow-sm border-0 '>
         <CardContent className='p-4'>
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink
                   href='/'
-                  className='hover:text-blue-600 transition-colors'
+                  className='hover:text-orange-600 transition-colors'
                 >
                   Trang chủ
                 </BreadcrumbLink>
@@ -334,89 +378,41 @@ export default function SeatMapPage() {
         </CardContent>
       </Card>
 
-      {/* Selection Card */}
-      <Card className='shadow-lg border-0 overflow-hidden'>
-        <div className='absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'></div>
-        <CardHeader className='pb-3 bg-gradient-to-br from-slate-50 to-slate-100/50'>
-          <CardTitle className='text-lg flex items-center gap-2'>
-            <Sparkles className='w-5 h-5 text-purple-500' />
-            Chọn hội trường và session
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='p-5'>
-          <div className='flex gap-3 flex-wrap items-center'>
-            <Select onValueChange={setHall}>
-              <SelectTrigger className='w-[240px] border-2 hover:border-blue-400 transition-colors'>
-                <SelectValue placeholder='🏛️ Chọn hội trường' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Hội trường</SelectLabel>
-                  {Array.isArray(hallList?.data?.data) &&
-                    hallList.data.data.map((h: any) => (
-                      <SelectItem key={h.hallId} value={String(h.hallId)}>
-                        {h.hallName}
-                      </SelectItem>
-                    ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+      {/* Picker tái sử dụng (cam) */}
+      <HallSessionPicker
+        storageKey='seatmap'
+        onChange={(v) => {
+          setHall(v.hallId);
+          setSession(v.sessionId);
+          setSelectedHallName(v.hallName || '');
+        }}
+      />
 
-            <Select onValueChange={setSession}>
-              <SelectTrigger className='w-[240px] border-2 hover:border-purple-400 transition-colors'>
-                <SelectValue placeholder='📅 Chọn session' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>Session</SelectLabel>
-                  {Array.isArray(sessionList?.data?.data) &&
-                    sessionList.data.data.map((s: any) => (
-                      <SelectItem key={s.sessionId} value={String(s.sessionId)}>
-                        {s.session1}
-                      </SelectItem>
-                    ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-
-            <Button
-              disabled={!enabled}
-              onClick={enterFull}
-              variant='default'
-              className='bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-md transition-all duration-300 hover:shadow-lg'
-            >
-              <Maximize2 className='w-4 h-4 mr-2' />
-              Toàn màn hình
-            </Button>
+      {/* Thống kê nhanh */}
+      {enabled && !isFetching && (
+        <div className='flex gap-4 flex-wrap'>
+          <div className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-50 to-rose-100 rounded-lg border border-rose-200'>
+            <User className='w-4 h-4 text-rose-600' />
+            <span className='text-sm font-semibold text-rose-900'>
+              {stats.totalStudents} tân cử nhân
+            </span>
           </div>
-
-          {/* Stats */}
-          {enabled && !isFetching && (
-            <div className='mt-4 flex gap-4 flex-wrap'>
-              <div className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-50 to-rose-100 rounded-lg border border-rose-200'>
-                <User className='w-4 h-4 text-rose-600' />
-                <span className='text-sm font-semibold text-rose-900'>
-                  {stats.totalStudents} tân cử nhân
-                </span>
-              </div>
-              <div className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-50 to-sky-100 rounded-lg border border-sky-200'>
-                <Users className='w-4 h-4 text-sky-600' />
-                <span className='text-sm font-semibold text-sky-900'>
-                  {stats.totalParents} phụ huynh
-                </span>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <div className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200'>
+            <Users className='w-4 h-4 text-amber-600' />
+            <span className='text-sm font-semibold text-amber-900'>
+              {stats.totalParents} phụ huynh
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Seat map */}
       <Card className='shadow-lg border-0'>
         <CardContent className='p-6'>
           {!enabled ? (
             <div className='flex flex-col items-center justify-center py-16 px-4'>
-              <div className='w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mb-4'>
-                <Sparkles className='w-8 h-8 text-purple-500' />
+              <div className='w-16 h-16 bg-gradient-to-br from-orange-100 to-amber-100 rounded-full flex items-center justify-center mb-4'>
+                <Camera className='w-8 h-8 text-orange-500' />
               </div>
               <p className='text-base text-gray-600 text-center'>
                 Vui lòng chọn hội trường và session để hiển thị sơ đồ chỗ ngồi
@@ -432,57 +428,99 @@ export default function SeatMapPage() {
               ref={containerRef}
               className={
                 isFullscreen
-                  ? 'w-screen h-screen overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-amber-100'
+                  ? 'w-screen h-screen overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50'
                   : 'w-full overflow-auto'
               }
             >
-              {isFullscreen && (
-                <div className='flex justify-end p-4'>
-                  <Button
-                    size='sm'
-                    variant='outline'
-                    onClick={exitFull}
-                    className='shadow-md hover:shadow-lg transition-all'
-                  >
-                    <Minimize2 className='w-4 h-4 mr-2' />
-                    Thoát toàn màn hình
-                  </Button>
-                </div>
-              )}
-
+              {/* Khối vẽ, scale-to-fit để chạm lề trái/phải */}
               <div
-                className={`mx-auto ${isFullscreen ? 'px-6' : ''}`}
-                style={{
-                  width: isFullscreen ? '100vw' : undefined,
-                  maxWidth: isFullscreen
-                    ? '100vw'
-                    : showFullInfo
-                    ? 'min(1600px, calc(100vw - 48px))'
-                    : 1200,
-                }}
+                className={isFullscreen ? '' : 'mx-auto'}
+                style={
+                  isFullscreen
+                    ? {
+                        width: '100vw',
+                        height: '100vh',
+                        padding: 0,
+                        margin: 0,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'flex-start',
+                      }
+                    : {
+                        maxWidth: showFullInfo
+                          ? 'min(1600px, calc(100vw - 48px))'
+                          : 1200,
+                      }
+                }
               >
-                {/* Wrapper 3 cột: Trái (dãy), Giữa (máy quay), Phải (dãy) */}
-                <div className='grid grid-cols-[1fr_auto_1fr] gap-6 items-start'>
-                  {/* Left side */}
-                  <div className='space-y-3'>
-                    <div className='flex items-center gap-2 mb-3'>
-                      {isHallB ? (
-                        <>
-                          <User className='w-5 h-5 text-rose-600' />
-                          <span className='text-sm font-bold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200'>
-                            Dãy Tân cử nhân
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <Users className='w-5 h-5 text-sky-600' />
-                          <span className='text-sm font-bold text-sky-700 bg-sky-50 px-3 py-1.5 rounded-full border border-sky-200'>
-                            Dãy Phụ huynh
-                          </span>
-                        </>
-                      )}
+                <div
+                  style={
+                    isFullscreen
+                      ? {
+                          width: `${scaleData.contentWidth}px`,
+                          height: `${scaleData.contentHeight}px`,
+                          transform: `scale(${scaleData.scale})`,
+                          transformOrigin: 'top center',
+                        }
+                      : undefined
+                  }
+                >
+                  {/* Header: label trái | tiêu đề | label phải + nút */}
+                  <div
+                    className='grid items-center mb-2 mt-2'
+                    style={{
+                      gridTemplateColumns: `1fr ${scaleData.middleWidth}px 1fr`,
+                      gap: isFullscreen ? 16 : 20,
+                    }}
+                  >
+                    {/* Label trái */}
+                    <div className='flex items-center gap-2'>
+                      <HeaderLabel type='left' />
                     </div>
 
+                    {/* Giữa: tiêu đề nhỏ */}
+                    <div className='flex items-center justify-center'>
+                      <div className='bg-gradient-to-b from-orange-600 to-amber-600 text-white text-center px-4 py-2 rounded-xl font-bold shadow-lg'>
+                        SƠ ĐỒ HỘI TRƯỜNG
+                      </div>
+                    </div>
+
+                    {/* Label phải + Nút */}
+                    <div className='flex items-center justify-end gap-2'>
+                      <HeaderLabel type='right' />
+                      {isFullscreen ? (
+                        <Button
+                          size='sm'
+                          variant='outline'
+                          onClick={exitFull}
+                          className='shadow-sm'
+                        >
+                          <Minimize2 className='w-4 h-4 mr-2' />
+                          Thoát toàn màn hình
+                        </Button>
+                      ) : (
+                        <Button
+                          size='sm'
+                          onClick={enterFull}
+                          disabled={!enabled}
+                          className='bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 shadow-sm'
+                        >
+                          <Maximize2 className='w-4 h-4 mr-2' />
+                          Toàn màn hình
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 3 cột ghế: trái | lối giữa (trống) | phải */}
+                  <div
+                    className='grid items-start'
+                    style={{
+                      gridTemplateColumns: `1fr ${scaleData.middleWidth}px 1fr`,
+                      gap: isFullscreen ? 16 : 20,
+                    }}
+                  >
+                    {/* Trái */}
                     <div className='grid' style={gridSeatStyle}>
                       {Array.from(
                         { length: SEATS_PER_SIDE },
@@ -495,6 +533,7 @@ export default function SeatMapPage() {
                             occupant={studentMap.get(n) || null}
                             variant='student'
                             showDetails={showFullInfo}
+                            oneLine={isFullscreen}
                           />
                         ) : (
                           <SeatCell
@@ -503,40 +542,16 @@ export default function SeatMapPage() {
                             occupant={parentMap.get(n) || null}
                             variant='parent'
                             showDetails={showFullInfo}
+                            oneLine={isFullscreen}
                           />
                         )
                       )}
                     </div>
-                  </div>
 
-                  {/* Middle aisle */}
-                  <div className='flex flex-col items-center justify-start pt-11 h-full'>
-                    <div className='bg-gradient-to-b from-red-600 to-red-700 text-white text-center px-5 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 sticky top-0'>
-                      <Camera className='w-5 h-5' />
-                      <span className='text-sm'>MÁY QUAY</span>
-                    </div>
-                  </div>
+                    {/* Lối giữa (trống để chiếm chỗ) */}
+                    <div />
 
-                  {/* Right side */}
-                  <div className='space-y-3'>
-                    <div className='flex items-center gap-2 mb-3'>
-                      {isHallB ? (
-                        <>
-                          <Users className='w-5 h-5 text-sky-600' />
-                          <span className='text-sm font-bold text-sky-700 bg-sky-50 px-3 py-1.5 rounded-full border border-sky-200'>
-                            Dãy Phụ huynh
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <User className='w-5 h-5 text-rose-600' />
-                          <span className='text-sm font-bold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200'>
-                            Dãy Tân cử nhân
-                          </span>
-                        </>
-                      )}
-                    </div>
-
+                    {/* Phải */}
                     <div className='grid' style={gridSeatStyle}>
                       {Array.from(
                         { length: SEATS_PER_SIDE },
@@ -549,6 +564,7 @@ export default function SeatMapPage() {
                             occupant={parentMap.get(n) || null}
                             variant='parent'
                             showDetails={showFullInfo}
+                            oneLine={isFullscreen}
                           />
                         ) : (
                           <SeatCell
@@ -557,22 +573,24 @@ export default function SeatMapPage() {
                             occupant={studentMap.get(n) || null}
                             variant='student'
                             showDetails={showFullInfo}
+                            oneLine={isFullscreen}
                           />
                         )
                       )}
                     </div>
                   </div>
-                </div>
 
-                {!showFullInfo && (
-                  <div className='mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200'>
-                    <p className='text-sm text-gray-700 text-center'>
-                      💡 <span className='font-semibold'>Mẹo:</span> Di chuột
-                      vào ghế để xem tên tân cử nhân
-                    </p>
-                  </div>
-                )}
+                  {!showFullInfo && (
+                    <div className='mt-3 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200'>
+                      <p className='text-sm text-gray-700 text-center'>
+                        💡 <span className='font-semibold'>Mẹo:</span> Di chuột
+                        vào ghế để xem tên tân cử nhân
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
+              {/* Hết khối vẽ */}
             </div>
           )}
         </CardContent>
