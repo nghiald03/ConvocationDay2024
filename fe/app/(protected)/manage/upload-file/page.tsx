@@ -287,8 +287,41 @@ export default function Page() {
   };
 
   const copyUrl = async (url: string) => {
-    await navigator.clipboard.writeText(url);
-    toast.success('Đã copy URL');
+    try {
+      // Build full URL: if url is already absolute, use it; otherwise prefix with current origin
+      let full = url;
+      if (typeof window !== 'undefined') {
+        const origin = window.location.origin;
+        if (!/^https?:\/\//i.test(url)) {
+          full = url.startsWith('/') ? origin + url : origin + '/' + url;
+        }
+      }
+
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.clipboard &&
+        navigator.clipboard.writeText
+      ) {
+        await navigator.clipboard.writeText(full);
+      } else {
+        // Fallback for older browsers or non-secure contexts
+        const ta = document.createElement('textarea');
+        ta.value = full;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (!ok) throw new Error('execCommand failed');
+      }
+      toast.success('Đã copy URL');
+    } catch (err) {
+      console.error('Copy failed', err);
+      toast.error('Không thể copy URL');
+    }
   };
 
   // ===== UI =====

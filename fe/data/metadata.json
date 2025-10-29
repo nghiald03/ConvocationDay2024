@@ -1,42 +1,12 @@
 [
   {
-    "id": "f8345b39-2099-446e-946c-a8dda0dc8872",
-    "originalName": "LED_HCMC_1024x6144_1.png",
-    "path": "/images/f8345b39-2099-446e-946c-a8dda0dc8872.png",
-    "size": 493243,
-    "mimeType": "image/png",
-    "width": 6144,
-    "height": 1024,
-    "createdAt": "2025-10-28T16:07:14.184Z"
-  },
-  {
-    "id": "c1ebf60a-ec10-4dd7-b43a-06a1bf90c064",
-    "originalName": "Dark_blue_misty_landscape_of_Vietnam__silhouette_of_mountains_and_rice_terraces_under_faint_sunrise_.png",
-    "path": "/images/c1ebf60a-ec10-4dd7-b43a-06a1bf90c064.png",
-    "size": 1317026,
-    "mimeType": "image/png",
-    "width": 1344,
-    "height": 768,
-    "createdAt": "2025-10-28T16:07:14.187Z"
-  },
-  {
-    "id": "5e3d782e-83f0-4b10-b799-ce3bfca27836",
+    "id": "e2a1e104-a05f-4f98-b624-af785e5fd335",
     "originalName": "Thiết kế chưa có tên (2).png",
-    "path": "/images/5e3d782e-83f0-4b10-b799-ce3bfca27836.png",
+    "path": "/images/e2a1e104-a05f-4f98-b624-af785e5fd335.png",
     "size": 467524,
     "mimeType": "image/png",
     "width": 1920,
     "height": 1080,
-    "createdAt": "2025-10-28T16:07:14.189Z"
-  },
-  {
-    "id": "f9769dc6-bc42-42f5-8e7b-16748a3f7b03",
-    "originalName": "image 23.png",
-    "path": "/images/f9769dc6-bc42-42f5-8e7b-16748a3f7b03.png",
-    "size": 857941,
-    "mimeType": "image/png",
-    "width": 4507,
-    "height": 1170,
-    "createdAt": "2025-10-28T16:07:14.191Z"
+    "createdAt": "2025-10-29T03:35:49.462Z"
   }
 ]
