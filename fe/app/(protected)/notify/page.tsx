@@ -34,7 +34,6 @@ import toast from 'react-hot-toast';
 import { InputNumber } from '@/components/ui/input-number';
 
 // ===== Types =====
-// ===== Types =====
 type BackendNotification = {
   notificationId: number;
   title: string;
@@ -53,7 +52,7 @@ type NotifyMessage = {
   id: string | number;
   message: string;
   createdAt: string; // ISO
-  priority?: 'high' | 'normal' | 'low';
+  priority?: 'high' | 'normal' | 'low' | undefined;
   repeatCount?: number;
 
   scope?: string;
@@ -80,15 +79,18 @@ function transformBackendNotification(
     repeatCount: data.repeatCount,
     scope: data.scope,
     hallName: data.hallName,
-    originalData: data, // Keep original for debugging/reference
+    originalData: data,
   };
 }
 
 function mapLocalToApi(local: {
   message: string;
-  priority: 'high' | 'normal' | 'low';
+  priority: 'high' | 'normal' | 'low' | undefined;
   repeatCount?: number;
 }): CreateNotificationRequest {
+  // NOTE: Giữ nguyên mapping như anh đang dùng:
+  // high -> 1, normal -> 2, low -> 3
+  // (Nếu BE dùng 1=low,2=normal,3=high thì đổi lại cho đúng.)
   return {
     title: 'Thông báo hội trường',
     content: local.message,
@@ -175,11 +177,9 @@ export default function NotifyMockPage() {
   }, [items, enabled, repeatCount, consoleOnly]);
 
   // ================== Access Token từ localStorage ==================
-  // NOTE: đổi key này theo app của anh
   const TOKEN_KEY = 'access_token';
   const [accessToken, setAccessToken] = useState<string | undefined>(undefined);
 
-  // Lấy token lúc mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -190,7 +190,6 @@ export default function NotifyMockPage() {
     }
   }, []);
 
-  // Nghe sự kiện thay đổi token ở tab khác / runtime
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onStorage = (e: StorageEvent) => {
@@ -202,7 +201,6 @@ export default function NotifyMockPage() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  // Nút "lấy lại token" thủ công (nếu token set bằng JS trong cùng tab)
   const refreshTokenFromLocalStorage = () => {
     try {
       const tk = localStorage.getItem(TOKEN_KEY);
@@ -218,7 +216,7 @@ export default function NotifyMockPage() {
     autoConnect: true,
     forceWebsockets: true, // BE đã hỗ trợ WS → tránh negotiate
     stopDelayMs: 3000,
-    accessToken, // <-- QUAN TRỌNG: truyền token thô (KHÔNG kèm "Bearer ")
+    accessToken, // <-- truyền token thô (KHÔNG kèm "Bearer ")
     onTTSBroadcast: (data) => {
       const msg = transformBackendNotification(data);
       console.log('[SignalR] Transformed TTS message', msg);
@@ -284,58 +282,79 @@ export default function NotifyMockPage() {
       },
     });
 
-    queryClient.setQueryData(QUERY_KEY, (prev: any) => {
-      const current: NotifyMessage[] = prev?.data?.data ?? [];
-      const echoItem: NotifyMessage = {
-        id: `LOCAL-${Date.now()}`,
-        message: msg.trim(),
-        createdAt: new Date().toISOString(),
-        priority,
-        repeatCount,
-      };
-      return { data: { data: [...current, echoItem] } };
-    });
-
-    // clear input sau khi bấm
+    // Không echo local: danh sách sẽ được cập nhật bởi SignalR + onSuccess (speak)
     setMsg('');
   };
 
-  // ================== QUICK ACTIONS ==================
+  // ============== QUICK ACTIONS (API-based) ==============
   const [callNumber, setCallNumber] = useState<number | ''>('');
 
+  // (GIỮ nếu anh còn cần xài ở nơi khác; không dùng cho 2 action chính nữa)
   const addMessageFromText = (
     text: string,
     level: 'high' | 'normal' | 'low' = 'normal',
     immediateSpeak = true
   ) => {
-    const newItem: NotifyMessage = {
-      id: `QUICK-${Date.now()}`,
+    const request = mapLocalToApi({
       message: text,
-      createdAt: new Date().toISOString(),
       priority: level,
-    };
-    queryClient.setQueryData(QUERY_KEY, (prev: any) => {
-      const current: NotifyMessage[] = prev?.data?.data ?? [];
-      return { data: { data: [...current, newItem] } };
+      repeatCount,
     });
-    playedIdsRef.current.add(newItem.id);
-    if (immediateSpeak) speak(humanizeMessage(newItem));
+    createNotificationMutation.mutate({
+      request,
+      shouldSpeak: immediateSpeak,
+      rawInputForSpeak: {
+        message: text,
+        priority: level,
+        repeatCount,
+      },
+    });
   };
 
   const handleCallNumber = () => {
     if (callNumber === '' || Number.isNaN(Number(callNumber))) return;
+
     const n = Number(callNumber);
     setCurrentNumber(n);
-    addMessageFromText(`Số ${n} chuẩn bị lên chụp hình.`, 'high', true);
+    setEditCurrent(String(n));
+
+    const message = `Số ${n} chuẩn bị lên chụp hình.`;
+    const request = mapLocalToApi({
+      message,
+      priority: 'high',
+      repeatCount,
+    });
+
+    createNotificationMutation.mutate({
+      request,
+      shouldSpeak: true,
+      rawInputForSpeak: {
+        message,
+        priority: 'high',
+        repeatCount,
+      },
+    });
+
     setCallNumber('');
   };
 
   const handleQueueNotice = () => {
-    addMessageFromText(
-      'Các bạn nhận số thứ tự tại bàn và chờ đến lượt chụp ảnh.',
-      'normal',
-      true
-    );
+    const message = 'Các bạn nhận số thứ tự tại bàn và chờ đến lượt chụp ảnh.';
+    const request = mapLocalToApi({
+      message,
+      priority: 'normal',
+      repeatCount,
+    });
+
+    createNotificationMutation.mutate({
+      request,
+      shouldSpeak: true,
+      rawInputForSpeak: {
+        message,
+        priority: 'normal',
+        repeatCount,
+      },
+    });
   };
 
   // ================== CURRENT NUMBER (sessionStorage) ==================
@@ -385,7 +404,7 @@ export default function NotifyMockPage() {
         id: 'CUR',
         message: `Số ${currentNumber} chuẩn bị lên chụp hình.`,
         createdAt: new Date().toISOString(),
-        priority: 'high',
+        priority: 'normal',
       })
     );
   };
@@ -401,18 +420,15 @@ export default function NotifyMockPage() {
       shouldSpeak: boolean;
       rawInputForSpeak: {
         message: string;
-        priority: 'high' | 'normal' | 'low';
+        priority: 'high' | 'normal' | 'low' | undefined;
         repeatCount: number;
       };
     }) => {
-      // gọi API tạo notice
       return notificationAPI.create(params.request);
     },
     onSuccess: async (response, { shouldSpeak, rawInputForSpeak }) => {
-      // refresh list nếu anh có query khác; ở mock mình đang lưu cache cục bộ nên không bắt buộc
       toast.success(response?.data?.message || 'Tạo thông báo thành công!');
 
-      // NẾU muốn đọc thử ngay (không tốn token ElevenLabs do anh đã cache/gộp lặp trong hook)
       if (shouldSpeak) {
         const temp: NotifyMessage = {
           id: response?.data?.notificationId ?? `POST-${Date.now()}`,
@@ -421,7 +437,6 @@ export default function NotifyMockPage() {
           priority: rawInputForSpeak.priority,
           repeatCount: rawInputForSpeak.repeatCount,
         };
-        // đánh dấu & speak
         playedIdsRef.current.add(temp.id);
         speak(humanizeMessage(temp));
       }
@@ -510,13 +525,6 @@ export default function NotifyMockPage() {
               >
                 Đọc lại số
               </Button>
-              {/* <Button
-                variant={'default'}
-                color='destructive'
-                onClick={resetCurrent}
-              >
-                Reset
-              </Button> */}
             </div>
           </div>
 
@@ -530,10 +538,16 @@ export default function NotifyMockPage() {
                   min={0}
                   step={1}
                   defaultValue={currentNumber ?? 0}
-                  onChange={(v) => setEditCurrent(String(v))} // giữ logic tạm vào editCurrent
+                  onChange={(v) =>
+                    setMsg(`Số ${String(v)} chuẩn bị lên chụp hình.`)
+                  }
                   className='flex-1 h-full'
                 />
-                <Button onClick={applyEditCurrent} size='md'>
+                <Button
+                  onClick={() => addMessage(true)}
+                  disabled={!editCurrent}
+                  size='md'
+                >
                   Cập nhật
                 </Button>
               </div>
@@ -543,7 +557,7 @@ export default function NotifyMockPage() {
                 className='w-full'
                 size='md'
                 variant='outline'
-                onClick={handleQueueNotice}
+                onClick={handleQueueNotice} // ---> API-based
               >
                 Thông báo “Nhận số thứ tự…”
               </Button>
@@ -692,16 +706,21 @@ export default function NotifyMockPage() {
                       priority: 'normal',
                     },
                   ];
-                  samples.forEach((s, idx) => {
-                    const newItem: NotifyMessage = {
-                      id: `SAMPLE-${Date.now()}-${idx}`,
+                  // Chuyển mẫu sang API luôn
+                  samples.forEach((s) => {
+                    const request = mapLocalToApi({
                       message: s.message,
-                      createdAt: new Date().toISOString(),
                       priority: s.priority,
-                    };
-                    queryClient.setQueryData(QUERY_KEY, (prev: any) => {
-                      const current: NotifyMessage[] = prev?.data?.data ?? [];
-                      return { data: { data: [...current, newItem] } };
+                      repeatCount,
+                    });
+                    createNotificationMutation.mutate({
+                      request,
+                      shouldSpeak: true,
+                      rawInputForSpeak: {
+                        message: s.message,
+                        priority: s.priority,
+                        repeatCount,
+                      },
                     });
                   });
                 }}
@@ -723,7 +742,7 @@ export default function NotifyMockPage() {
               </Button>
             </div>
 
-            {/* NEW: Quick actions gọi số */}
+            {/* NEW: Quick actions gọi số (API-based) */}
             <div className='md:col-span-6 mt-2 grid gap-3 md:grid-cols-3'>
               <div className='col-span-2 flex items-end gap-3'>
                 <div className='flex-1'>
@@ -745,7 +764,7 @@ export default function NotifyMockPage() {
                 </div>
                 <Button
                   className='whitespace-nowrap'
-                  onClick={handleCallNumber}
+                  onClick={handleCallNumber} // ---> API-based
                 >
                   Gọi số
                 </Button>
@@ -755,7 +774,7 @@ export default function NotifyMockPage() {
                 <Button
                   variant='outline'
                   className='w-full'
-                  onClick={handleQueueNotice}
+                  onClick={handleQueueNotice} // ---> API-based
                 >
                   Thông báo “Nhận số thứ tự…”
                 </Button>

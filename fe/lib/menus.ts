@@ -60,6 +60,14 @@ export function getMenuList(pathname: string): Group[] {
           submenus: [],
         },
         {
+          id: 'notification',
+          href: '/notify/current-number',
+          label: 'Gọi số chụp ảnh',
+          active: pathname.includes('/notify/current-number'),
+          icon: 'heroicons-outline:phone-arrow-up-right',
+          submenus: [],
+        },
+        {
           id: 'notification-display',
           href: '/notification-display',
           label: 'Hiển thị thông báo',
