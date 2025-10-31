@@ -70,7 +70,7 @@ const ProfileInfo = () => {
 
               // Force page reload to login page
               console.log('[DEBUG] Reloading to /en');
-              window.location.replace('/en');
+              window.location.replace('/');
               console.log('[DEBUG] Window.location.replace called');
             }}
           >
