@@ -10,7 +10,7 @@ import { useElevenLabsTTS } from '@/hooks/useElevenLabsTTS';
 import { cn } from '@/lib/utils';
 import { useSignalRContext } from './SignalRContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { statisticsAPI, type ActiveHallSummary } from '@/config/axios';
 
 export default function NotificationDisplayPage() {
@@ -20,7 +20,7 @@ export default function NotificationDisplayPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isReading, setIsReading] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
-  const [queue, setQueue] = useState<any[]>([]); // Queue cho notifications chưa phát
+  // Queue moved to TanStack Query cache
   const [completedNotifications, setCompletedNotifications] = useState<any[]>(
     []
   ); // Các thông báo đã phát
@@ -182,6 +182,41 @@ export default function NotificationDisplayPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // React Query client and keys
+  const queryClient = useQueryClient();
+  const QUEUE_KEY = ['tts-queue'];
+  const COMPLETED_KEY = ['tts-completed'];
+
+  // Ensure cache seeds
+  useEffect(() => {
+    if (!queryClient.getQueryData(QUEUE_KEY)) {
+      queryClient.setQueryData(QUEUE_KEY, [] as any[]);
+    }
+    if (!queryClient.getQueryData(COMPLETED_KEY)) {
+      queryClient.setQueryData(COMPLETED_KEY, [] as any[]);
+    }
+  }, [queryClient]);
+
+  // Subscribe to queue via query
+  const { data: queue = [] } = useQuery<any[]>({
+    queryKey: QUEUE_KEY,
+    queryFn: async () => (queryClient.getQueryData(QUEUE_KEY) as any[]) ?? [],
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: completedFromCache = [] } = useQuery<any[]>({
+    queryKey: COMPLETED_KEY,
+    queryFn: async () =>
+      (queryClient.getQueryData(COMPLETED_KEY) as any[]) ?? [],
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+  });
+
+  // Keep local completed list in sync for UI effects
+  useEffect(() => {
+    setCompletedNotifications(completedFromCache);
+  }, [completedFromCache]);
   // Calculate max visible notifications based on screen height
   useEffect(() => {
     const calculateMaxNotifications = () => {
@@ -233,64 +268,51 @@ export default function NotificationDisplayPage() {
     return () => clearTimeout(timer);
   }, [completedNotifications.length, maxVisibleNotifications]);
 
-  // Listen for broadcasts from SignalR
+  // Listen for broadcasts from SignalR and push into global queue (deduped)
   useEffect(() => {
-    if (connection) {
-      connection.on('ReceiveTTSBroadcast', (data: any) => {
-        console.log('[SignalR] Received notification broadcast:', data);
+    if (!connection) return;
+    const handler = (data: any) => {
+      console.log('[SignalR] Received notification broadcast:', data);
+      const baseId =
+        data.notificationId ?? `${data.title ?? ''}-${data.content ?? ''}`;
+      const time = data.broadcastAt || new Date().toISOString();
+      const notif = {
+        notificationId: baseId,
+        title: data.title,
+        content: data.content,
+        priority: data.priority || 3,
+        hallId: data.hallId,
+        sessionId: data.sessionId,
+        createdAt: time,
+        broadcastAt: data.broadcastAt,
+        isAutomatic: data.isAutomatic,
+        repeatCount: data.repeatCount || 1,
+        currentRepeat: 0,
+        id: `${baseId}-${time}`,
+        scope: data.scope,
+        hallName: data.hallName,
+      };
 
-        const notification = {
-          notificationId: data.notificationId || Date.now(),
-          title: data.title,
-          content: data.content,
-          priority: data.priority || 3,
-          hallId: data.hallId,
-          sessionId: data.sessionId,
-          createdAt: data.broadcastAt || new Date().toISOString(),
-          broadcastAt: data.broadcastAt,
-          isAutomatic: data.isAutomatic,
-          repeatCount: data.repeatCount || 1,
-          currentRepeat: 0,
-          id: `${data.notificationId || Date.now()}-${Math.random()}`,
-          scope: data.scope,
-          hallName: data.hallName,
-        };
-
-        if (lastCompletedNotification) {
-          console.log('[Queue] Pushing current notification to queue');
-          setQueue((prev) => {
-            const currentNotificationInQueue = {
-              ...lastCompletedNotification,
-              id: `current-${Date.now()}`,
-              priority: lastCompletedNotification.priority || 3,
-            };
-            const updated = [...prev, currentNotificationInQueue, notification];
-            const sorted = sortNotifications(updated);
-            console.log(
-              `[Queue] Added current + new notification to queue. New queue length: ${sorted.length}`
-            );
-            return sorted;
-          });
-          setLastCompletedNotification(null);
-        } else {
-          setQueue((prev) => {
-            const updated = [...prev, notification];
-            const sorted = sortNotifications(updated);
-            console.log(
-              `[Queue] Added notification to queue. New queue length: ${sorted.length}`
-            );
-            return sorted;
-          });
-        }
+      queryClient.setQueryData(QUEUE_KEY, (prev: any[] = []) => {
+        // Dedup by (notificationId + broadcastAt + content)
+        const exists = prev.some(
+          (x) =>
+            (x.notificationId ?? x.id) === notif.notificationId &&
+            (x.broadcastAt || x.createdAt) ===
+              (notif.broadcastAt || notif.createdAt) &&
+            x.content === notif.content
+        );
+        if (exists) return prev;
+        const sorted = sortNotifications([...prev, notif]);
+        console.log(`[Queue] Added notification. New length: ${sorted.length}`);
+        return sorted;
       });
-    }
-
-    return () => {
-      if (connection) {
-        connection.off('ReceiveTTSBroadcast');
-      }
     };
-  }, [connection, lastCompletedNotification]);
+    connection.on('ReceiveTTSBroadcast', handler);
+    return () => {
+      connection.off('ReceiveTTSBroadcast', handler);
+    };
+  }, [connection, queryClient]);
 
   // Read notification from queue with repeat count
   const readNotificationWithRepeat = useCallback(
@@ -302,10 +324,10 @@ export default function NotificationDisplayPage() {
       );
 
       if (currentRepeat === 0) {
-        setQueue((prev) => {
+        queryClient.setQueryData(QUEUE_KEY, (prev: any[] = []) => {
           const filtered = prev.filter((item) => item.id !== notification.id);
           console.log(
-            `[Queue] Removed notification from queue. Remaining queue length: ${filtered.length}`
+            `[Queue] Removed from queue. Remaining: ${filtered.length}`
           );
           return filtered;
         });
@@ -315,7 +337,7 @@ export default function NotificationDisplayPage() {
       setNotifications([notification]);
       setCurrentIndex(0);
 
-      const textToRead = `${notification.title}. ${notification.content}`;
+      const textToRead = `Thông báo: ${notification.content}`;
 
       try {
         // ⚠️ dùng wrapper speak mới (không truyền options), vẫn await được
@@ -332,7 +354,8 @@ export default function NotificationDisplayPage() {
             completedAt: new Date().toISOString(),
           });
 
-          setCompletedNotifications((prev) => {
+          // Push to completed cache (capped)
+          queryClient.setQueryData(COMPLETED_KEY, (prev: any[] = []) => {
             const updated = [
               ...prev,
               { ...notification, completedAt: new Date().toISOString() },

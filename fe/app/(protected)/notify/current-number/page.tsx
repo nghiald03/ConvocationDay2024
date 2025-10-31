@@ -87,7 +87,6 @@ export default function CurrentNumberPage() {
       repeatCount,
     });
     createNotificationMutation.mutate(request);
-    setCallNumber('');
   }, [callNumber, repeatCount, createNotificationMutation]);
 
   const handleQueueNotice = useCallback(() => {
@@ -136,7 +135,7 @@ export default function CurrentNumberPage() {
                 {currentNumber !== null ? currentNumber : '—'}
               </div>
             </div>
-            <div className='flex gap-2'>
+            {/* <div className='flex gap-2'>
               <Button
                 variant='outline'
                 onClick={() => bumpCurrent(-1)}
@@ -147,7 +146,7 @@ export default function CurrentNumberPage() {
               <Button variant='outline' onClick={() => bumpCurrent(+1)}>
                 +1
               </Button>
-            </div>
+            </div> */}
           </div>
 
           <div className='grid gap-3 md:grid-cols-3'>
