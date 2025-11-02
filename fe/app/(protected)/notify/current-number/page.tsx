@@ -40,7 +40,6 @@ function mapLocalToApi(local: {
 const CURRENT_NUMBER_KEY = 'notify-current-number';
 
 export default function CurrentNumberPage() {
-  // Persist current number for convenience
   const [currentNumber, setCurrentNumber] = useState<number | null>(null);
   const [callNumber, setCallNumber] = useState<number | ''>('');
   const [repeatCount, setRepeatCount] = useState<number>(1);
@@ -70,7 +69,7 @@ export default function CurrentNumberPage() {
     onError: (err: any) => {
       toast.error(
         err?.response?.data?.message ||
-          'Không thể gửi thông báo. Vui lòng thử lại.'
+        'Không thể gửi thông báo. Vui lòng thử lại.'
       );
     },
   });
@@ -99,13 +98,25 @@ export default function CurrentNumberPage() {
     createNotificationMutation.mutate(request);
   }, [repeatCount, createNotificationMutation]);
 
-  const bumpCurrent = (delta: number) => {
-    setCurrentNumber((prev) => {
-      const next =
-        prev === null ? (delta >= 0 ? delta : 0) : Math.max(0, prev + delta);
-      return next;
+  // NEW HANDLERS YOU ASKED
+  const handleSilentNotice = useCallback(() => {
+    const request = mapLocalToApi({
+      message: 'Các bạn vui lòng giữ trật tự trong studio.',
+      priority: 'normal',
+      repeatCount,
     });
-  };
+    createNotificationMutation.mutate(request);
+  }, [repeatCount, createNotificationMutation]);
+
+  const handleCleanNotice = useCallback(() => {
+    const request = mapLocalToApi({
+      message: 'Các bạn vui lòng dọn rác trước khi rời khỏi studio.',
+      priority: 'normal',
+      repeatCount,
+    });
+    createNotificationMutation.mutate(request);
+  }, [repeatCount, createNotificationMutation]);
+
 
   return (
     <>
@@ -125,7 +136,6 @@ export default function CurrentNumberPage() {
         </CardContent>
       </Card>
 
-      {/* Current number board */}
       <Card className='mt-3 animate-fade-up'>
         <CardContent className='p-4 space-y-3'>
           <div className='flex items-center justify-between'>
@@ -135,18 +145,6 @@ export default function CurrentNumberPage() {
                 {currentNumber !== null ? currentNumber : '—'}
               </div>
             </div>
-            {/* <div className='flex gap-2'>
-              <Button
-                variant='outline'
-                onClick={() => bumpCurrent(-1)}
-                disabled={currentNumber === null}
-              >
-                -1
-              </Button>
-              <Button variant='outline' onClick={() => bumpCurrent(+1)}>
-                +1
-              </Button>
-            </div> */}
           </div>
 
           <div className='grid gap-3 md:grid-cols-3'>
@@ -178,25 +176,30 @@ export default function CurrentNumberPage() {
                 variant='outline'
                 onClick={handleQueueNotice}
               >
-                Thông báo &quot;Nhận số thứ tự&quot;
+                Thông báo "Nhận số thứ tự"
               </Button>
             </div>
           </div>
 
+          {/* NEW buttons */}
+          <div className='grid gap-3 md:grid-cols-2 mt-2'>
+            <Button className='w-full' size='md' variant='outline' onClick={handleSilentNotice}>
+              Giữ trật tự trong studio
+            </Button>
+            <Button className='w-full' size='md' variant='outline' onClick={handleCleanNotice}>
+              Dọn rác trước khi rời studio
+            </Button>
+          </div>
+
           <div className='grid gap-3 md:grid-cols-3 mt-2'>
             <div className='w-40'>
-              <label className='text-xs text-muted-foreground'>
-                Số lần đọc
-              </label>
-              <Input
-                type='number'
+              <label className='text-xs text-muted-foreground'>Số lần đọc</label>
+              <InputNumber
                 min={1}
-                max={5}
-                value={repeatCount}
+                step={1}
+                defaultValue={repeatCount ?? 0}
                 onChange={(e) =>
-                  setRepeatCount(
-                    Math.max(1, Math.min(5, Number(e.target.value) || 1))
-                  )
+                  setRepeatCount(e || 1)
                 }
                 className='mt-1'
               />
