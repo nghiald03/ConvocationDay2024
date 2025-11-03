@@ -34,7 +34,15 @@ const COLS = 6;
 const getGivenName = (full?: string | null) => {
   if (!full) return '';
   const parts = full.trim().split(/\s+/);
-  return parts.length ? parts[parts.length - 1] : full;
+  if (parts.length === 0) return '';
+
+  const lastName = parts[parts.length - 1]; // Nghĩa
+  const initials = parts
+    .slice(0, -1) // Lê Đại
+    .map((p) => p[0]?.toUpperCase() || '') // L, Đ
+    .join(''); // LD
+
+  return `${lastName}${initials}`; // NghiaLD
 };
 
 type SeatCellProps = {

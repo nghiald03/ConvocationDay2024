@@ -21,20 +21,6 @@ export default function Page() {
       }
       return manageAPI.uncheckAll();
     },
-    onSuccess: (variables, context) => {
-      toast.success(` ${context.description} thành công`, {
-        duration: 5000,
-        position: 'top-right',
-      });
-
-      console.log('variables', context);
-    },
-    onError: (error: any, c) => {
-      toast.error(`${c.description} thất bại! ` + error.respone.data, {
-        duration: 5000,
-        position: 'top-right',
-      });
-    },
   });
   const handleAction = (action: Action) => {
     swal({

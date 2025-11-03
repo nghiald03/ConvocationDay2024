@@ -42,6 +42,11 @@ import AddOrUpdateBachelor from './components/formAddOrUpdate';
 import swal from 'sweetalert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BachelorListNotCheckin from './components/bachelorListNotCheckin';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function Page() {
   const queryClient = useQueryClient();
@@ -127,10 +132,10 @@ export default function Page() {
         bachelorDT?.data?.data?.items &&
         bachelorDT.data.data.items.length === 0
       ) {
-        toast.error('Không tìm thấy tân cử nhân', {
-          duration: 3000,
-          position: 'top-right',
-        });
+        // toast.error('Không tìm thấy tân cử nhân', {
+        //   duration: 3000,
+        //   position: 'top-right',
+        // });
         setBachelorList([]);
         return;
       }
@@ -139,10 +144,10 @@ export default function Page() {
       setPageIndex(bachelorDT.data.data.currentPage);
       setPageSize(bachelorDT.data.data.pageSize);
     } else {
-      toast.error('Không tìm thấy tân cử nhân', {
-        duration: 3000,
-        position: 'top-right',
-      });
+      // toast.error('Không tìm thấy tân cử nhân', {
+      //   duration: 3000,
+      //   position: 'top-right',
+      // });
       setBachelorList([]);
     }
   }, [bachelorDT]);
@@ -206,6 +211,25 @@ export default function Page() {
     {
       accessorKey: 'image',
       header: 'Image',
+      cell: ({ row }) => {
+        const value = String(row.getValue('image') ?? '');
+        return (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className='text-base max-w-40 truncate cursor-help' title=''>
+                {value || '—'}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent
+              side='top'
+              align='start'
+              className='max-w-sm whitespace-pre-wrap break-words'
+            >
+              {value || 'Không có dữ liệu'}
+            </TooltipContent>
+          </Tooltip>
+        );
+      },
     },
     {
       accessorKey: 'fullName',

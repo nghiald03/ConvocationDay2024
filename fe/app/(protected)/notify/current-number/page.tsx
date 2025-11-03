@@ -69,7 +69,7 @@ export default function CurrentNumberPage() {
     onError: (err: any) => {
       toast.error(
         err?.response?.data?.message ||
-        'Không thể gửi thông báo. Vui lòng thử lại.'
+          'Không thể gửi thông báo. Vui lòng thử lại.'
       );
     },
   });
@@ -116,7 +116,6 @@ export default function CurrentNumberPage() {
     });
     createNotificationMutation.mutate(request);
   }, [repeatCount, createNotificationMutation]);
-
 
   return (
     <>
@@ -176,31 +175,41 @@ export default function CurrentNumberPage() {
                 variant='outline'
                 onClick={handleQueueNotice}
               >
-                Thông báo "Nhận số thứ tự"
+                Thông báo &quot;Nhận số thứ tự&quot;
               </Button>
             </div>
           </div>
 
           {/* NEW buttons */}
           <div className='grid gap-3 md:grid-cols-2 mt-2'>
-            <Button className='w-full' size='md' variant='outline' onClick={handleSilentNotice}>
+            <Button
+              className='w-full'
+              size='md'
+              variant='outline'
+              onClick={handleSilentNotice}
+            >
               Giữ trật tự trong studio
             </Button>
-            <Button className='w-full' size='md' variant='outline' onClick={handleCleanNotice}>
+            <Button
+              className='w-full'
+              size='md'
+              variant='outline'
+              onClick={handleCleanNotice}
+            >
               Dọn rác trước khi rời studio
             </Button>
           </div>
 
           <div className='grid gap-3 md:grid-cols-3 mt-2'>
             <div className='w-40'>
-              <label className='text-xs text-muted-foreground'>Số lần đọc</label>
+              <label className='text-xs text-muted-foreground'>
+                Số lần đọc
+              </label>
               <InputNumber
                 min={1}
                 step={1}
                 defaultValue={repeatCount ?? 0}
-                onChange={(e) =>
-                  setRepeatCount(e || 1)
-                }
+                onChange={(e) => setRepeatCount(e || 1)}
                 className='mt-1'
               />
             </div>

@@ -1,6 +1,7 @@
 import DashCodeFooter from '@/components/partials/footer';
 import DashCodeHeader from '@/components/partials/header';
 import DashCodeSidebar from '@/components/partials/sidebar';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import AuthentificationProvider from '@/providers/AuthentificationProvider';
 import LayoutContentProvider from '@/providers/content.provider';
 import LayoutProvider from '@/providers/layout.provider';
@@ -14,7 +15,9 @@ const layout = async ({ children }: { children: React.ReactNode }) => {
       <DashCodeSidebar />
       <LayoutContentProvider>
         <AuthentificationProvider>
-          <ProtectProvider>{children}</ProtectProvider>
+          <TooltipProvider delayDuration={200}>
+            <ProtectProvider>{children}</ProtectProvider>
+          </TooltipProvider>
         </AuthentificationProvider>
       </LayoutContentProvider>
       <DashCodeFooter />
