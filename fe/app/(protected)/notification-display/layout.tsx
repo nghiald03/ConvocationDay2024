@@ -1,13 +1,12 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Icon } from '@iconify/react';
-import { useEffect, useState } from 'react';
-import { useSignalR } from '@/hooks/useSignalR';
+import {Badge} from '@/components/ui/badge';
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
+import {Icon} from '@iconify/react';
+import {useEffect, useState} from 'react';
+import {useSignalR} from '@/hooks/useSignalR';
 import SignalRProvider from './SignalRContext';
-import { toast } from 'sonner';
+import {toast} from 'sonner';
 
 export default function NotificationDisplayLayout({
     children,
