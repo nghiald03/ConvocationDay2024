@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Icon } from '@iconify/react';
 import { useEffect, useState } from 'react';
 import { useSignalR } from '@/hooks/useSignalR';
-import { SignalRProvider } from './SignalRContext';
+import SignalRProvider from './SignalRContext';
 import { toast } from 'sonner';
 
 export default function NotificationDisplayLayout({

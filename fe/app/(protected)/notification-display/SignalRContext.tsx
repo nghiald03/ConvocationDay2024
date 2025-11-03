@@ -21,7 +21,7 @@ const SignalRContext = createContext<SignalRContextType>({
 
 export const useSignalRContext = () => useContext(SignalRContext);
 
-export const SignalRProvider = ({
+const SignalRProvider = ({
     children,
     isConnected,
     connectionState,
@@ -42,4 +42,5 @@ export const SignalRProvider = ({
         </SignalRContext.Provider>
     );
 };
+export default SignalRProvider
 

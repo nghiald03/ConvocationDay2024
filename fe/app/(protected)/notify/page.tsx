@@ -282,7 +282,7 @@ export default function NotifyMockPage() {
       },
     });
 
-    // Không echo local: danh sách sẽ được cập nhật bởi SignalR + onSuccess (speak)
+    // Không echo local: danh sách sẽ được cập nhật bởi SignalR + onSuccess (speak) á vê cxê as
     setMsg('');
   };
 
