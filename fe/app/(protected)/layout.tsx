@@ -7,6 +7,12 @@ import LayoutContentProvider from '@/providers/content.provider';
 import LayoutProvider from '@/providers/layout.provider';
 import ProtectProvider from '@/providers/ProtectProvider';
 import { Toaster } from 'react-hot-toast';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Khu vực quản trị',
+  description: '',
+};
 
 const layout = async ({ children }: { children: React.ReactNode }) => {
   return (
