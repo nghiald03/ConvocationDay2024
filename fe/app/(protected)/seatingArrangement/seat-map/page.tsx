@@ -22,65 +22,136 @@ import {
   Camera,
   CheckCircle2,
   XCircle,
+  CornerDownRight,
+  ArrowRight,
+  ArrowDown,
+  ArrowUp,
 } from 'lucide-react';
 import { checkinAPI } from '@/config/axios';
 import HallSessionPicker from '@/components/hallSessionPicker';
 
-// ====== Cấu hình lưới ======
-const SEATS_PER_SIDE = 70;
-const COLS = 6;
+/* =========================
+   1) Layout + Marker + BLOCK CONFIG
+   ========================= */
 
-// Chỉ hiển thị tên (lấy từ cuối)
+type RowCol = { row: number; col: number }; // 0-based trong lưới
+
+type HallLayout = {
+  seatsPerSide: number; // số ghế mỗi dãy (student/parent)
+  cols: number; // số cột
+  markers: {
+    checkinTopPct: number;
+    cameraPct: number;
+    stageEntrancePct: number;
+  };
+};
+
+const HALL_LAYOUTS: Record<'A' | 'B', HallLayout> = {
+  A: {
+    seatsPerSide: 70,
+    cols: 6,
+    markers: { checkinTopPct: 5, cameraPct: 48, stageEntrancePct: 92 },
+  },
+  B: {
+    seatsPerSide: 60,
+    cols: 5,
+    markers: { checkinTopPct: 6, cameraPct: 50, stageEntrancePct: 90 },
+  },
+};
+
+/**
+ * GHẾ BLOCK sau khi chuẩn hoá:
+ * - SV luôn ngồi BÊN PHẢI (cả Hall A & B) → không block dãy SV
+ * - BÊN TRÁI là dãy PH:
+ *    + Hall A: thêm 1 hàng block đầu (X hết)
+ *    + Hall B: thêm 1 hàng block đầu, trong đó 2 ô đầu là ghế thật PH26 & PH27,
+ *      và phủ X tại vị trí gốc PH26/27 trong lưới chính.
+ */
+const BLOCKS = {
+  A: {
+    extraRows: { student: 1, parent: 1 },
+    overlayParentByNumber: [] as ReadonlyArray<number>,
+    overlayParentByRowCol: [] as ReadonlyArray<RowCol>,
+    parentTopRowSeatNumbers: [] as ReadonlyArray<number>,
+  },
+  B: {
+    extraRows: { student: 1, parent: 1 },
+    overlayParentByNumber: [26, 27] as const,
+    overlayParentByRowCol: [] as ReadonlyArray<RowCol>,
+    parentTopRowSeatNumbers: [26, 27] as const,
+  },
+} as const;
+
+const parseHallSymbol = (name?: string) => {
+  const n = (name || '').trim().toUpperCase();
+  if (/\bA\b/.test(n) || /HALL\s*A\b/.test(n) || n.endsWith(' A'))
+    return 'A' as const;
+  if (/\bB\b/.test(n) || /HALL\s*B\b/.test(n) || n.endsWith(' B'))
+    return 'B' as const;
+  return 'A' as const;
+};
+
+const rcToSeat = (row: number, col: number, cols: number) =>
+  row * cols + col + 1;
+
+/* =========================
+   2) Helpers & SeatCell
+   ========================= */
+
 const getGivenName = (full?: string | null) => {
   if (!full) return '';
   const parts = full.trim().split(/\s+/);
-  if (parts.length === 0) return '';
-
-  const lastName = parts[parts.length - 1]; // Nghĩa
+  if (!parts.length) return '';
+  const last = parts[parts.length - 1];
   const initials = parts
-    .slice(0, -1) // Lê Đại
-    .map((p) => p[0]?.toUpperCase() || '') // L, Đ
-    .join(''); // LD
-
-  return `${lastName}${initials}`; // NghiaLD
+    .slice(0, -1)
+    .map((p) => p[0]?.toUpperCase() || '')
+    .join('');
+  return `${last}${initials}`;
 };
 
 type SeatCellProps = {
   label: string;
   occupant?: Bachelor | null;
-  variant: 'student' | 'parent' | 'empty';
+  variant: 'student' | 'parent';
+  blockedOverlay?: boolean;
   showDetails?: boolean;
   oneLine?: boolean;
+  seatHeight?: number;
 };
 
 function SeatCell({
   label,
   occupant,
   variant,
+  blockedOverlay = false,
   showDetails = false,
   oneLine = false,
+  seatHeight,
 }: SeatCellProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const base =
-    'relative flex items-center justify-center rounded-lg text-[10px] sm:text-xs border select-none h-10 sm:h-12 p-1.5 text-center transition-all duration-300 ease-out cursor-default';
-
-  const color =
+    'relative flex items-center justify-center rounded-lg text-[10px] sm:text-xs border select-none p-1.5 text-center transition-all';
+  const tone =
     variant === 'student'
-      ? occupant
-        ? 'bg-gradient-to-br from-rose-100 to-rose-200 border-rose-300 text-rose-900 shadow-sm hover:shadow-md hover:scale-105'
-        : 'bg-gradient-to-br from-rose-50 to-rose-100/50 border-rose-200 text-rose-600 hover:border-rose-300'
-      : variant === 'parent'
-      ? occupant
-        ? 'bg-gradient-to-br from-sky-100 to-sky-200 border-sky-300 text-sky-900 shadow-sm hover:shadow-md hover:scale-105'
-        : 'bg-gradient-to-br from-sky-50 to-sky-100/50 border-sky-200 text-sky-600 hover:border-sky-300'
-      : 'bg-gradient-to-br from-gray-50 to-gray-100/50 border-gray-200 text-gray-500';
+      ? 'bg-gradient-to-br from-rose-50 to-rose-100/50 border-rose-200 text-rose-700'
+      : 'bg-gradient-to-br from-sky-50 to-sky-100/50 border-sky-200 text-sky-700';
 
-  const details = occupant
+  const ring =
+    occupant && !blockedOverlay ? 'ring-1 ring-inset ring-white/40' : '';
+  const interactive =
+    occupant && !blockedOverlay
+      ? 'shadow-sm hover:shadow-md hover:scale-105'
+      : 'cursor-default';
+
+  const details = blockedOverlay
+    ? `Khu vực không ngồi – ${label}`
+    : occupant
     ? `${label} - ${occupant.fullName} - ${occupant.studentCode}`
     : label;
 
-  const statusDot = occupant && !showDetails && (
+  const statusDot = occupant && !showDetails && !blockedOverlay && (
     <span
       className={`absolute right-1 top-1 h-2 w-2 rounded-full ${
         occupant.checkIn ? 'bg-emerald-600' : 'bg-rose-500'
@@ -91,17 +162,23 @@ function SeatCell({
   const statusIcon =
     occupant &&
     showDetails &&
+    !blockedOverlay &&
     (occupant.checkIn ? (
       <CheckCircle2 className='absolute right-1.5 top-1.5 w-4 h-4 text-emerald-600' />
     ) : (
       <XCircle className='absolute right-1.5 top-1.5 w-4 h-4 text-rose-600' />
     ));
 
+  const inlineStyle: React.CSSProperties = seatHeight
+    ? { height: seatHeight }
+    : {};
+
   return (
     <div
-      className={`${base} ${color} ${
-        showDetails ? 'h-20 sm:h-28 text-[11px] sm:text-sm' : ''
-      } ${occupant ? 'ring-1 ring-inset ring-white/40' : ''}`}
+      className={`${base} ${tone} ${ring} ${interactive} ${
+        showDetails ? 'text-[11px] sm:text-sm' : ''
+      }`}
+      style={inlineStyle}
       title={details}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -113,50 +190,345 @@ function SeatCell({
         <div
           className={[
             'leading-tight font-semibold flex items-center justify-center gap-1 sm:gap-2 text-center',
-            oneLine ? 'flex-row whitespace-nowrap' : 'flex-wrap',
+            oneLine ? 'flex-col whitespace-nowrap' : 'flex-wrap',
           ].join(' ')}
         >
-          <span className='shrink-0'>{label}</span>
-          {occupant ? (
-            <>
+          <span className='shrink-0'>
+            {label}
+            <br />
+          </span>
+          {occupant && !blockedOverlay ? (
+            <span>
               <span className='truncate max-w-[140px] sm:max-w-[160px]'>
-                {getGivenName(occupant.fullName)}
+                {getGivenName(occupant.fullName)}{' '}
               </span>
               <span className='opacity-80 shrink-0'>
                 {occupant.studentCode}
               </span>
-            </>
+            </span>
           ) : (
-            <span className='opacity-60'>Trống</span>
+            <span className='opacity-60'>
+              {blockedOverlay ? 'KHÔNG NGỒI' : 'Trống'}
+            </span>
           )}
         </div>
       ) : (
         <div className='flex flex-col items-center gap-0.5'>
           <span className='font-bold'>{label}</span>
-          {occupant && isHovered && (
+          {occupant && !blockedOverlay && isHovered && (
             <div className='text-[8px] opacity-80 font-medium truncate max-w-full'>
               {occupant.fullName?.split(' ').pop()}
             </div>
           )}
         </div>
       )}
+
+      {blockedOverlay && (
+        <>
+          <div className='pointer-events-none absolute inset-0 rounded-lg bg-gray-300/25' />
+          <div className='pointer-events-none absolute inset-0 flex items-center justify-center'>
+            <span className='text-[14px] sm:text-base font-extrabold text-gray-700/85 tracking-wider'>
+              X
+            </span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
+function BlockRow({
+  cols,
+  tone,
+  seatHeight,
+}: {
+  cols: number;
+  tone: 'student' | 'parent';
+  seatHeight?: number;
+}) {
+  const base =
+    'relative flex items-center justify-center rounded-lg text-[10px] sm:text-xs border select-none p-1.5 text-center';
+  const color =
+    tone === 'student'
+      ? 'bg-gradient-to-br from-rose-100 to-rose-200/80 border-rose-300 text-rose-900'
+      : 'bg-gradient-to-br from-sky-100 to-sky-200/80 border-sky-300 text-sky-900';
+
+  const cellStyle: React.CSSProperties = seatHeight
+    ? { height: seatHeight }
+    : {};
+
+  return (
+    <div
+      className='grid'
+      style={{
+        gridTemplateColumns: `repeat(${cols}, minmax(44px, 1fr))`,
+        gap: 8,
+      }}
+    >
+      {Array.from({ length: cols }).map((_, i) => (
+        <div
+          key={i}
+          className={`${base} ${color} cursor-not-allowed`}
+          style={cellStyle}
+          title='Khu vực không ngồi'
+        >
+          <span className='font-bold'>X</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ParentTopBlockRow({
+  cols,
+  seatNumbers,
+  parentMap,
+  showDetails,
+  oneLine,
+  seatHeight,
+}: {
+  cols: number;
+  seatNumbers: ReadonlyArray<number>;
+  parentMap: Map<number, Bachelor>;
+  showDetails: boolean;
+  oneLine: boolean;
+  seatHeight?: number;
+}) {
+  const xStyle: React.CSSProperties = seatHeight ? { height: seatHeight } : {};
+  return (
+    <div
+      className='grid'
+      style={{
+        gridTemplateColumns: `repeat(${cols}, minmax(44px, 1fr))`,
+        gap: 8,
+      }}
+    >
+      {Array.from({ length: cols }).map((_, i) => {
+        const seatNo = seatNumbers[i];
+        if (seatNo) {
+          const occ = parentMap.get(seatNo) || null;
+          return (
+            <SeatCell
+              key={`ptop-${seatNo}`}
+              label={`PH${seatNo}`}
+              occupant={occ}
+              variant='parent'
+              blockedOverlay={false}
+              showDetails={showDetails}
+              oneLine={oneLine}
+              seatHeight={seatHeight}
+            />
+          );
+        }
+        return (
+          <div
+            key={`ptop-x-${i}`}
+            className='relative flex items-center justify-center rounded-lg border p-1.5 text-center cursor-not-allowed
+                       bg-gradient-to-br from-sky-100 to-sky-200/80 border-sky-300 text-sky-900'
+            style={xStyle}
+            title='Khu vực không ngồi'
+          >
+            <span className='font-bold'>X</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* =========================
+   3) Middle marker (để sẵn)
+   ========================= */
+/* =========================
+   MARKERS (edge/overlay)
+   ========================= */
+type Tone = 'amber' | 'sky' | 'rose' | 'slate';
+
+const toneClass: Record<Tone, string> = {
+  amber: 'bg-amber-50/95 border-amber-300 text-amber-900 shadow-amber-100',
+  sky: 'bg-sky-50/95 border-sky-300 text-sky-900 shadow-sky-100',
+  rose: 'bg-rose-50/95 border-rose-300 text-rose-900 shadow-rose-100',
+  slate: 'bg-white/90 border-slate-300 text-slate-900 shadow-slate-100',
+};
+
+function Pill({
+  children,
+  tone = 'slate',
+  className = '',
+  vertical = false,
+}: {
+  children: React.ReactNode;
+  tone?: Tone;
+  className?: string;
+  vertical?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        'flex items-center justify-center gap-2 px-3 py-1.5 rounded-md border shadow-sm backdrop-blur',
+        toneClass[tone],
+        vertical ? 'writing-vertical' : '',
+        className,
+      ].join(' ')}
+    >
+      {children}
+      <style jsx>{`
+        .writing-vertical {
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/** Marker định vị tuyệt đối theo % hoặc px */
+function PositionedMarker({
+  children,
+  style,
+  className = '',
+}: {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  className?: string;
+}) {
+  return (
+    <div
+      className={['pointer-events-none absolute', className].join(' ')}
+      style={style}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Bộ Marker tổng hợp theo hall */
+function Markers({
+  hallSymbol,
+  isFullscreen,
+}: {
+  hallSymbol: 'A' | 'B';
+  isFullscreen: boolean;
+}) {
+  // tỷ lệ/offset cho fullscreen & normal
+  const rightEdge = isFullscreen ? '2vw' : '12px';
+  const leftEdge = isFullscreen ? '2vw' : '12px';
+  const topEdge = isFullscreen ? '6vh' : '36px';
+  const bottomEdge = isFullscreen ? '4vh' : '24px';
+  const midY = isFullscreen ? '35vh' : '35%';
+
+  return (
+    <>
+      {/* === Chung cho cả A & B === */}
+
+      {/* Lối lên nhận bằng (mũi tên ↑), text dọc ở lề phải */}
+      <PositionedMarker style={{ top: midY as any, right: rightEdge }}>
+        <Pill tone='rose' vertical>
+          <ArrowUp className='w-4 h-4' />
+          <span className='font-semibold'>LỐI LÊN NHẬN BẰNG</span>
+        </Pill>
+      </PositionedMarker>
+
+      {/* Lối trở về chỗ ngồi (mũi tên ↓) ở lề trái */}
+      <PositionedMarker style={{ top: midY as any, left: leftEdge }}>
+        <Pill tone='sky' vertical>
+          <ArrowDown className='w-4 h-4' />
+          <span className='font-semibold'>LỐI TRỞ VỀ CHỖ NGỒI</span>
+        </Pill>
+      </PositionedMarker>
+
+      {/* Lối trở về chỗ ngồi ở CUỐI HÀNG GHẾ, mũi tên → (trừ trái qua phải) */}
+      <PositionedMarker
+        style={{ bottom: bottomEdge, left: isFullscreen ? '10vw' : '10%' }}
+      >
+        <Pill tone='sky'>
+          <ArrowRight className='w-4 h-4' />
+          <span className='font-semibold'>LỐI TRỞ VỀ CHỖ NGỒI</span>
+        </Pill>
+      </PositionedMarker>
+
+      {/* Ở khoảng trống giữa (lối đi ở giữa hai dãy) */}
+      <PositionedMarker
+        style={{
+          top: isFullscreen ? '40vh' : '40%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+        }}
+      >
+        <Pill tone='slate' vertical>
+          <span className='font-semibold'>KHÔNG ĐI LỐI NÀY</span>
+        </Pill>
+      </PositionedMarker>
+
+      {/* === Riêng Hall A === */}
+      {hallSymbol === 'A' && (
+        <>
+          {/* Lối ra lầu 4 ở trên bên trái */}
+          <PositionedMarker style={{ top: topEdge, left: leftEdge }}>
+            <Pill tone='amber'>
+              <span className='font-semibold'>LỐI RA LẦU 4</span>
+            </Pill>
+          </PositionedMarker>
+
+          {/* Cuối hàng: CHECK-IN & LỐI VÀO LẦU 5 */}
+          <PositionedMarker
+            style={{ bottom: bottomEdge, right: isFullscreen ? '10vw' : '10%' }}
+          >
+            <Pill tone='rose'>
+              <span className='font-semibold'>
+                CHECK-IN &nbsp;•&nbsp; LỐI VÀO LẦU 5
+              </span>
+            </Pill>
+          </PositionedMarker>
+        </>
+      )}
+
+      {/* === Riêng Hall B === */}
+      {hallSymbol === 'B' && (
+        <>
+          {/* Lối vào & Check-in lầu 4 ở góc dưới phải */}
+          <PositionedMarker style={{ bottom: bottomEdge, right: rightEdge }}>
+            <Pill tone='rose'>
+              <span className='font-semibold'>
+                LỐI VÀO &amp; CHECK-IN (LẦU 4)
+              </span>
+            </Pill>
+          </PositionedMarker>
+
+          {/* Lối ra ở trên hàng đầu, lề phải: Lối ra lầu 3 */}
+          <PositionedMarker style={{ top: topEdge, right: rightEdge }}>
+            <Pill tone='amber'>
+              <span className='font-semibold'>LỐI RA (LẦU 3)</span>
+            </Pill>
+          </PositionedMarker>
+        </>
+      )}
+    </>
+  );
+}
+
+/* =========================
+   4) Main
+   ========================= */
 export default function SeatMapPage() {
-  // ==== Nhận lựa chọn từ HallSessionPicker ====
   const [hall, setHall] = useState<string>('');
   const [session, setSession] = useState<string>('');
   const [selectedHallName, setSelectedHallName] = useState<string>('');
 
-  // ==== Hiển thị ====
   const [showFullInfo, setShowFullInfo] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  // ==== Fetch danh sách ghế theo Hall/Session ====
+  const hallSymbol = useMemo(
+    () => parseHallSymbol(selectedHallName),
+    [selectedHallName]
+  );
+  const layout = useMemo(() => HALL_LAYOUTS[hallSymbol], [hallSymbol]);
+  const SEATS_PER_SIDE = layout.seatsPerSide;
+  const COLS = layout.cols;
+
+  const cfg = BLOCKS[hallSymbol];
   const enabled = !!hall && !!session;
 
   const {
@@ -177,21 +549,16 @@ export default function SeatMapPage() {
   });
 
   useEffect(() => {
-    if (listErr) {
-      toast.error('Lỗi khi tải danh sách chỗ ngồi');
-    }
+    if (listErr) toast.error('Lỗi khi tải danh sách chỗ ngồi');
   }, [listErr]);
 
   const bachelors: Bachelor[] = useMemo(() => {
-    const raw = listRes?.data;
-    const extract = (r: any): any[] => {
-      if (!r) return [];
-      if (Array.isArray(r?.data?.data?.items)) return r.data.data.items;
-      if (Array.isArray(r?.data?.items)) return r.data.items;
-      if (Array.isArray(r?.data)) return r.data;
-      return [];
-    };
-    return extract(listRes);
+    const r = listRes as any;
+    if (!r) return [];
+    if (Array.isArray(r?.data?.data?.items)) return r.data.data.items;
+    if (Array.isArray(r?.data?.items)) return r.data.items;
+    if (Array.isArray(r?.data)) return r.data;
+    return [];
   }, [listRes]);
 
   const studentMap = useMemo(() => {
@@ -201,78 +568,72 @@ export default function SeatMapPage() {
       if (!isNaN(n) && n >= 1 && n <= SEATS_PER_SIDE) map.set(n, b);
     }
     return map;
-  }, [bachelors]);
+  }, [bachelors, SEATS_PER_SIDE]);
+
+  const parentBlockedOverlaySet = useMemo(() => {
+    const set = new Set<number>();
+    cfg.overlayParentByNumber.forEach((n) => {
+      if (n >= 1 && n <= SEATS_PER_SIDE) set.add(n);
+    });
+    cfg.overlayParentByRowCol.forEach(({ row, col }) => {
+      const n = rcToSeat(row, col, COLS);
+      if (n >= 1 && n <= SEATS_PER_SIDE) set.add(n);
+    });
+    return set;
+  }, [cfg, COLS, SEATS_PER_SIDE]);
 
   const parentMap = useMemo(() => {
     const map = new Map<number, Bachelor>();
     for (const b of bachelors) {
-      const raw = String(b.chairParent ?? '');
-      const n = parseInt(raw.replace(/[^0-9]/g, ''));
+      const n = parseInt(String(b.chairParent ?? '').replace(/[^0-9]/g, ''));
       if (!isNaN(n) && n >= 1 && n <= SEATS_PER_SIDE) map.set(n, b);
     }
     return map;
-  }, [bachelors]);
+  }, [bachelors, SEATS_PER_SIDE]);
 
-  // Xác định Hall B để hoán đổi nhãn/dãy
-  const isHallB = useMemo(() => {
-    const name = (selectedHallName || '').toString();
-    const n = name.trim().toLowerCase();
-    return /(^|\s)b($|\s)/i.test(name) || n.endsWith(' b');
-  }, [selectedHallName]);
-
-  // ==== Theo dõi fullscreen + resize (ESC đồng bộ layout) ====
   useEffect(() => {
-    const updateDims = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
-      }
+    const upd = () => {
+      if (!containerRef.current) return;
+      setDimensions({
+        width: containerRef.current.clientWidth,
+        height: containerRef.current.clientHeight,
+      });
     };
-    const handleFull = () => {
-      const isFull = !!document.fullscreenElement;
-      setIsFullscreen(isFull);
-      setShowFullInfo(isFull);
-      if (isFull) {
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
-      }
-      updateDims();
+    const onFull = () => {
+      const full = !!document.fullscreenElement;
+      setIsFullscreen(full);
+      setShowFullInfo(full);
+      document.documentElement.style.overflow = full ? 'hidden' : '';
+      document.body.style.overflow = full ? 'hidden' : '';
+      upd();
     };
-    const handleResize = () => updateDims();
-
-    document.addEventListener('fullscreenchange', handleFull);
-    window.addEventListener('resize', handleResize);
+    document.addEventListener('fullscreenchange', onFull);
+    window.addEventListener('resize', upd);
     return () => {
-      document.removeEventListener('fullscreenchange', handleFull);
-      window.removeEventListener('resize', handleResize);
+      document.removeEventListener('fullscreenchange', onFull);
+      window.removeEventListener('resize', upd);
     };
   }, []);
 
-  // ==== Kích thước ghế cơ sở (trước khi scale) ====
+  /**
+   * TÍNH KÍCH THƯỚC GHẾ
+   * - Normal mode: như cũ (dựa theo container width/height)
+   * - Fullscreen: bám đúng 40vw (bề rộng mỗi dãy) và 80vh (chiều cao)
+   */
   const seatSize = useMemo(() => {
     if (!isFullscreen || !dimensions.width || !dimensions.height) {
-      return { width: 56, height: 48, gap: 8, fontSize: 'xs' as const };
+      return { width: 56, height: 20, gap: 8, fontSize: 'xs' as const };
     }
+    const aw = dimensions.width * 0.425; // mỗi dãy chiếm 42.5% width
+    const ah = dimensions.height * 0.9; // chiều cao 90%
+
     const rows = Math.ceil(SEATS_PER_SIDE / COLS);
-    const middleWidthFS = Math.max(
-      140,
-      Math.min(240, Math.floor(dimensions.width * 0.06))
-    );
-    const availableWidth = (dimensions.width - middleWidthFS) / 2;
-    const availableHeight = dimensions.height - 48;
-
-    const maxWidthPerSeat = (availableWidth - (COLS - 1) * 10) / COLS;
-    const maxHeightPerSeat = (availableHeight - (rows - 1) * 10) / rows;
-
-    const size = Math.min(maxWidthPerSeat, maxHeightPerSeat, 130);
+    const maxW = (aw - (COLS - 1) * 10) / COLS;
+    const maxH = (ah - (rows - 1) * 10) / rows;
+    const size = Math.min(maxW, maxH, 130);
     return {
       width: Math.floor(size),
-      height: Math.floor(size * 1.12),
+      height: Math.floor(size * 0.8),
       gap: size > 100 ? 12 : 10,
       fontSize:
         size > 96
@@ -281,62 +642,64 @@ export default function SeatMapPage() {
           ? ('sm' as const)
           : ('xs' as const),
     };
-  }, [isFullscreen, dimensions]);
+  }, [isFullscreen, dimensions, SEATS_PER_SIDE, COLS]);
 
-  // ==== Tính kích thước bố cục & scale-to-fit (ưu tiên sát 2 lề ngang) ====
+  // Chiều cao cell (áp dụng FS để đồng nhất block & seat)
+  const cellHeight = useMemo(() => {
+    const h = Math.max(seatSize.height, 30);
+    return isFullscreen ? h : undefined;
+  }, [seatSize.height, isFullscreen]);
+
+  // (Only Normal mode) scale wrapper như cũ
   const scaleData = useMemo(() => {
-    const rows = Math.ceil(SEATS_PER_SIDE / COLS);
-    const sideWidth = COLS * seatSize.width + (COLS - 1) * seatSize.gap;
-    const middleWidth = isFullscreen
-      ? Math.max(140, Math.min(240, Math.floor(dimensions.width * 0.06)))
-      : 200;
-
-    // >>> CHUẨN: 2 dãy + lối giữa
-    const contentWidth = sideWidth * 3.5 + middleWidth;
-    const gridsHeight = rows * seatSize.height + (rows - 1) * seatSize.gap;
-    const contentHeight = gridsHeight + (isFullscreen ? 32 : 96);
-
-    let scale = 1;
-    if (isFullscreen && dimensions.width && dimensions.height) {
-      const sx = dimensions.width / contentWidth; // ép sát trái/phải
-      const sy = dimensions.height / contentHeight;
-      scale = Math.min(sx, sy);
-      scale = Math.min(scale, 1.25);
+    if (isFullscreen) {
+      return {
+        contentWidth: 0,
+        contentHeight: 0,
+        middleWidth: 0,
+        scale: 1,
+        gridsHeight: 0,
+      };
     }
-    return { contentWidth, contentHeight, middleWidth, scale };
-  }, [seatSize, isFullscreen, dimensions]);
+    const rows = Math.ceil(SEATS_PER_SIDE / COLS);
+    const sideW = COLS * seatSize.width + (COLS - 1) * seatSize.gap;
+    const middleW = 200;
+    const contentWidth = sideW * 3.5 + middleW;
+    const gridsHeight = rows * seatSize.height + (rows - 1) * seatSize.gap;
+    const contentHeight = gridsHeight + 96;
+    return {
+      contentWidth,
+      contentHeight,
+      middleWidth: middleW,
+      scale: 1,
+      gridsHeight,
+    };
+  }, [isFullscreen, seatSize, SEATS_PER_SIDE, COLS]);
 
   const enterFull = async () => {
     try {
       setShowFullInfo(true);
       await containerRef.current?.requestFullscreen?.();
-      // overflow sẽ do fullscreenchange xử lý
     } catch {}
   };
-
   const exitFull = async () => {
     try {
       await document.exitFullscreen();
     } catch {}
-    // fullscreenchange sẽ đồng bộ lại state
   };
 
-  // style lưới theo seatSize (trước khi scale)
-  const gridSeatStyle = {
-    gridTemplateColumns: `repeat(${COLS}, minmax(${
-      isFullscreen || showFullInfo ? Math.max(seatSize.width, 44) : 48
-    }px, 1fr))`,
-    gap: isFullscreen || showFullInfo ? Math.max(seatSize.gap, 8) : 8,
-  } as React.CSSProperties;
+  const gridSeatStyle = useMemo(() => {
+    const minCell =
+      isFullscreen || showFullInfo ? Math.max(seatSize.width, 44) : 48;
+    const gap = isFullscreen || showFullInfo ? Math.max(seatSize.gap, 8) : 8;
+    return {
+      gridTemplateColumns: `repeat(${COLS}, minmax(${minCell}px, 1fr))`,
+      gap,
+    } as React.CSSProperties;
+  }, [COLS, isFullscreen, showFullInfo, seatSize.width, seatSize.gap]);
 
   const HeaderLabel = ({ type }: { type: 'left' | 'right' }) => {
-    const leftIsStudent = isHallB; // Hall B: bên trái là Tân cử nhân
-    const rightIsStudent = !isHallB;
-
-    const showStudent =
-      (type === 'left' && leftIsStudent) ||
-      (type === 'right' && rightIsStudent);
-
+    const showStudent = type === 'right';
     return showStudent ? (
       <div className='flex items-center gap-2'>
         <User className='w-5 h-5 text-rose-600' />
@@ -354,15 +717,14 @@ export default function SeatMapPage() {
     );
   };
 
-  const stats = useMemo(() => {
-    const totalStudents = studentMap.size;
-    const totalParents = parentMap.size;
-    return { totalStudents, totalParents };
-  }, [studentMap, parentMap]);
+  const stats = useMemo(
+    () => ({ totalStudents: studentMap.size, totalParents: parentMap.size }),
+    [studentMap, parentMap]
+  );
 
+  /* ---------- RENDER ---------- */
   return (
     <div className='space-y-5 pb-8'>
-      {/* Breadcrumb cam */}
       <Card className='shadow-sm border-0 '>
         <CardContent className='p-4'>
           <Breadcrumb>
@@ -386,7 +748,6 @@ export default function SeatMapPage() {
         </CardContent>
       </Card>
 
-      {/* Picker tái sử dụng (cam) */}
       <HallSessionPicker
         storageKey='seatmap'
         onChange={(v) => {
@@ -396,7 +757,6 @@ export default function SeatMapPage() {
         }}
       />
 
-      {/* Thống kê nhanh */}
       {enabled && !isFetching && (
         <div className='flex gap-4 flex-wrap'>
           <div className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-50 to-rose-100 rounded-lg border border-rose-200'>
@@ -414,7 +774,6 @@ export default function SeatMapPage() {
         </div>
       )}
 
-      {/* Seat map */}
       <Card className='shadow-lg border-0'>
         <CardContent className='p-6'>
           {!enabled ? (
@@ -440,73 +799,182 @@ export default function SeatMapPage() {
                   : 'w-full overflow-auto'
               }
             >
-              {/* Khối vẽ, scale-to-fit để chạm lề trái/phải */}
-              <div
-                className={isFullscreen ? '' : 'mx-auto'}
-                style={
-                  isFullscreen
-                    ? {
-                        width: '100vw',
-                        height: '100vh',
-                        padding: 0,
-                        margin: 0,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'flex-start',
-                      }
-                    : {
-                        maxWidth: showFullInfo
-                          ? 'min(1600px, calc(100vw - 48px))'
-                          : 1200,
-                      }
-                }
-              >
-                <div
-                  style={
-                    isFullscreen
-                      ? {
-                          width: `${scaleData.contentWidth}px`,
-                          height: `${scaleData.contentHeight}px`,
-                          transform: `scale(${scaleData.scale})`,
-                          transformOrigin: 'top center',
-                        }
-                      : undefined
-                  }
-                >
-                  {/* Header: label trái | tiêu đề | label phải + nút */}
+              {/* ========= FULLSCREEN LAYOUT (20vh header + 80vh content) ========= */}
+              {isFullscreen ? (
+                <div className='w-screen h-screen'>
+                  {/* Header 20vh, 100vw */}
                   <div
-                    className='grid items-center mb-2 mt-2'
-                    style={{
-                      gridTemplateColumns: `1fr ${scaleData.middleWidth}px 1fr`,
-                      gap: isFullscreen ? 16 : 20,
-                    }}
+                    className='flex items-center justify-between px-[5vw]'
+                    style={{ height: '10vh', width: '100vw' }}
                   >
-                    {/* Label trái */}
-                    <div className='flex items-center gap-2'>
+                    <div>
+                      {/* giữ cân đối, placeholder bên trái */}
                       <HeaderLabel type='left' />
                     </div>
 
-                    {/* Giữa: tiêu đề nhỏ */}
                     <div className='flex items-center justify-center'>
-                      <div className='bg-gradient-to-b from-orange-600 to-amber-600 text-white text-center px-4 py-2 rounded-xl font-bold shadow-lg'>
-                        SƠ ĐỒ HỘI TRƯỜNG
+                      <div className='bg-gradient-to-b from-orange-600 to-amber-600 text-white text-center px-6 py-3 rounded-xl font-bold shadow-lg'>
+                        SƠ ĐỒ HỘI TRƯỜNG {hallSymbol}
                       </div>
                     </div>
 
-                    {/* Label phải + Nút */}
-                    <div className='flex items-center justify-end gap-2'>
+                    <div className='flex items-center gap-2'>
                       <HeaderLabel type='right' />
-                      {isFullscreen ? (
-                        <Button
-                          size='sm'
-                          variant='outline'
-                          onClick={exitFull}
-                          className='shadow-sm'
-                        >
-                          <Minimize2 className='w-4 h-4 mr-2' />
-                          Thoát toàn màn hình
-                        </Button>
-                      ) : (
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        onClick={exitFull}
+                        className='shadow-sm'
+                      >
+                        <Minimize2 className='w-4 h-4 mr-2' />
+                        Thoát toàn màn hình
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Content 80vh:
+                      [5vw margin] [40vw PH] [10vw gap] [40vw SV] [5vw margin] */}
+                  <div
+                    className='grid'
+                    style={{
+                      gridTemplateColumns: '5vw 42.5vw 5vw 42.5vw 5vw',
+
+                      columnGap: 0,
+                      height: '90vh',
+                      width: '100vw',
+                    }}
+                  >
+                    {/* margin trái */}
+                    <div />
+
+                    {/* PH 40vw × 80vh */}
+                    <div className='flex flex-col h-full'>
+                      {cfg.extraRows.parent > 0 &&
+                        (hallSymbol === 'B' ? (
+                          <ParentTopBlockRow
+                            cols={COLS}
+                            seatNumbers={cfg.parentTopRowSeatNumbers}
+                            parentMap={parentMap}
+                            showDetails={showFullInfo}
+                            oneLine={true}
+                            seatHeight={cellHeight}
+                          />
+                        ) : (
+                          <BlockRow
+                            cols={COLS}
+                            tone='parent'
+                            seatHeight={cellHeight}
+                          />
+                        ))}
+                      <div
+                        className='grid mt-2'
+                        style={{
+                          ...gridSeatStyle,
+                          height: '100%',
+                          alignContent: 'start',
+                        }}
+                      >
+                        {Array.from(
+                          { length: SEATS_PER_SIDE },
+                          (_, i) => i + 1
+                        ).map((n) => {
+                          const label = `PH${n}`;
+                          const blockedOverlay = parentBlockedOverlaySet.has(n);
+                          const occ = parentMap.get(n);
+                          return (
+                            <SeatCell
+                              key={`left-p-${n}`}
+                              label={label}
+                              occupant={occ || null}
+                              variant='parent'
+                              blockedOverlay={blockedOverlay}
+                              showDetails={showFullInfo}
+                              oneLine={true}
+                              seatHeight={cellHeight}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* GAP giữa 10vw */}
+                    <div className='relative'>
+                      {/* có thể thả MiddleMarker nếu muốn */}
+                    </div>
+
+                    {/* SV 40vw × 80vh */}
+                    <div className='flex flex-col h-full'>
+                      {cfg.extraRows.student > 0 && (
+                        <BlockRow
+                          cols={COLS}
+                          tone='student'
+                          seatHeight={cellHeight}
+                        />
+                      )}
+                      <div
+                        className='grid mt-2'
+                        style={{
+                          ...gridSeatStyle,
+                          height: '100%',
+                          alignContent: 'start',
+                        }}
+                      >
+                        {Array.from(
+                          { length: SEATS_PER_SIDE },
+                          (_, i) => i + 1
+                        ).map((n) => {
+                          const label = `${n}`;
+                          const occ = studentMap.get(n);
+                          return (
+                            <SeatCell
+                              key={`right-s-${n}`}
+                              label={label}
+                              occupant={occ || null}
+                              variant='student'
+                              blockedOverlay={false}
+                              showDetails={showFullInfo}
+                              oneLine={true}
+                              seatHeight={cellHeight}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* margin phải */}
+                    <div />
+                  </div>
+                  <Markers hallSymbol={hallSymbol} isFullscreen={false} />
+                </div>
+              ) : (
+                /* ========= NORMAL LAYOUT (giữ như cũ) ========= */
+                <div
+                  className='mx-auto'
+                  style={{
+                    maxWidth: showFullInfo
+                      ? 'min(1600px, calc(100vw - 48px))'
+                      : 1200,
+                  }}
+                >
+                  <div>
+                    {/* Header */}
+                    <div
+                      className='grid items-center mb-2 mt-2'
+                      style={{
+                        gridTemplateColumns: `1fr ${scaleData.middleWidth}px 1fr`,
+                        gap: 20,
+                      }}
+                    >
+                      <div className='flex items-center gap-2'>
+                        <HeaderLabel type='left' />
+                      </div>
+                      <div className='flex items-center justify-center'>
+                        <div className='bg-gradient-to-b from-orange-600 to-amber-600 text-white text-center px-4 py-2 rounded-xl font-bold shadow-lg'>
+                          SƠ ĐỒ HỘI TRƯỜNG {hallSymbol}
+                        </div>
+                      </div>
+                      <div className='flex items-center justify-end gap-2'>
+                        <HeaderLabel type='right' />
                         <Button
                           size='sm'
                           onClick={enterFull}
@@ -516,89 +984,102 @@ export default function SeatMapPage() {
                           <Maximize2 className='w-4 h-4 mr-2' />
                           Toàn màn hình
                         </Button>
-                      )}
+                      </div>
+                    </div>
+
+                    {/* 3 cột: Trái | Lối giữa | Phải */}
+                    <div
+                      className='grid items-start'
+                      style={{ gridTemplateColumns: `1fr 200px 1fr`, gap: 20 }}
+                    >
+                      {/* TRÁI = PH */}
+                      <div className='flex flex-col gap-2'>
+                        {cfg.extraRows.parent > 0 &&
+                          (hallSymbol === 'B' ? (
+                            <ParentTopBlockRow
+                              cols={COLS}
+                              seatNumbers={cfg.parentTopRowSeatNumbers}
+                              parentMap={parentMap}
+                              showDetails={showFullInfo}
+                              oneLine={false}
+                              seatHeight={cellHeight}
+                            />
+                          ) : (
+                            <BlockRow
+                              cols={COLS}
+                              tone='parent'
+                              seatHeight={cellHeight}
+                            />
+                          ))}
+                        <div className='grid' style={gridSeatStyle}>
+                          {Array.from(
+                            { length: SEATS_PER_SIDE },
+                            (_, i) => i + 1
+                          ).map((n) => {
+                            const label = `PH${n}`;
+                            const blockedOverlay =
+                              parentBlockedOverlaySet.has(n);
+                            const occ = parentMap.get(n);
+                            return (
+                              <SeatCell
+                                key={`left-p-${n}`}
+                                label={label}
+                                occupant={occ || null}
+                                variant='parent'
+                                blockedOverlay={blockedOverlay}
+                                showDetails={showFullInfo}
+                                oneLine={false}
+                                seatHeight={cellHeight}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* LỐI GIỮA */}
+                      <div
+                        className='relative rounded-lg'
+                        style={{
+                          background:
+                            'linear-gradient(to bottom, rgba(255,200,100,0.06), rgba(255,220,120,0.06))',
+                          border: '1px dashed rgba(253,186,116,0.6)',
+                        }}
+                      />
+
+                      {/* PHẢI = SV */}
+                      <div className='flex flex-col gap-2'>
+                        {cfg.extraRows.student > 0 && (
+                          <BlockRow
+                            cols={COLS}
+                            tone='student'
+                            seatHeight={cellHeight}
+                          />
+                        )}
+                        <div className='grid' style={gridSeatStyle}>
+                          {Array.from(
+                            { length: SEATS_PER_SIDE },
+                            (_, i) => i + 1
+                          ).map((n) => {
+                            const occ = studentMap.get(n);
+                            return (
+                              <SeatCell
+                                key={`right-s-${n}`}
+                                label={`${n}`}
+                                occupant={occ || null}
+                                variant='student'
+                                blockedOverlay={false}
+                                showDetails={showFullInfo}
+                                oneLine={false}
+                                seatHeight={cellHeight}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  {/* 3 cột ghế: trái | lối giữa (trống) | phải */}
-                  <div
-                    className='grid items-start'
-                    style={{
-                      gridTemplateColumns: `1fr ${scaleData.middleWidth}px 1fr`,
-                      gap: isFullscreen ? 16 : 20,
-                    }}
-                  >
-                    {/* Trái */}
-                    <div className='grid' style={gridSeatStyle}>
-                      {Array.from(
-                        { length: SEATS_PER_SIDE },
-                        (_, i) => i + 1
-                      ).map((n) =>
-                        isHallB ? (
-                          <SeatCell
-                            key={`left-s-${n}`}
-                            label={`${n}`}
-                            occupant={studentMap.get(n) || null}
-                            variant='student'
-                            showDetails={showFullInfo}
-                            oneLine={isFullscreen}
-                          />
-                        ) : (
-                          <SeatCell
-                            key={`left-p-${n}`}
-                            label={`PH${n}`}
-                            occupant={parentMap.get(n) || null}
-                            variant='parent'
-                            showDetails={showFullInfo}
-                            oneLine={isFullscreen}
-                          />
-                        )
-                      )}
-                    </div>
-
-                    {/* Lối giữa (trống để chiếm chỗ) */}
-                    <div />
-
-                    {/* Phải */}
-                    <div className='grid' style={gridSeatStyle}>
-                      {Array.from(
-                        { length: SEATS_PER_SIDE },
-                        (_, i) => i + 1
-                      ).map((n) =>
-                        isHallB ? (
-                          <SeatCell
-                            key={`right-p-${n}`}
-                            label={`PH${n}`}
-                            occupant={parentMap.get(n) || null}
-                            variant='parent'
-                            showDetails={showFullInfo}
-                            oneLine={isFullscreen}
-                          />
-                        ) : (
-                          <SeatCell
-                            key={`right-s-${n}`}
-                            label={`${n}`}
-                            occupant={studentMap.get(n) || null}
-                            variant='student'
-                            showDetails={showFullInfo}
-                            oneLine={isFullscreen}
-                          />
-                        )
-                      )}
-                    </div>
-                  </div>
-
-                  {!showFullInfo && (
-                    <div className='mt-3 p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200'>
-                      <p className='text-sm text-gray-700 text-center'>
-                        💡 <span className='font-semibold'>Mẹo:</span> Di chuột
-                        vào ghế để xem tên tân cử nhân
-                      </p>
-                    </div>
-                  )}
                 </div>
-              </div>
-              {/* Hết khối vẽ */}
+              )}
             </div>
           )}
         </CardContent>
