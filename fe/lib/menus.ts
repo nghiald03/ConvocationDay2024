@@ -49,7 +49,7 @@ export function getMenuList(pathname: string): Group[] {
     {
       groupLabel: 'Thông báo',
       id: 'notification',
-      roleAccess: ['MN', 'CK', 'MC', 'US', 'NO'],
+      roleAccess: ['MN', 'NO'],
       menus: [
         {
           id: 'notification',

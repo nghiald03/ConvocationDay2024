@@ -41,6 +41,7 @@ import { Bachelor } from '@/dtos/BachelorDTO';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useMemo, useState } from 'react';
+import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import swal from 'sweetalert';
 import { useDebounce } from 'use-debounce';
@@ -61,6 +62,22 @@ export default function ManualCheckinPage() {
   const [applying, setApplying] = useState(false);
   const [mssv, setMSSV] = useState('');
   const [sessionBachelor, setSessionBachelor] = useState<string | null>(null);
+
+  // ---- Chặn gửi thông báo nếu không phải role MN
+  const [isMN, setIsMN] = useState(false);
+  useEffect(() => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      if (!token) {
+        setIsMN(false);
+        return;
+      }
+      const decoded: any = jwtDecode(token);
+      setIsMN(decoded?.role === 'MN');
+    } catch {
+      setIsMN(false);
+    }
+  }, []);
 
   // Set MSSV đang xử lý để disable switch theo từng hàng
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
@@ -275,6 +292,10 @@ export default function ManualCheckinPage() {
   });
 
   const handleSendNotify = (row: any) => {
+    if (!isMN) {
+      toast.error('Bạn không có quyền gửi thông báo', { duration: 3000, position: 'top-right' });
+      return;
+    }
     const hallLabel =
       row.hallName != null && row.hallName !== '' ? row.hallName : 'hội trường';
     const message = `Xin mời Tân cử nhân ${row.fullName} với mã số sinh viên ${row.studentCode} tới hội trường ${hallLabel} thuộc phiên ${row.sessionNum} để làm thủ tục checkin trước khi cổng checkin đóng lại.`;
@@ -331,7 +352,7 @@ export default function ManualCheckinPage() {
             size='sm'
             variant='outline'
             onClick={() => handleSendNotify(row.original)}
-            disabled={sendNotifyMutation.isPending}
+            disabled={!isMN || sendNotifyMutation.isPending}
           >
             {sendNotifyMutation.isPending ? 'Đang gửi...' : 'Gửi thông báo'}
           </Button>
@@ -342,6 +363,7 @@ export default function ManualCheckinPage() {
       processingIds,
       updateBachelorMissingSession.isPending,
       sendNotifyMutation.isPending,
+      isMN,
     ]
   );
 
