@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Bachelor } from '@/dtos/BachelorDTO';
@@ -23,11 +23,18 @@ import {
   CheckCircle2,
   XCircle,
   CornerDownRight,
+  Bell,
   ArrowRight,
   ArrowDown,
   ArrowUp,
 } from 'lucide-react';
-import { checkinAPI } from '@/config/axios';
+import { checkinAPI, notificationAPI, type CreateNotificationRequest } from '@/config/axios';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import HallSessionPicker from '@/components/hallSessionPicker';
 
 /* =========================
@@ -118,6 +125,8 @@ type SeatCellProps = {
   showDetails?: boolean;
   oneLine?: boolean;
   seatHeight?: number;
+  onNotify?: (occupant: Bachelor) => void;
+  notifyDisabled?: boolean;
 };
 
 function SeatCell({
@@ -128,6 +137,8 @@ function SeatCell({
   showDetails = false,
   oneLine = false,
   seatHeight,
+  onNotify,
+  notifyDisabled,
 }: SeatCellProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -173,7 +184,7 @@ function SeatCell({
     ? { height: seatHeight }
     : {};
 
-  return (
+  const content = (
     <div
       className={`${base} ${tone} ${ring} ${interactive} ${
         showDetails ? 'text-[11px] sm:text-sm' : ''
@@ -233,7 +244,34 @@ function SeatCell({
           </div>
         </>
       )}
+
     </div>
+  );
+
+  const canContextMenu =
+    occupant &&
+    variant === 'student' &&
+    !blockedOverlay &&
+    !occupant.checkIn &&
+    !!onNotify;
+
+  if (!canContextMenu) return content;
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{content}</ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem
+          onClick={(e) => {
+            e.preventDefault();
+            onNotify?.(occupant!);
+          }}
+          disabled={!!notifyDisabled}
+        >
+          <Bell className='h-4 w-4 mr-2' /> Gửi thông báo
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
@@ -591,6 +629,39 @@ export default function SeatMapPage() {
     return map;
   }, [bachelors, SEATS_PER_SIDE]);
 
+  // ---- Notify action (like ManualCheckinPage)
+  const sendNotifyMutation = useMutation({
+    mutationFn: async (payload: { message: string }) => {
+      const req: CreateNotificationRequest = {
+        title: 'Thông báo hội trường',
+        content: payload.message,
+        priority: 2,
+        isAutomatic: false,
+        repeatCount: 1,
+      };
+      return notificationAPI.create(req);
+    },
+    onSuccess: (res) => {
+      toast.success(res?.data?.message ?? 'Đã gửi thông báo!', {
+        duration: 3000,
+        position: 'top-right',
+      });
+    },
+    onError: (err: any) => {
+      toast.error(
+        'Gửi thông báo thất bại: ' +
+          (err?.response?.data?.message || err?.message || 'Lỗi không xác định'),
+        { duration: 4000, position: 'top-right' }
+      );
+    },
+  });
+
+  const handleSendNotify = (b: Bachelor) => {
+    const hallLabel = b.hallName && b.hallName !== '' ? b.hallName : selectedHallName || 'hội trường';
+    const message = `Xin mời Tân cử nhân ${b.fullName} với mã số sinh viên ${b.studentCode} tới hội trường ${hallLabel} thuộc phiên ${b.sessionNum} để làm thủ tục checkin trước khi cổng checkin đóng lại.`;
+    sendNotifyMutation.mutate({ message });
+  };
+
   useEffect(() => {
     const upd = () => {
       if (!containerRef.current) return;
@@ -935,6 +1006,8 @@ export default function SeatMapPage() {
                               showDetails={showFullInfo}
                               oneLine={true}
                               seatHeight={cellHeight}
+                              onNotify={occ && !occ.checkIn ? handleSendNotify : undefined}
+                              notifyDisabled={sendNotifyMutation.isPending}
                             />
                           );
                         })}
@@ -1071,6 +1144,8 @@ export default function SeatMapPage() {
                                 showDetails={showFullInfo}
                                 oneLine={false}
                                 seatHeight={cellHeight}
+                                onNotify={occ && !occ.checkIn ? handleSendNotify : undefined}
+                                notifyDisabled={sendNotifyMutation.isPending}
                               />
                             );
                           })}

@@ -37,6 +37,8 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+// Reuse existing SeatMapPage without modifying it
+import SeatMapPage from '@/app/(protected)/seatingArrangement/seat-map/page';
 
 export default function HallOverviewPage() {
   const { data, isLoading, isError } = useQuery({
@@ -119,14 +121,11 @@ export default function HallOverviewPage() {
         item.sessionNumber != null ? `Session ${item.sessionNumber}` : '';
 
       const listText = unchecked
-        .map(
-          (b) =>
-            `Tân cử nhân ${b.fullName} với mã số sinh viên ${b.studentCode}`
-        )
+        .map((b) => `${b.fullName} ${b.studentCode}`)
         .join('\n');
 
       const message =
-        `Xin mời các Tân cử nhân với mã số sinh viên tới hội trường ${hallLabel} thuộc phiên ${sessionLabel} để làm thủ tục checkin trước khi cổng checkin đóng lại.` +
+        `Xin mời các Tân cử nhân với mã số sinh viên sau tới hội trường ${hallLabel} thuộc phiên ${sessionLabel} để làm thủ tục checkin trước khi cổng checkin đóng lại.` +
         (listText ? `\n${listText}` : '');
 
       sendNotifyMutation.mutate({
@@ -439,6 +438,12 @@ export default function HallOverviewPage() {
             );
           })}
         </div>
+      </div>
+
+      {/* Seat Map (embedded) */}
+      <div className='space-y-4'>
+        <h2 className='text-2xl font-bold tracking-tight'>Sơ đồ chỗ ngồi</h2>
+        <SeatMapPage />
       </div>
     </div>
   );
