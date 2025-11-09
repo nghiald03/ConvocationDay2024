@@ -1,6 +1,6 @@
-﻿namespace FA23_Convocation2023_API.DTO
+namespace FA23_Convocation2023_API.DTO
 {
-    public class CreateSessionRequest
+    public class UpdateSessionRequest
     {
         public int SessionNum { get; set; }
         public string? Description { get; set; }

@@ -4,5 +4,6 @@
     {
         public int SessionId { get; set; }
         public int? Session1 { get; set; }
+        public string? Description { get; set; }
     }
 }

@@ -30,7 +30,7 @@ namespace FA23_Convocation2023_API.Controllers
                     message = "Session already exists!"
                 });
             }
-            var result = await _sessionService.CreateSession(sessionRequest.SessionNum);
+            var result = await _sessionService.CreateSession(sessionRequest.SessionNum, sessionRequest.Description);
             return Ok(new
             {
                 status = StatusCodes.Status200OK,
@@ -57,9 +57,9 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("UpdateStatusSession/{sessionId}")] // Update status session
-        public async Task<IActionResult> UpdateStatusSessionAsync([FromRoute] int sessionId, [FromBody] int sessionNum)
+        public async Task<IActionResult> UpdateStatusSessionAsync([FromRoute] int sessionId, [FromBody] UpdateSessionRequest updateRequest)
         {
-            var result = await _sessionService.UpdateSessionAsync(sessionId, sessionNum);
+            var result = await _sessionService.UpdateSessionAsync(sessionId, updateRequest.SessionNum, updateRequest.Description);
             return Ok(new
             {
                 status = StatusCodes.Status200OK,
