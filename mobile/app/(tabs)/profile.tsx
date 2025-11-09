@@ -25,7 +25,7 @@ export default function ProfileScreen() {
                 </View>
 
                 <Text style={styles.email}>{user?.email}</Text>
-                <Text style={styles.role}>Tân Cử Nhân</Text>
+                <Text style={styles.role}>Ban tổ chức</Text>
 
                 <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={20} color="#FFF" />

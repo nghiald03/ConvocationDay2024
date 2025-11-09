@@ -71,7 +71,7 @@ export default function LoginScreen() {
                         style={styles.logo}
                         resizeMode="contain"
                     />
-                    <Text style={styles.title}>Welcome, Tân Cử Nhân! 🎓</Text>
+                    <Text style={styles.title}>Welcome! 🎓</Text>
                     <Text style={styles.subtitle}>Đăng nhập để bắt đầu check-in</Text>
                 </View>
 
