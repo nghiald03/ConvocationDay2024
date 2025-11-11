@@ -38,6 +38,7 @@ export default function HomeScreen() {
     const [quickActionsVisible, setQuickActionsVisible] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
     const pageSize = 20;
 
     // Filter states
@@ -88,8 +89,10 @@ export default function HomeScreen() {
             );
 
             if (response.success) {
+                // console.log('Dữ liệu tân cử nhân đã được tải:', response.data);
                 setGraduates(response.data);
-                setTotalPages(Math.ceil(response.total / pageSize));
+                setTotalPages(response.totalPages);
+                setTotalItems(response.total);
             }
         } catch (error) {
             console.error("Error loading graduates:", error);
@@ -103,14 +106,12 @@ export default function HomeScreen() {
     const filterAndSortGraduates = () => {
         let filtered = [...graduates];
 
-        // Filter by tab
         if (activeTab === "checkedIn") {
             filtered = filtered.filter((g) => g.isCheckedIn);
         } else if (activeTab === "notCheckedIn") {
             filtered = filtered.filter((g) => !g.isCheckedIn);
         }
 
-        // Filter by search
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(
@@ -121,7 +122,6 @@ export default function HomeScreen() {
             );
         }
 
-        // Sort
         filtered.sort((a, b) => {
             let comparison = 0;
 
@@ -143,6 +143,7 @@ export default function HomeScreen() {
             return sortOrder === "asc" ? comparison : -comparison;
         });
 
+        // console.log(`Danh sách tân cử nhân: ${JSON.stringify(filtered)}`);
         setFilteredGraduates(filtered);
     };
 
@@ -213,9 +214,9 @@ export default function HomeScreen() {
     };
 
     const getTabCount = (tab: TabType) => {
-        if (tab === "all") return graduates.length;
+        if (tab === "all") return totalItems;
         if (tab === "checkedIn") return graduates.filter((g) => g.isCheckedIn).length;
-        return graduates.filter((g) => !g.isCheckedIn).length;
+        return totalItems - graduates.filter((g) => g.isCheckedIn).length;
     };
 
     const getActiveFilterCount = () => {
@@ -242,7 +243,7 @@ export default function HomeScreen() {
                     </Text>
                     <Text style={styles.graduateCode}>{item.studentCode}</Text>
                     <View style={styles.detailRow}>
-                        <Ionicons name="location-outline" size={14} color="#666" />
+                        <Ionicons name="location-outline" size={12} color="#666" />
                         <Text style={styles.detailText}>
                             {item.hall} - Ghế {item.seat}
                         </Text>
@@ -253,13 +254,11 @@ export default function HomeScreen() {
             <View style={styles.cardRight}>
                 {item.isCheckedIn ? (
                     <View style={styles.checkedInBadge}>
-                        <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-                        <Text style={styles.checkedInText}>Đã check-in</Text>
+                        <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />
                     </View>
                 ) : (
                     <View style={styles.notCheckedInBadge}>
-                        <Ionicons name="time-outline" size={20} color="#FF9800" />
-                        <Text style={styles.notCheckedInText}>Chưa check-in</Text>
+                        <Ionicons name="time-outline" size={18} color="#FF9800" />
                     </View>
                 )}
             </View>
@@ -268,162 +267,94 @@ export default function HomeScreen() {
 
     const renderHeader = () => (
         <>
-            {/* Welcome Section */}
-            <View style={styles.welcomeSection}>
-                <View style={styles.welcomeHeader}>
-                    <View>
-                        <Text style={styles.welcomeTitle}>🎓 Lễ Tốt Nghiệp FPT</Text>
-                        <Text style={styles.welcomeSubtitle}>
-                            Xin chào, {user?.fullname || user?.email}!
+            {/* Compact Header */}
+            <View style={styles.compactHeader}>
+                <View style={styles.headerTop}>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.headerTitle}>🎓 Lễ Tốt Nghiệp</Text>
+                        <Text style={styles.headerSubtitle}>
+                            {graduates.filter((g) => g.isCheckedIn).length}/{totalItems} sinh viên đã check-in
                         </Text>
                     </View>
                     <TouchableOpacity
-                        style={styles.quickActionButton}
+                        style={styles.menuButton}
                         onPress={() => setQuickActionsVisible(true)}
                     >
-                        <Ionicons name="menu" size={24} color="#FFF" />
+                        <Ionicons name="menu" size={24} color="#FF6600" />
                     </TouchableOpacity>
                 </View>
-            </View>
 
-            {/* Stats Cards */}
-            <View style={styles.statsContainer}>
-                <View style={styles.statCard}>
-                    <Ionicons name="people" size={24} color="#FF6600" />
-                    <Text style={styles.statNumber}>{graduates.length}</Text>
-                    <Text style={styles.statLabel}>Tổng số</Text>
-                </View>
-                <View style={styles.statCard}>
-                    <Ionicons name="checkmark-done" size={24} color="#4CAF50" />
-                    <Text style={styles.statNumber}>
-                        {graduates.filter((g) => g.isCheckedIn).length}
-                    </Text>
-                    <Text style={styles.statLabel}>Đã check-in</Text>
-                </View>
-                <View style={styles.statCard}>
-                    <Ionicons name="time" size={24} color="#FF9800" />
-                    <Text style={styles.statNumber}>
-                        {graduates.filter((g) => !g.isCheckedIn).length}
-                    </Text>
-                    <Text style={styles.statLabel}>Chưa check-in</Text>
-                </View>
-            </View>
+                {/* Compact Search & Actions */}
+                <View style={styles.searchActionsRow}>
+                    <View style={styles.compactSearchContainer}>
+                        <Ionicons name="search" size={16} color="#999" />
+                        <TextInput
+                            style={styles.compactSearchInput}
+                            placeholder="Tìm kiếm..."
+                            placeholderTextColor="#999"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        {searchQuery ? (
+                            <TouchableOpacity onPress={() => setSearchQuery("")}>
+                                <Ionicons name="close-circle" size={16} color="#999" />
+                            </TouchableOpacity>
+                        ) : null}
+                    </View>
 
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <Ionicons name="search" size={20} color="#999" />
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Tìm kiếm theo tên hoặc mã sinh viên"
-                    placeholderTextColor="#999"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                />
-                {searchQuery ? (
-                    <TouchableOpacity onPress={() => setSearchQuery("")}>
-                        <Ionicons name="close-circle" size={20} color="#999" />
-                    </TouchableOpacity>
-                ) : null}
-            </View>
-
-            {/* Filter & Sort Bar */}
-            <View style={styles.filterSortContainer}>
-                <TouchableOpacity
-                    style={[styles.filterButton, getActiveFilterCount() > 0 && styles.filterButtonActive]}
-                    onPress={() => setFilterModalVisible(true)}
-                >
-                    <Ionicons
-                        name="funnel"
-                        size={18}
-                        color={getActiveFilterCount() > 0 ? "#FF6600" : "#666"}
-                    />
-                    <Text
-                        style={[
-                            styles.filterButtonText,
-                            getActiveFilterCount() > 0 && styles.filterButtonTextActive,
-                        ]}
+                    <TouchableOpacity
+                        style={[styles.iconButton, getActiveFilterCount() > 0 && styles.iconButtonActive]}
+                        onPress={() => setFilterModalVisible(true)}
                     >
-                        Lọc {getActiveFilterCount() > 0 && `(${getActiveFilterCount()})`}
-                    </Text>
-                </TouchableOpacity>
+                        <Ionicons
+                            name="funnel"
+                            size={18}
+                            color={getActiveFilterCount() > 0 ? "#FF6600" : "#666"}
+                        />
+                        {getActiveFilterCount() > 0 && (
+                            <View style={styles.badge}>
+                                <Text style={styles.badgeText}>{getActiveFilterCount()}</Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={styles.sortButton}
-                    onPress={() => setSortModalVisible(true)}
-                >
-                    <Ionicons name="swap-vertical" size={18} color="#666" />
-                    <Text style={styles.sortButtonText}>Sắp xếp</Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* Active Filters Display */}
-            {(selectedHall || selectedSession) && (
-                <View style={styles.activeFiltersContainer}>
-                    {selectedHall && (
-                        <View style={styles.activeFilterChip}>
-                            <Text style={styles.activeFilterText}>
-                                {halls.find((h) => h.hallId === selectedHall)?.hallName}
-                            </Text>
-                            <TouchableOpacity onPress={() => setSelectedHall(null)}>
-                                <Ionicons name="close-circle" size={16} color="#FF6600" />
-                            </TouchableOpacity>
-                        </View>
-                    )}
-                    {selectedSession && (
-                        <View style={styles.activeFilterChip}>
-                            <Text style={styles.activeFilterText}>
-                                {sessions.find((s) => s.sessionId === selectedSession)?.sessionName}
-                            </Text>
-                            <TouchableOpacity onPress={() => setSelectedSession(null)}>
-                                <Ionicons name="close-circle" size={16} color="#FF6600" />
-                            </TouchableOpacity>
-                        </View>
-                    )}
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={() => setSortModalVisible(true)}
+                    >
+                        <Ionicons name="swap-vertical" size={18} color="#666" />
+                    </TouchableOpacity>
                 </View>
-            )}
 
-            {/* Tabs */}
-            <View style={styles.tabsContainer}>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === "all" && styles.activeTab]}
-                    onPress={() => setActiveTab("all")}
-                >
-                    <Ionicons name="list" size={20} color={activeTab === "all" ? "#FF6600" : "#666"} />
-                    <Text style={[styles.tabText, activeTab === "all" && styles.activeTabText]}>
-                        Tất cả ({getTabCount("all")})
-                    </Text>
-                </TouchableOpacity>
+                {/* Compact Tabs */}
+                <View style={styles.compactTabsContainer}>
+                    <TouchableOpacity
+                        style={[styles.compactTab, activeTab === "all" && styles.compactTabActive]}
+                        onPress={() => setActiveTab("all")}
+                    >
+                        <Text style={[styles.compactTabText, activeTab === "all" && styles.compactTabTextActive]}>
+                            Tất cả ({getTabCount("all")})
+                        </Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === "checkedIn" && styles.activeTab]}
-                    onPress={() => setActiveTab("checkedIn")}
-                >
-                    <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color={activeTab === "checkedIn" ? "#FF6600" : "#666"}
-                    />
-                    <Text style={[styles.tabText, activeTab === "checkedIn" && styles.activeTabText]}>
-                        Đã check-in ({getTabCount("checkedIn")})
-                    </Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.compactTab, activeTab === "checkedIn" && styles.compactTabActive]}
+                        onPress={() => setActiveTab("checkedIn")}
+                    >
+                        <Text style={[styles.compactTabText, activeTab === "checkedIn" && styles.compactTabTextActive]}>
+                            Đã ({getTabCount("checkedIn")})
+                        </Text>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === "notCheckedIn" && styles.activeTab]}
-                    onPress={() => setActiveTab("notCheckedIn")}
-                >
-                    <Ionicons name="time" size={20} color={activeTab === "notCheckedIn" ? "#FF6600" : "#666"} />
-                    <Text style={[styles.tabText, activeTab === "notCheckedIn" && styles.activeTabText]}>
-                        Chưa check-in ({getTabCount("notCheckedIn")})
-                    </Text>
-                </TouchableOpacity>
-            </View>
-
-            {/* List Header */}
-            <View style={styles.listHeader}>
-                <Text style={styles.listHeaderText}>
-                    Danh sách tân cử nhân ({filteredGraduates.length})
-                </Text>
+                    <TouchableOpacity
+                        style={[styles.compactTab, activeTab === "notCheckedIn" && styles.compactTabActive]}
+                        onPress={() => setActiveTab("notCheckedIn")}
+                    >
+                        <Text style={[styles.compactTabText, activeTab === "notCheckedIn" && styles.compactTabTextActive]}>
+                            Chưa ({getTabCount("notCheckedIn")})
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </>
     );
@@ -439,7 +370,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
 
             <Text style={styles.paginationText}>
-                Trang {currentPage} / {totalPages}
+                {currentPage}/{totalPages}
             </Text>
 
             <TouchableOpacity
@@ -602,7 +533,6 @@ export default function HomeScreen() {
                         </View>
 
                         <ScrollView style={styles.modalBody}>
-                            {/* Hall Filter */}
                             <View style={styles.filterSection}>
                                 <Text style={styles.filterSectionTitle}>Hội trường</Text>
                                 <View style={styles.filterOptions}>
@@ -641,7 +571,6 @@ export default function HomeScreen() {
                                 </View>
                             </View>
 
-                            {/* Session Filter */}
                             <View style={styles.filterSection}>
                                 <Text style={styles.filterSectionTitle}>Phiên</Text>
                                 <View style={styles.filterOptions}>
@@ -861,207 +790,134 @@ const styles = StyleSheet.create({
     listContent: {
         paddingBottom: 20,
     },
-    welcomeSection: {
-        backgroundColor: "#FF6600",
-        padding: 24,
-        paddingTop: 16,
+
+    // Compact Header Styles
+    compactHeader: {
+        backgroundColor: "#FFF",
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 12,
+        marginBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: "#F0F0F0",
     },
-    welcomeHeader: {
+    headerTop: {
         flexDirection: "row",
         justifyContent: "space-between",
-        alignItems: "flex-start",
-    },
-    welcomeTitle: {
-        fontSize: 24,
-        fontWeight: "700",
-        color: "#FFF",
-        marginBottom: 8,
-    },
-    welcomeSubtitle: {
-        fontSize: 16,
-        color: "#FFF",
-        opacity: 0.9,
-    },
-    quickActionButton: {
-        padding: 8,
-        backgroundColor: "rgba(255,255,255,0.2)",
-        borderRadius: 8,
-    },
-    statsContainer: {
-        flexDirection: "row",
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        gap: 12,
-    },
-    statCard: {
-        flex: 1,
-        backgroundColor: "#FFF",
-        padding: 16,
-        borderRadius: 12,
         alignItems: "center",
-        shadowColor: "#000",
-        shadowOpacity: 0.05,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
-        elevation: 2,
+        marginBottom: 12,
     },
-    statNumber: {
-        fontSize: 24,
+    headerLeft: {
+        flex: 1,
+    },
+    headerTitle: {
+        fontSize: 18,
         fontWeight: "700",
         color: "#333",
-        marginTop: 8,
+        marginBottom: 2,
     },
-    statLabel: {
-        fontSize: 12,
+    headerSubtitle: {
+        fontSize: 13,
         color: "#666",
-        marginTop: 4,
     },
-    searchContainer: {
+    menuButton: {
+        padding: 8,
+        backgroundColor: "#FFF5F0",
+        borderRadius: 8,
+    },
+
+    // Compact Search & Actions
+    searchActionsRow: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#FFF",
-        marginHorizontal: 16,
-        marginTop: 16,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderRadius: 12,
-        shadowColor: "#000",
-        shadowOpacity: 0.05,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
-        elevation: 2,
+        gap: 8,
+        marginBottom: 12,
     },
-    searchInput: {
+    compactSearchContainer: {
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#F5F5F5",
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    compactSearchInput: {
         flex: 1,
         marginLeft: 8,
-        fontSize: 15,
+        fontSize: 14,
         color: "#333",
     },
-    filterSortContainer: {
-        flexDirection: "row",
-        paddingHorizontal: 16,
-        paddingTop: 12,
-        gap: 12,
-    },
-    filterButton: {
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
+    iconButton: {
+        width: 40,
+        height: 40,
         justifyContent: "center",
-        backgroundColor: "#FFF",
-        paddingVertical: 10,
-        paddingHorizontal: 16,
+        alignItems: "center",
+        backgroundColor: "#F5F5F5",
         borderRadius: 8,
-        gap: 6,
-        borderWidth: 1,
-        borderColor: "#E0E0E0",
+        position: "relative",
     },
-    filterButtonActive: {
-        borderColor: "#FF6600",
+    iconButtonActive: {
         backgroundColor: "#FFF5F0",
     },
-    filterButtonText: {
-        fontSize: 14,
-        color: "#666",
-        fontWeight: "600",
-    },
-    filterButtonTextActive: {
-        color: "#FF6600",
-    },
-    sortButton: {
-        flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
+    badge: {
+        position: "absolute",
+        top: -4,
+        right: -4,
+        backgroundColor: "#FF6600",
+        width: 18,
+        height: 18,
+        borderRadius: 9,
         justifyContent: "center",
-        backgroundColor: "#FFF",
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 8,
-        gap: 6,
-        borderWidth: 1,
-        borderColor: "#E0E0E0",
+        alignItems: "center",
     },
-    sortButtonText: {
-        fontSize: 14,
-        color: "#666",
-        fontWeight: "600",
+    badgeText: {
+        color: "#FFF",
+        fontSize: 10,
+        fontWeight: "700",
     },
-    activeFiltersContainer: {
+
+    // Compact Tabs
+    compactTabsContainer: {
         flexDirection: "row",
-        flexWrap: "wrap",
-        paddingHorizontal: 16,
-        paddingTop: 12,
         gap: 8,
     },
-    activeFilterChip: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#FFF5F0",
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 16,
-        gap: 6,
-        borderWidth: 1,
-        borderColor: "#FF6600",
-    },
-    activeFilterText: {
-        fontSize: 13,
-        color: "#FF6600",
-        fontWeight: "600",
-    },
-    tabsContainer: {
-        flexDirection: "row",
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        gap: 8,
-    },
-    tab: {
+    compactTab: {
         flex: 1,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#FFF",
-        paddingVertical: 12,
+        paddingVertical: 8,
         paddingHorizontal: 8,
-        borderRadius: 8,
-        gap: 6,
+        borderRadius: 6,
+        backgroundColor: "#F5F5F5",
+        alignItems: "center",
     },
-    activeTab: {
+    compactTabActive: {
         backgroundColor: "#FFF5F0",
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: "#FF6600",
     },
-    tabText: {
+    compactTabText: {
         fontSize: 12,
         color: "#666",
         fontWeight: "600",
     },
-    activeTabText: {
+    compactTabTextActive: {
         color: "#FF6600",
     },
-    listHeader: {
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 12,
-    },
-    listHeaderText: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: "#333",
-    },
+
+    // Graduate Card Styles
     graduateCard: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         backgroundColor: "#FFF",
         marginHorizontal: 16,
-        marginBottom: 12,
+        marginBottom: 8,
         padding: 12,
         borderRadius: 12,
         shadowColor: "#000",
         shadowOpacity: 0.05,
-        shadowOffset: { width: 0, height: 2 },
-        shadowRadius: 4,
+        shadowOffset: { width: 0, height: 1 },
+        shadowRadius: 3,
         elevation: 2,
     },
     cardLeft: {
@@ -1070,9 +926,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     avatar: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         backgroundColor: "#F0F0F0",
     },
     graduateInfo: {
@@ -1080,23 +936,23 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     graduateName: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: "600",
         color: "#333",
-        marginBottom: 4,
+        marginBottom: 3,
     },
     graduateCode: {
-        fontSize: 14,
+        fontSize: 13,
         color: "#666",
-        marginBottom: 4,
+        marginBottom: 3,
     },
     detailRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
+        gap: 3,
     },
     detailText: {
-        fontSize: 12,
+        fontSize: 11,
         color: "#666",
     },
     cardRight: {
@@ -1104,27 +960,19 @@ const styles = StyleSheet.create({
     },
     checkedInBadge: {
         alignItems: "center",
-        gap: 4,
-    },
-    checkedInText: {
-        fontSize: 11,
-        color: "#4CAF50",
-        fontWeight: "600",
+        justifyContent: "center",
     },
     notCheckedInBadge: {
         alignItems: "center",
-        gap: 4,
+        justifyContent: "center",
     },
-    notCheckedInText: {
-        fontSize: 11,
-        color: "#FF9800",
-        fontWeight: "600",
-    },
+
+    // Pagination
     paginationContainer: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        paddingVertical: 20,
+        paddingVertical: 16,
         gap: 16,
     },
     paginationButton: {
@@ -1136,9 +984,12 @@ const styles = StyleSheet.create({
         opacity: 0.3,
     },
     paginationText: {
-        fontSize: 14,
+        fontSize: 13,
         color: "#666",
+        fontWeight: "500",
     },
+
+    // Empty State
     emptyContainer: {
         alignItems: "center",
         justifyContent: "center",
@@ -1149,6 +1000,8 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: "#999",
     },
+
+    // Modal Styles
     modalOverlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.5)",
@@ -1236,6 +1089,8 @@ const styles = StyleSheet.create({
         color: "#333",
         fontWeight: "500",
     },
+
+    // Filter Modal
     filterSection: {
         marginBottom: 24,
     },
@@ -1302,6 +1157,8 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         color: "#FFF",
     },
+
+    // Sort Modal
     sortOption: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -1321,6 +1178,8 @@ const styles = StyleSheet.create({
         color: "#333",
         fontWeight: "500",
     },
+
+    // Quick Actions Modal
     quickActionsOverlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.5)",

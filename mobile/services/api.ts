@@ -147,6 +147,11 @@ export interface GraduateResponse {
     data: Graduate[];
     total: number;
     message?: string;
+    totalPages: number;
+    currentPage: number;
+    pageSize: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
 }
 
 export interface Graduate {
@@ -188,7 +193,7 @@ export const graduateAPI = {
     // Lấy danh sách tân cử nhân với pagination
     getAll: async (
         pageIndex: number = 1,
-        pageSize: number = 20,
+        pageSize: number = 10,
         keySearch?: string,
         sessionId?: number,
         hallId?: number
@@ -208,6 +213,7 @@ export const graduateAPI = {
                 url += `&hallId=${hallId}`;
             }
 
+            console.log('Chuẩn bị thực hiện call API graduates...')
             const response = await fetch(url, {
                 method: "GET",
                 headers: {
@@ -215,33 +221,38 @@ export const graduateAPI = {
                     Authorization: `Bearer ${token}`,
                 },
             });
-
+            console.log('Đã nhận được phản hồi từ API graduates.')
+            // console.log('Phản hồi từ API graduates trước khi parse:', response);
             const result = await response.json();
+            // console.log('Kết quả từ API graduates đã parse:', result);
 
             if (!response.ok) {
                 throw new Error(result.message || "Không thể tải dữ liệu");
             }
 
-            console.log(result);
-
             // Map response data to match interface
             const graduates = result.data.items.map((item: any) => ({
                 id: item.id,
                 imageUrl: item.image || "https://via.placeholder.com/60",
-                name: item.ten || "",
-                studentCode: item.mssv || "",
+                name: item.fullName || "",
+                studentCode: item.studentCode || "",
                 email: item.mail || "",
-                hall: item.hoiTruong || "",
-                session: item.session || 1,
-                seat: item.ghe || 0,
-                seatExtra: item.ghePhuHuynh || "",
-                isCheckedIn: item.isCheckedIn || false,
+                hall: item.hallName || "",
+                session: item.sessionNum || 1,
+                seat: item.chair || 0,
+                seatExtra: item.chairParent || "",
+                isCheckedIn: item.checkIn || false,
             }));
 
             return {
                 success: true,
                 data: graduates,
-                total: result.total || graduates.length,
+                total: result.data.totalItems || graduates.length,
+                totalPages: result.data.totalPages || 1,
+                currentPage: result.data.currentPage || 1,
+                pageSize: result.data.pageSize || 1,
+                hasPreviousPage: result.data.hasPreviousPage || false,
+                hasNextPage: result.data.hasNextPage || false,
             };
         } catch (error) {
             console.error("Error fetching graduates:", error);
@@ -304,7 +315,7 @@ export const graduateAPI = {
                 success: true,
                 data: result.data.map((item: any) => ({
                     sessionId: item.sessionId,
-                    sessionName: item.sessionN || `Phiên ${item.sessionId}`,
+                    sessionName: item.session1 || `Phiên ${item.sessionId}`,
                 })),
             };
         } catch (error) {

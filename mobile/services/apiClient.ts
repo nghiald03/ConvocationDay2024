@@ -1,4 +1,7 @@
+import { useAuth } from "@/context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+import { Alert } from "react-native";
 
 const API_BASE_URL = "https://your-api-url.com/api";
 const ACCESS_TOKEN_KEY = "@access_token";
@@ -80,18 +83,13 @@ class ApiClient {
         endpoint: string,
         options: RequestInit = {}
     ): Promise<T> {
-        // Thử refresh token nếu cần
-        // const token = await this.refreshAccessTokenIfNeeded();
-
         const headers: Record<string, string> = {
             "Content-Type": "application/json",
         };
 
-        // if (token) {
-        //     headers["Authorization"] = `Bearer ${token}`;
-        // }
-
         try {
+            const { user, logout } = useAuth();
+
             const response = await fetch(`${this.baseURL}${endpoint}`, {
                 ...options,
                 headers,
@@ -99,28 +97,25 @@ class ApiClient {
 
             const data = await response.json();
 
-            // Nếu server trả về 401 (Unauthorized)
-            // if (response.status === 401) {
-            //     // Thử refresh token một lần nữa
-            //     const newToken = await this.refreshAccessTokenIfNeeded();
-
-            //     if (newToken) {
-            //         // Retry request với token mới
-            //         headers["Authorization"] = `Bearer ${newToken}`;
-            //         const retryResponse = await fetch(`${this.baseURL}${endpoint}`, {
-            //             ...options,
-            //             headers,
-            //         });
-
-            //         if (!retryResponse.ok) {
-            //             throw new Error(data.message || "API request failed");
-            //         }
-
-            //         return await retryResponse.json();
-            //     }
-
-            //     throw new Error("Session expired. Please login again.");
-            // }
+            // 🔥 Nếu token hết hạn
+            if (response.status === 401) {
+                Alert.alert(
+                    "Phiên đăng nhập hết hạn",
+                    "Vui lòng đăng nhập lại để tiếp tục.",
+                    [
+                        {
+                            text: "Đăng nhập lại",
+                            onPress: () => {
+                                // Xóa token cũ nếu có
+                                // AsyncStorage.removeItem("accessToken");
+                                // Điều hướng về login
+                                logout()
+                            },
+                        },
+                    ]
+                );
+                throw new Error("Token expired");
+            }
 
             if (!response.ok) {
                 throw new Error(data.message || "API request failed");
