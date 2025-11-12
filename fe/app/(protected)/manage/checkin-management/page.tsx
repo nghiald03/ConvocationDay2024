@@ -10,102 +10,216 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { manageAPI } from '@/config/axios';
+import {
+  manageAPI,
+  notificationAPI,
+  type CreateNotificationRequest,
+} from '@/config/axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ColumnDef } from '@tanstack/react-table';
-import React, { useEffect, useState } from 'react';
+import type { ColumnDef } from '@tanstack/react-table';
+import React from 'react';
 import toast from 'react-hot-toast';
 import swal from 'sweetalert';
 
-export default function Page() {
+/* =========================
+   Types
+========================= */
+type Priority = 'high' | 'normal' | 'low';
+
+export type CheckinRow = {
+  checkinId: string | number;
+  hallName: string;
+  sessionNum: number;
+  status: boolean;
+};
+
+type CheckinListResponse = {
+  data: {
+    data: CheckinRow[];
+  };
+};
+
+/* =========================
+   Mapper
+========================= */
+function mapLocalToApi(local: {
+  message: string;
+  priority: Priority | undefined;
+  repeatCount?: number;
+}): CreateNotificationRequest {
+  return {
+    title: 'Thông báo hội trường',
+    content: local.message,
+    priority: local.priority === 'high' ? 1 : local.priority === 'low' ? 3 : 2,
+    isAutomatic: false,
+    repeatCount: local.repeatCount || 1,
+  };
+}
+
+export default function CheckinPage() {
   const queryClient = useQueryClient();
-  const [checkinsList, setCheckinList] = useState<any[]>([]);
-  const { data: checkinList } = useQuery({
+
+  /* =========================
+     Query: get list
+  ========================= */
+  const {
+    data: rows = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<CheckinRow[]>({
     queryKey: ['checkinList'],
-    queryFn: () => {
-      return manageAPI.getCheckinList();
+    queryFn: async () => {
+      const res = (await manageAPI.getCheckinList()) as CheckinListResponse;
+      return res.data.data;
     },
   });
-  const checkinAction = useMutation({
-    mutationFn: (data: any) => {
-      const nData = {
-        checkinId: data.checkinId,
-        status: !data.status,
-      };
-      console.log(nData);
-      return manageAPI.updateStatusCheckin(nData);
-    },
 
-    onSuccess: (data, variables) => {
-      console.log('onSuccess', variables);
-      // toast.success(`Checkin cho ${variables.fullName} thành công`, {
-      //   duration: 3000,
-      //   position: 'top-right',
-      // });
+  /* =========================
+     Mutation: create notification
+  ========================= */
+  const createNotificationMutation = useMutation({
+    mutationFn: (request: CreateNotificationRequest) =>
+      notificationAPI.create(request),
+    onSuccess: () => {
+      toast.success('Đã gửi thông báo mở session');
+    },
+    onError: (err: any) => {
+      toast.error(
+        err?.response?.data?.message ||
+          'Không thể gửi thông báo. Vui lòng thử lại.'
+      );
+    },
+  });
+
+  /* =========================
+     Mutation: toggle checkin (optimistic)
+  ========================= */
+  const toggleMutation = useMutation({
+    mutationFn: async (payload: {
+      checkinId: CheckinRow['checkinId'];
+      status: boolean;
+    }) => {
+      return manageAPI.updateStatusCheckin(payload);
+    },
+    onMutate: async (vars) => {
+      await queryClient.cancelQueries({ queryKey: ['checkinList'] });
+      const prev = queryClient.getQueryData<CheckinRow[]>(['checkinList']);
+
+      // Optimistic update
+      if (prev) {
+        queryClient.setQueryData<CheckinRow[]>(
+          ['checkinList'],
+          prev.map((r) =>
+            r.checkinId === vars.checkinId ? { ...r, status: vars.status } : r
+          )
+        );
+      }
+
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      // Rollback
+      if (ctx?.prev) {
+        queryClient.setQueryData(['checkinList'], ctx.prev);
+      }
+      toast.error('Cập nhật trạng thái thất bại.');
+    },
+    onSuccess: (_data, vars) => {
+      // Refresh to be exact with server
       queryClient.invalidateQueries({ queryKey: ['checkinList'] });
+      const item = rows.find((r) => r.checkinId === vars.checkinId);
+      if (item) {
+        toast.success(
+          `Thay trạng thái checkin của hội trường ${item.hallName} session ${item.sessionNum} thành công!`
+        );
+      }
     },
   });
 
-  const handleCheckin = (data: any) => {
-    swal({
-      title: `Thay đổi trạng thái checkin`,
-      text: `Bạn có muốn thay đổi trạng thái checkin của hội trường ${data.hallName} session ${data.sessionNum} không?`,
+  /* =========================
+     Handlers
+  ========================= */
+  const handleToggle = async (row: CheckinRow, nextChecked: boolean) => {
+    // Confirm (sweetalert v1: icon hợp lệ: 'warning' | 'success' | 'error' | 'info')
+    const confirm = await swal({
+      title: 'Thay đổi trạng thái checkin',
+      text: `Bạn có muốn thay đổi trạng thái checkin của hội trường ${row.hallName} session ${row.sessionNum} không?`,
       icon: 'warning',
       buttons: ['Không', 'Thay đổi'],
       dangerMode: true,
-    }).then((value) => {
-      if (value) {
-        // checkinAction.mutate(data);
-        toast.promise(
-          checkinAction.mutateAsync(data),
-          {
-            loading: 'Đang thay đổi trạng thái...',
-            success: `Thay trạng thái checkin của hội trường ${data.hallName} session ${data.sessionNum} thành công!`,
-            error: `Không thể thay đồi trạng thái checkin của hội trường ${data.hallName} session ${data.sessionNum}!`,
-          },
-          { position: 'top-right', duration: 3000 }
-        );
-      }
     });
+
+    if (!confirm) return;
+
+    // toast.promise cho call update
+    try {
+      await toast.promise(
+        toggleMutation.mutateAsync({
+          checkinId: row.checkinId,
+          status: nextChecked,
+        }),
+        {
+          loading: 'Đang thay đổi trạng thái...',
+          success: 'Cập nhật trạng thái thành công!',
+          error: 'Không thể thay đổi trạng thái!',
+        },
+        { position: 'top-right', duration: 3000 }
+      );
+
+      // Nếu mở session (true) -> hỏi gửi thông báo
+      if (nextChecked) {
+        const send = await swal({
+          title: 'Thông báo mở session',
+          text: 'Bạn có muốn gửi thông báo rằng session đã mở không?',
+          icon: 'info',
+          buttons: ['Không', 'Có, gửi thông báo'],
+        });
+
+        if (send) {
+          const request = mapLocalToApi({
+            message: `Session ${row.sessionNum} hội trường ${row.hallName} đã mở. Các bạn có thể bắt đầu check-in.`,
+            priority: 'high',
+            repeatCount: 2,
+          });
+          createNotificationMutation.mutate(request);
+        }
+      }
+    } catch {
+      // lỗi đã được toast.promise xử lý
+    }
   };
 
-  const columns: ColumnDef<any[]>[] = [
-    {
-      accessorKey: 'checkinId',
-      header: 'ID',
-    },
-    {
-      accessorKey: 'hallName',
-      header: 'Hội trường',
-    },
-    {
-      accessorKey: 'sessionNum',
-      header: 'Session',
-    },
-
+  /* =========================
+     Columns
+  ========================= */
+  const columns: ColumnDef<CheckinRow>[] = [
+    { accessorKey: 'checkinId', header: 'ID' },
+    { accessorKey: 'hallName', header: 'Hội trường' },
+    { accessorKey: 'sessionNum', header: 'Session' },
     {
       accessorKey: 'status',
       header: 'Action',
+      cell: ({ row }) => {
+        const original = row.original;
+        const checked = Boolean(row.getValue('status'));
+        const pending = toggleMutation.isPending;
 
-      cell: ({ row }) => (
-        <p>
+        return (
           <Switch
-            checked={row.getValue('status')}
-            onClick={() => {
-              handleCheckin(row.original);
-            }}
-            color='primary'
-          ></Switch>
-        </p>
-      ),
+            checked={checked}
+            disabled={pending}
+            // shadcn Switch nên dùng onCheckedChange thay vì onClick
+            onCheckedChange={(next) => handleToggle(original, next)}
+          />
+        );
+      },
     },
   ];
 
-  useEffect(() => {
-    if (checkinList) {
-      setCheckinList(checkinList.data.data);
-    }
-  }, [checkinList]);
+  /* =========================
+     Render
+  ========================= */
   return (
     <>
       <Card>
@@ -117,7 +231,7 @@ export default function Page() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>Quản lí </BreadcrumbPage>
+                <BreadcrumbPage>Quản lí</BreadcrumbPage>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
@@ -132,9 +246,9 @@ export default function Page() {
         <CardContent className='p-3'>
           <TableCustom
             title='Danh sách session trao bằng'
-            data={checkinsList}
+            data={rows}
             columns={columns}
-          ></TableCustom>
+          />
         </CardContent>
       </Card>
     </>
