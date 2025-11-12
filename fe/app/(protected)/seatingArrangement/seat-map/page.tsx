@@ -28,7 +28,11 @@ import {
   ArrowDown,
   ArrowUp,
 } from 'lucide-react';
-import { checkinAPI, notificationAPI, type CreateNotificationRequest } from '@/config/axios';
+import {
+  checkinAPI,
+  notificationAPI,
+  type CreateNotificationRequest,
+} from '@/config/axios';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -244,7 +248,6 @@ function SeatCell({
           </div>
         </>
       )}
-
     </div>
   );
 
@@ -583,6 +586,7 @@ export default function SeatMapPage() {
         session,
       }),
     enabled,
+    refetchInterval: 3000,
     refetchOnWindowFocus: false,
   });
 
@@ -650,14 +654,19 @@ export default function SeatMapPage() {
     onError: (err: any) => {
       toast.error(
         'Gửi thông báo thất bại: ' +
-          (err?.response?.data?.message || err?.message || 'Lỗi không xác định'),
+          (err?.response?.data?.message ||
+            err?.message ||
+            'Lỗi không xác định'),
         { duration: 4000, position: 'top-right' }
       );
     },
   });
 
   const handleSendNotify = (b: Bachelor) => {
-    const hallLabel = b.hallName && b.hallName !== '' ? b.hallName : selectedHallName || 'hội trường';
+    const hallLabel =
+      b.hallName && b.hallName !== ''
+        ? b.hallName
+        : selectedHallName || 'hội trường';
     const message = `Xin mời Tân cử nhân ${b.fullName} với mã số sinh viên ${b.studentCode} tới hội trường ${hallLabel} thuộc phiên ${b.sessionNum} để làm thủ tục checkin trước khi cổng checkin đóng lại.`;
     sendNotifyMutation.mutate({ message });
   };
@@ -828,7 +837,7 @@ export default function SeatMapPage() {
         }}
       />
 
-      {enabled && !isFetching && (
+      {enabled && (
         <div className='flex gap-4 flex-wrap'>
           <div className='flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-rose-50 to-rose-100 rounded-lg border border-rose-200'>
             <User className='w-4 h-4 text-rose-600' />
@@ -855,11 +864,6 @@ export default function SeatMapPage() {
               <p className='text-base text-gray-600 text-center'>
                 Vui lòng chọn hội trường và session để hiển thị sơ đồ chỗ ngồi
               </p>
-            </div>
-          ) : isFetching ? (
-            <div className='flex flex-col items-center justify-center py-16'>
-              <div className='loader mb-4' />
-              <p className='text-sm text-gray-500'>Đang tải sơ đồ...</p>
             </div>
           ) : (
             <div
@@ -1006,7 +1010,11 @@ export default function SeatMapPage() {
                               showDetails={showFullInfo}
                               oneLine={true}
                               seatHeight={cellHeight}
-                              onNotify={occ && !occ.checkIn ? handleSendNotify : undefined}
+                              onNotify={
+                                occ && !occ.checkIn
+                                  ? handleSendNotify
+                                  : undefined
+                              }
                               notifyDisabled={sendNotifyMutation.isPending}
                             />
                           );
@@ -1144,7 +1152,11 @@ export default function SeatMapPage() {
                                 showDetails={showFullInfo}
                                 oneLine={false}
                                 seatHeight={cellHeight}
-                                onNotify={occ && !occ.checkIn ? handleSendNotify : undefined}
+                                onNotify={
+                                  occ && !occ.checkIn
+                                    ? handleSendNotify
+                                    : undefined
+                                }
                                 notifyDisabled={sendNotifyMutation.isPending}
                               />
                             );
