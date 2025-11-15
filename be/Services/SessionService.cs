@@ -20,11 +20,12 @@ namespace FA23_Convocation2023_API.Services
         }
 
         //create session
-        public async Task<Session> CreateSession(int sessionNum, string description = null)
+        public async Task<Session> CreateSession(int sessionNum, string description = null, int? sessionInDay = null)
         {
             var session = new Session
             {
                 Session1 = sessionNum,
+                SessionInDay = sessionInDay,
                 Description = description
             };
             await _context.Sessions.AddAsync(session);
@@ -43,13 +44,14 @@ namespace FA23_Convocation2023_API.Services
                 {
                     SessionId = session.SessionId,
                     Session1 = session.Session1,
+                    SessionInDay = session.SessionInDay,
                     Description = session.Description
                 });
             }
             return listSession;
         }
 
-        public async Task<Session> UpdateSessionAsync(int sessionId, int sessionNum, string? description = null) {
+        public async Task<Session> UpdateSessionAsync(int sessionId, int sessionNum, string? description = null, int? sessionInDay = null) {
             try {
                 var existingSession = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == sessionId);
                 if (existingSession == null)
@@ -57,6 +59,7 @@ namespace FA23_Convocation2023_API.Services
                     return null;
                 }
                 existingSession.Session1 = sessionNum;
+                existingSession.SessionInDay = sessionInDay;
                 existingSession.Description = description;
                 _context.Sessions.Update(existingSession);
                 await _context.SaveChangesAsync();
@@ -79,6 +82,39 @@ namespace FA23_Convocation2023_API.Services
                 await _context.SaveChangesAsync();
                 return true;
             } catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
+
+        // Auto fill sessionInDay for a range of sessions
+        public async Task<bool> AutoFillSessionInDayAsync(int fromSession, int toSession)
+        {
+            try
+            {
+                // Get all sessions within the range
+                var sessions = await _context.Sessions
+                    .Where(s => s.Session1 >= fromSession && s.Session1 <= toSession)
+                    .OrderBy(s => s.Session1)
+                    .ToListAsync();
+
+                if (sessions.Count == 0)
+                {
+                    return false;
+                }
+
+                // Auto fill sessionInDay starting from 1
+                for (int i = 0; i < sessions.Count; i++)
+                {
+                    sessions[i].SessionInDay = i + 1;
+                }
+
+                _context.Sessions.UpdateRange(sessions);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
                 Console.WriteLine(ex.Message);
                 return false;
             }
