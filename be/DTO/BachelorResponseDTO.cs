@@ -10,5 +10,6 @@ public class BachelorResponseDTO
     public string HallName { get; set; }
 
     public int SessionNum { get; set; }
+    public int? SessionInDay { get; set; }
     // Other properties you want to return
 }

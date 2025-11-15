@@ -20,6 +20,7 @@ namespace FA23_Convocation2023_API.Models
         public int? SessionId { get; set; }
         public string Chair { get; set; }
         public string ChairParent { get; set; }
+        public int? SessionInDay { get; set; }
         public bool? CheckIn { get; set; }
         public DateTime? TimeCheckIn { get; set; }
 

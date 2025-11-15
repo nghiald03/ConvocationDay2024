@@ -24,6 +24,8 @@
 
         public int? SessionNum { get; set; }
 
+        public int? SessionInDay { get; set; }
+
         public string? Chair { get; set; }
 
         public string? ChairParent { get; set; }

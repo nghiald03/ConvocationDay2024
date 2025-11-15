@@ -9,6 +9,7 @@
         public string Mail { get; set; }
         public string HallName {  get; set; }
         public int SessionNum {  get; set; }
+        public int? SessionInDay { get; set; }
 
         public string Chair {  get; set; }
         public string ChairParent { get; set;}

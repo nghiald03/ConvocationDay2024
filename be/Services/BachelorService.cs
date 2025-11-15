@@ -32,6 +32,7 @@ namespace FA23_Convocation2023_API.Services
                Mail = b.Mail,
                HallName = b.Hall.HallName,
                SessionNum = (int)b.Session.Session1,
+               SessionInDay = b.SessionInDay,
                Chair = b.Chair,
                ChairParent = b.ChairParent
            });
@@ -98,6 +99,7 @@ namespace FA23_Convocation2023_API.Services
                     StatusBaChelor = bachelor.StatusBaChelor,
                     HallName = bachelor.Hall.HallName,
                     SessionNum = bachelor.Session.Session1,
+                    SessionInDay = bachelor.SessionInDay,
                     Chair = bachelor.Chair,
                     ChairParent = bachelor.ChairParent,
                     CheckIn = bachelor.CheckIn,
@@ -155,12 +157,19 @@ namespace FA23_Convocation2023_API.Services
 
                 // Handle session
                 var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bItem.SessionNum)
-                              ?? new Session { Session1 = bItem.SessionNum };
+                              ?? new Session { Session1 = bItem.SessionNum, SessionInDay = bItem.SessionInDay };
 
                 if (session.SessionId == 0) // If Session is new, add and save it
                 {
                     await _context.Sessions.AddAsync(session);
                     await _context.SaveChangesAsync(); // Save to get the generated SessionId
+                }
+                else if (session.SessionInDay == null && bItem.SessionInDay.HasValue)
+                {
+                    // Update existing session with SessionInDay if it's not set
+                    session.SessionInDay = bItem.SessionInDay;
+                    _context.Sessions.Update(session);
+                    await _context.SaveChangesAsync();
                 }
 
                 // Handle check-in
@@ -187,6 +196,7 @@ namespace FA23_Convocation2023_API.Services
                     Major = bItem.Major,
                     HallId = hall.HallId,
                     SessionId = session.SessionId,
+                    SessionInDay = bItem.SessionInDay,
                     Chair = bItem.Chair,
                     ChairParent = bItem.ChairParent,
                     CheckIn = false
@@ -226,12 +236,19 @@ namespace FA23_Convocation2023_API.Services
 
             // Handle session
             var session = await _context.Sessions.FirstOrDefaultAsync(s => s.Session1 == bachelorRequest.SessionNum)
-                          ?? new Session { Session1 = bachelorRequest.SessionNum };
+                          ?? new Session { Session1 = bachelorRequest.SessionNum, SessionInDay = bachelorRequest.SessionInDay };
 
             if (session.SessionId == 0) // If Session is new, add and save it
             {
                 await _context.Sessions.AddAsync(session);
                 await _context.SaveChangesAsync(); // Save to get the generated SessionId
+            }
+            else if (session.SessionInDay == null && bachelorRequest.SessionInDay.HasValue)
+            {
+                // Update existing session with SessionInDay if it's not set
+                session.SessionInDay = bachelorRequest.SessionInDay;
+                _context.Sessions.Update(session);
+                await _context.SaveChangesAsync();
             }
 
             // Handle check-in
@@ -252,6 +269,7 @@ namespace FA23_Convocation2023_API.Services
             existingBachelor.Major = bachelorRequest.Major;
             existingBachelor.HallId = hall.HallId;
             existingBachelor.SessionId = session.SessionId;
+            existingBachelor.SessionInDay = bachelorRequest.SessionInDay;
             existingBachelor.Chair = bachelorRequest.Chair;
             existingBachelor.ChairParent = bachelorRequest.ChairParent;
 
@@ -265,6 +283,8 @@ namespace FA23_Convocation2023_API.Services
                 Mail = existingBachelor.Mail,
                 Major = existingBachelor.Major,
                 HallName = hall.HallName,
+                SessionNum = (int)session.Session1,
+                SessionInDay = existingBachelor.SessionInDay
 
                 // Map other fields
             };
