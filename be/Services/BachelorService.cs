@@ -32,7 +32,7 @@ namespace FA23_Convocation2023_API.Services
                Mail = b.Mail,
                HallName = b.Hall.HallName,
                SessionNum = (int)b.Session.Session1,
-               SessionInDay = b.SessionInDay,
+               SessionInDay = b.SessionInDay ?? b.Session.SessionInDay,
                Chair = b.Chair,
                ChairParent = b.ChairParent
            });
@@ -99,7 +99,7 @@ namespace FA23_Convocation2023_API.Services
                     StatusBaChelor = bachelor.StatusBaChelor,
                     HallName = bachelor.Hall.HallName,
                     SessionNum = bachelor.Session.Session1,
-                    SessionInDay = bachelor.SessionInDay,
+                    SessionInDay = bachelor.SessionInDay ?? bachelor.Session.SessionInDay,
                     Chair = bachelor.Chair,
                     ChairParent = bachelor.ChairParent,
                     CheckIn = bachelor.CheckIn,
@@ -284,7 +284,7 @@ namespace FA23_Convocation2023_API.Services
                 Major = existingBachelor.Major,
                 HallName = hall.HallName,
                 SessionNum = (int)session.Session1,
-                SessionInDay = existingBachelor.SessionInDay
+                SessionInDay = existingBachelor.SessionInDay ?? session.SessionInDay
 
                 // Map other fields
             };
