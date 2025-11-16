@@ -59,7 +59,7 @@ type HallLayout = {
 
 const HALL_LAYOUTS: Record<'A' | 'B', HallLayout> = {
   A: {
-    seatsPerSide: 70,
+    seatsPerSide: 78,
     cols: 6,
     markers: { checkinTopPct: 5, cameraPct: 48, stageEntrancePct: 92 },
   },
@@ -80,7 +80,7 @@ const HALL_LAYOUTS: Record<'A' | 'B', HallLayout> = {
  */
 const BLOCKS = {
   A: {
-    extraRows: { student: 1, parent: 1 },
+    extraRows: { student: 0, parent: 0 },
     overlayParentByNumber: [] as ReadonlyArray<number>,
     overlayParentByRowCol: [] as ReadonlyArray<RowCol>,
     parentTopRowSeatNumbers: [] as ReadonlyArray<number>,
