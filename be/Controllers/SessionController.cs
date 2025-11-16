@@ -132,7 +132,14 @@ namespace FA23_Convocation2023_API.Controllers
                 {
                     status = StatusCodes.Status200OK,
                     message = "Session opened successfully!",
-                    data = result
+                    data = new
+                    {
+                        sessionId = result.SessionId,
+                        sessionNum = result.Session1,
+                        sessionInDay = result.SessionInDay,
+                        description = result.Description,
+                        status = result.Status.ToString()
+                    }
                 });
             }
             catch (Exception ex)
@@ -165,7 +172,14 @@ namespace FA23_Convocation2023_API.Controllers
                 {
                     status = StatusCodes.Status200OK,
                     message = "Session closed successfully and attendance status updated!",
-                    data = result
+                    data = new
+                    {
+                        sessionId = result.SessionId,
+                        sessionNum = result.Session1,
+                        sessionInDay = result.SessionInDay,
+                        description = result.Description,
+                        status = result.Status.ToString()
+                    }
                 });
             }
             catch (Exception ex)

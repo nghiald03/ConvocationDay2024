@@ -442,9 +442,9 @@ namespace FA23_Convocation2023_API.Services
                 }
 
                 // Check if new session is open
-                if (newSession.Status != FA23_Convocation2023_API.Enums.SessionStatus.Open)
+                if (newSession.Status == FA23_Convocation2023_API.Enums.SessionStatus.Closed)
                 {
-                    throw new Exception("Target session is not currently open!");
+                    throw new Exception("Target session is closed!");
                 }
 
                 // Update bachelor's session and mark as late
