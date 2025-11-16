@@ -214,6 +214,58 @@ namespace FA23_Convocation2023_API.Controllers
             });
         }
 
+        // Get students not checked-in in open sessions
+        [HttpGet("GetStudentsNotCheckedInOpenSessions")]
+        [Authorize(Roles = "MN, CK")]
+        public async Task<IActionResult> GetStudentsNotCheckedInOpenSessionsAsync(
+            [FromQuery] int? hallId = null,
+            [FromQuery] int? sessionId = null,
+            [FromQuery] string? keySearch = null,
+            [FromQuery] int pageIndex = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            // Validate pagination parameters
+            if (pageIndex < 1 || pageSize < 1)
+            {
+                return BadRequest(new
+                {
+                    status = StatusCodes.Status400BadRequest,
+                    message = "Page index and page size must be greater than zero."
+                });
+            }
+
+            try
+            {
+                var result = await _checkInService.GetStudentsNotCheckedInOpenSessionsAsync(
+                    hallId, sessionId, keySearch, pageIndex, pageSize);
+
+                if (result.TotalItems == 0)
+                {
+                    return Ok(new
+                    {
+                        status = StatusCodes.Status200OK,
+                        message = "No students found who have not checked in to open sessions!",
+                        data = result
+                    });
+                }
+
+                return Ok(new
+                {
+                    status = StatusCodes.Status200OK,
+                    message = "Get students not checked-in in open sessions successfully!",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    status = StatusCodes.Status500InternalServerError,
+                    message = ex.Message
+                });
+            }
+        }
+
 
 
 

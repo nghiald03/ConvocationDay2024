@@ -98,6 +98,9 @@ namespace FA23_Convocation2023_API.Models
 
                 entity.Property(e => e.TimeCheckIn).HasColumnType("datetime");
 
+                entity.Property(e => e.AttendanceStatus)
+                    .HasConversion<int>();
+
                 entity.HasOne(d => d.Hall)
                     .WithMany(p => p.Bachelors)
                     .HasForeignKey(d => d.HallId)

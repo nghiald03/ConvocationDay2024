@@ -17,7 +17,7 @@ namespace FA23_Convocation2023_API.Services
             _context = context;
         }
 
-        public async Task<PagedResult<BachelorDTO>> SearchBachelorsAsync(string keySearch, int pageIndex, int pageSize)
+        public async Task<PagedResult<BachelorDTO>> SearchBachelorsAsync(string? keySearch, int pageIndex, int pageSize)
         {
 
             var query = _context.Bachelors.Include(b => b.Hall).Include(b => b.Session)
@@ -57,7 +57,7 @@ namespace FA23_Convocation2023_API.Services
 
 
 
-        public async Task<PagedResult<ListBachelor>> GetAllBachelorAsync(int pageIndex, int pageSize, string keySearch = null, int? sessionId = null, int? hallId = null)
+        public async Task<PagedResult<ListBachelor>> GetAllBachelorAsync(int pageIndex, int pageSize, string? keySearch = null, int? sessionId = null, int? hallId = null)
         {
             var query = _context.Bachelors.Include(b => b.Hall).Include(b => b.Session)
                 .AsQueryable();
@@ -411,6 +411,89 @@ namespace FA23_Convocation2023_API.Services
             _context.Bachelors.Update(existingBachelor);
             await _context.SaveChangesAsync();
             return existingBachelor;
+        }
+
+        // Transfer late student to a different session
+        public async Task<Bachelor> TransferLateStudentAsync(string studentCode, int newSessionId)
+        {
+            try
+            {
+                var existingBachelor = await _context.Bachelors
+                    .Include(b => b.Hall)
+                    .Include(b => b.Session)
+                    .FirstOrDefaultAsync(b => b.StudentCode.ToLower().Equals(studentCode.ToLower()));
+
+                if (existingBachelor == null)
+                {
+                    throw new Exception("Graduate not found in the system!");
+                }
+
+                // Check if student has already checked in
+                if (existingBachelor.CheckIn == true)
+                {
+                    throw new Exception("Graduate has already checked in and cannot be transferred!");
+                }
+
+                // Get the new session
+                var newSession = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == newSessionId);
+                if (newSession == null)
+                {
+                    throw new Exception("Target session not found!");
+                }
+
+                // Check if new session is open (has a CheckIn record with Status = true)
+                var newSessionCheckIn = await _context.CheckIns
+                    .FirstOrDefaultAsync(c => c.SessionId == newSessionId);
+
+                if (newSessionCheckIn == null || newSessionCheckIn.Status != true)
+                {
+                    throw new Exception("Target session is not currently open!");
+                }
+
+                // Update bachelor's session and mark as late
+                existingBachelor.SessionId = newSessionId;
+                existingBachelor.AttendanceStatus = FA23_Convocation2023_API.Enums.AttendanceStatus.Late;
+
+                // Ensure check-in record exists for new hall-session combination
+                var existingCheckin = await _context.CheckIns
+                    .FirstOrDefaultAsync(c => c.HallId == existingBachelor.HallId && c.SessionId == newSessionId);
+
+                if (existingCheckin == null)
+                {
+                    var newCheckin = new CheckIn
+                    {
+                        HallId = existingBachelor.HallId,
+                        SessionId = newSessionId,
+                        Status = false
+                    };
+                    _context.CheckIns.Add(newCheckin);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Update chair assignment
+                var listChair = await _context.Bachelors
+                    .Where(b => b.HallId == existingBachelor.HallId && b.SessionId == newSessionId)
+                    .Select(b => b.Chair)
+                    .ToListAsync();
+
+                int count = 1;
+                while (listChair.Contains(count.ToString()))
+                {
+                    count++;
+                }
+
+                existingBachelor.Chair = count.ToString();
+                existingBachelor.ChairParent = "PH" + count.ToString();
+
+                _context.Bachelors.Update(existingBachelor);
+                await _context.SaveChangesAsync();
+                return existingBachelor;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                throw;
+            }
         }
     }
 }

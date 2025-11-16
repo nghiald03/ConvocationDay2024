@@ -20,7 +20,7 @@ namespace FA23_Convocation2023_API.Services
         }
 
         //create session
-        public async Task<Session> CreateSession(int sessionNum, string description = null, int? sessionInDay = null)
+        public async Task<Session> CreateSession(int sessionNum, string? description = null, int? sessionInDay = null)
         {
             var session = new Session
             {
@@ -51,7 +51,7 @@ namespace FA23_Convocation2023_API.Services
             return listSession;
         }
 
-        public async Task<Session> UpdateSessionAsync(int sessionId, int sessionNum, string? description = null, int? sessionInDay = null) {
+        public async Task<Session?> UpdateSessionAsync(int sessionId, int sessionNum, string? description = null, int? sessionInDay = null) {
             try {
                 var existingSession = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == sessionId);
                 if (existingSession == null)
@@ -119,5 +119,6 @@ namespace FA23_Convocation2023_API.Services
                 return false;
             }
         }
+
     }
 }

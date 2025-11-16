@@ -1,6 +1,7 @@
 ﻿using Azure.Core;
 using FA23_Convocation2023_API.DTO;
 using FA23_Convocation2023_API.Models;
+using FA23_Convocation2023_API.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace FA23_Convocation2023_API.Services
@@ -44,7 +45,21 @@ namespace FA23_Convocation2023_API.Services
             }
 
             var checkin = await _context.CheckIns
+                .Include(c => c.Session)
                 .FirstOrDefaultAsync(c => c.HallId == bachelor.HallId && c.SessionId == bachelor.SessionId);
+
+            // Check if session is open for check-in (CheckIn.Status = true)
+            if (checkin?.Status != true)
+            {
+                if (checkin?.Status == null)
+                {
+                    throw new Exception("Session is not currently open for check-in!");
+                }
+                else
+                {
+                    throw new Exception("Session has been closed for check-in!");
+                }
+            }
 
             if (checkin?.Status == true)
             {
@@ -53,6 +68,7 @@ namespace FA23_Convocation2023_API.Services
                 if (bachelor.CheckIn == true)
                 {
                     bachelor.Status = true;
+                    bachelor.AttendanceStatus = FA23_Convocation2023_API.Enums.AttendanceStatus.Attended;
                 }
                 else
                 {
@@ -103,7 +119,21 @@ namespace FA23_Convocation2023_API.Services
             }
 
             var checkin = await _context.CheckIns
+                .Include(c => c.Session)
                 .FirstOrDefaultAsync(c => c.HallId == bachelor.HallId && c.SessionId == bachelor.SessionId);
+
+            // Check if session is open for check-in (CheckIn.Status = true)
+            if (checkin?.Status != true)
+            {
+                if (checkin?.Status == null)
+                {
+                    throw new Exception("Session is not currently open for check-in!");
+                }
+                else
+                {
+                    throw new Exception("Session has been closed for check-in!");
+                }
+            }
 
             if (checkin?.Status == true)
             {
@@ -112,6 +142,7 @@ namespace FA23_Convocation2023_API.Services
                 if (bachelor.CheckIn == true)
                 {
                     bachelor.Status = true;
+                    bachelor.AttendanceStatus = FA23_Convocation2023_API.Enums.AttendanceStatus.Attended;
                 }
                 else
                 {
@@ -178,33 +209,30 @@ namespace FA23_Convocation2023_API.Services
         {
             var statusCheckin = await _context.CheckIns.FirstOrDefaultAsync(
                 c => c.CheckinId == checkinId) ?? throw new Exception("Checkin không tồn tại!");
+
             statusCheckin.Status = status;
-            //if status == fasle, get all bacchelor by hallName and sessionNum and find all bachelor have checkin = false and create new list bachelor by list bachelor just found which same infor but hallname and sessionnum == null
-            //if (statusCheckin.Status == false)
-            //{
-            //    var bachelors = await _context.Bachelors.Where(b => b.HallId == statusCheckin.HallId && b.SessionId == statusCheckin.SessionId && b.CheckIn == false).ToListAsync();
-            //    foreach (var bachelor in bachelors)
-            //    {
-            //        var newBachelor = new Bachelor
-            //        {
-            //            StudentCode = bachelor.StudentCode,
-            //            FullName = bachelor.FullName,
-            //            Mail = bachelor.Mail,
-            //            Faculty = bachelor.Faculty,
-            //            Major = bachelor.Major,
-            //            Image = bachelor.Image,
-            //            Status = bachelor.Status,
-            //            StatusBaChelor = bachelor.StatusBaChelor,
-            //            HallId = null,
-            //            SessionId = null,
-            //            Chair = bachelor.Chair,
-            //            ChairParent = bachelor.ChairParent,
-            //            CheckIn = false,
-            //            TimeCheckIn = null
-            //        };
-            //        await _context.Bachelors.AddAsync(newBachelor);
-            //    }
-            //}
+
+            // If closing session (status = false), update all non-checked-in students to Absent
+            if (status == false)
+            {
+                var bachelors = await _context.Bachelors
+                    .Where(b => b.HallId == statusCheckin.HallId &&
+                               b.SessionId == statusCheckin.SessionId &&
+                               b.CheckIn != true &&
+                               b.AttendanceStatus == FA23_Convocation2023_API.Enums.AttendanceStatus.NotCheckedIn)
+                    .ToListAsync();
+
+                foreach (var bachelor in bachelors)
+                {
+                    bachelor.AttendanceStatus = FA23_Convocation2023_API.Enums.AttendanceStatus.Absent;
+                }
+
+                if (bachelors.Count > 0)
+                {
+                    _context.Bachelors.UpdateRange(bachelors);
+                }
+            }
+
             _context.CheckIns.Update(statusCheckin);
             await _context.SaveChangesAsync();
             return statusCheckin;
@@ -342,6 +370,84 @@ namespace FA23_Convocation2023_API.Services
                 PageSize = pageSize,
                 HasPreviousPage = pageIndex > 1,
                 HasNextPage = pageIndex < (int)Math.Ceiling(totalItems / (double)pageSize)
+            };
+        }
+
+        // Get students not checked-in in open sessions
+        public async Task<PagedResult<ListBachelor>> GetStudentsNotCheckedInOpenSessionsAsync(
+            int? hallId = null,
+            int? sessionId = null,
+            string? keySearch = null,
+            int pageIndex = 1,
+            int pageSize = 10)
+        {
+            // First get all open CheckIns (where Status = true)
+            var openCheckIns = await _context.CheckIns
+                .Where(c => c.Status == true)
+                .Select(c => new { c.HallId, c.SessionId })
+                .ToListAsync();
+
+            var query = _context.Bachelors
+                .Include(b => b.Hall)
+                .Include(b => b.Session)
+                .Where(b => b.CheckIn != true &&
+                           openCheckIns.Any(oc => oc.HallId == b.HallId && oc.SessionId == b.SessionId))
+                .AsQueryable();
+
+            // Filter by HallId if provided
+            if (hallId.HasValue)
+            {
+                query = query.Where(b => b.HallId == hallId.Value);
+            }
+
+            // Filter by SessionId if provided
+            if (sessionId.HasValue)
+            {
+                query = query.Where(b => b.SessionId == sessionId.Value);
+            }
+
+            // Filter by search key (StudentCode or FullName)
+            if (!string.IsNullOrWhiteSpace(keySearch))
+            {
+                query = query.Where(b => b.StudentCode.Contains(keySearch) || b.FullName.Contains(keySearch));
+            }
+
+            var totalItems = await query.CountAsync();
+
+            var items = await query
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .Select(b => new ListBachelor
+                {
+                    Id = b.Id,
+                    StudentCode = b.StudentCode,
+                    FullName = b.FullName,
+                    Mail = b.Mail,
+                    Faculty = b.Faculty,
+                    Major = b.Major,
+                    Image = b.Image,
+                    Status = b.Status,
+                    StatusBaChelor = b.StatusBaChelor,
+                    HallName = b.Hall.HallName,
+                    SessionNum = b.Session.Session1,
+                    SessionInDay = b.SessionInDay ?? b.Session.SessionInDay,
+                    Chair = b.Chair,
+                    ChairParent = b.ChairParent,
+                    CheckIn = b.CheckIn,
+                    TimeCheckIn = b.TimeCheckIn
+                })
+                .ToListAsync();
+
+            var paginatedResult = new PaginatedList<ListBachelor>(items, totalItems, pageIndex, pageSize);
+            return new PagedResult<ListBachelor>
+            {
+                Items = paginatedResult.Items,
+                TotalItems = paginatedResult.TotalCount,
+                TotalPages = paginatedResult.TotalPages,
+                CurrentPage = paginatedResult.CurrentPage,
+                PageSize = paginatedResult.PageSize,
+                HasPreviousPage = paginatedResult.HasPreviousPage,
+                HasNextPage = paginatedResult.HasNextPage
             };
         }
 
