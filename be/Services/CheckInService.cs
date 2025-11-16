@@ -472,6 +472,46 @@ namespace FA23_Convocation2023_API.Services
             return result;
 
         }
+
+        public async Task<List<CheckInResponse>> GetCheckInsByHallId(int hallId)
+        {
+            return await _context.CheckIns
+                .Where(c => c.HallId == hallId)
+                .Select(c => new CheckInResponse
+                {
+                    CheckinId = c.CheckinId,
+                    Status = c.Status,
+
+                    HallId = c.Hall.HallId,
+                    HallName = c.Hall.HallName,
+
+                    SessionId = c.Session.SessionId,
+                    SessionNumber = c.Session.Session1,
+                    SessionInDay = c.Session.SessionInDay,
+                    SessionDescription = c.Session.Description
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<CheckInResponse>> GetCheckInsByHallName(string hallName)
+        {
+            return await _context.CheckIns
+                .Where(c => c.Hall.HallName == hallName)
+                .Select(c => new CheckInResponse
+                {
+                    CheckinId = c.CheckinId,
+                    Status = c.Status,
+
+                    HallId = c.Hall.HallId,
+                    HallName = c.Hall.HallName,
+
+                    SessionId = c.Session.SessionId,
+                    SessionNumber = c.Session.Session1,
+                    SessionInDay = c.Session.SessionInDay,
+                    SessionDescription = c.Session.Description
+                })
+                .ToListAsync();
+        }
     }
 
 }

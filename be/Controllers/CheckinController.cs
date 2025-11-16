@@ -266,9 +266,19 @@ namespace FA23_Convocation2023_API.Controllers
             }
         }
 
+        [HttpGet("by-hall/{hallId}")]
+        public async Task<IActionResult> GetByHallId(int hallId)
+        {
+            var result = await _checkInService.GetCheckInsByHallId(hallId);
+            return Ok(result);
+        }
 
-
-
+        [HttpGet("by-hall-name")]
+        public async Task<IActionResult> GetByHallName([FromQuery] string hallName)
+        {
+            var result = await _checkInService.GetCheckInsByHallName(hallName);
+            return Ok(result);
+        }
 
     }
 }
