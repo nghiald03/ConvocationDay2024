@@ -157,9 +157,6 @@ namespace FA23_Convocation2023_API.Models
                 entity.ToTable("Session");
 
                 entity.Property(e => e.Session1).HasColumnName("Session");
-
-                entity.Property(e => e.Status)
-                    .HasConversion<int>();
             });
 
             modelBuilder.Entity<User>(entity =>
