@@ -44,7 +44,14 @@ namespace FA23_Convocation2023_API.Services
             }
 
             var checkin = await _context.CheckIns
+                .Include(c => c.Session)
                 .FirstOrDefaultAsync(c => c.HallId == bachelor.HallId && c.SessionId == bachelor.SessionId);
+
+            // Check if session is open for check-in
+            if (checkin?.Session?.Status != FA23_Convocation2023_API.Enums.SessionStatus.Open)
+            {
+                throw new Exception("Session is not currently open for check-in!");
+            }
 
             if (checkin?.Status == true)
             {
@@ -53,6 +60,7 @@ namespace FA23_Convocation2023_API.Services
                 if (bachelor.CheckIn == true)
                 {
                     bachelor.Status = true;
+                    bachelor.AttendanceStatus = FA23_Convocation2023_API.Enums.AttendanceStatus.Attended;
                 }
                 else
                 {
@@ -103,7 +111,14 @@ namespace FA23_Convocation2023_API.Services
             }
 
             var checkin = await _context.CheckIns
+                .Include(c => c.Session)
                 .FirstOrDefaultAsync(c => c.HallId == bachelor.HallId && c.SessionId == bachelor.SessionId);
+
+            // Check if session is open for check-in
+            if (checkin?.Session?.Status != FA23_Convocation2023_API.Enums.SessionStatus.Open)
+            {
+                throw new Exception("Session is not currently open for check-in!");
+            }
 
             if (checkin?.Status == true)
             {
@@ -112,6 +127,7 @@ namespace FA23_Convocation2023_API.Services
                 if (bachelor.CheckIn == true)
                 {
                     bachelor.Status = true;
+                    bachelor.AttendanceStatus = FA23_Convocation2023_API.Enums.AttendanceStatus.Attended;
                 }
                 else
                 {

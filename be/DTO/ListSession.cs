@@ -1,4 +1,6 @@
-﻿namespace FA23_Convocation2023_API.DTO
+﻿using FA23_Convocation2023_API.Enums;
+
+namespace FA23_Convocation2023_API.DTO
 {
     public class ListSession
     {
@@ -6,5 +8,6 @@
         public int? Session1 { get; set; }
         public int? SessionInDay { get; set; }
         public string? Description { get; set; }
+        public SessionStatus Status { get; set; }
     }
 }

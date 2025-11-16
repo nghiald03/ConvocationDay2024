@@ -1,6 +1,7 @@
 ﻿using FA23_Convocation2023_API.DTO;
 using FA23_Convocation2023_API.Models;
 using FA23_Convocation2023_API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -109,6 +110,72 @@ namespace FA23_Convocation2023_API.Controllers
                 message = $"Auto-filled sessionInDay for sessions {request.FromSession} to {request.ToSession} successfully!",
                 data = new { fromSession = request.FromSession, toSession = request.ToSession }
             });
+        }
+
+        [HttpPut("OpenSession/{sessionId}")]
+        [Authorize(Roles = "MN, CK")]
+        public async Task<IActionResult> OpenSessionAsync([FromRoute] int sessionId)
+        {
+            try
+            {
+                var result = await _sessionService.OpenSessionAsync(sessionId);
+                if (result == null)
+                {
+                    return BadRequest(new
+                    {
+                        status = StatusCodes.Status400BadRequest,
+                        message = "Session not found!"
+                    });
+                }
+
+                return Ok(new
+                {
+                    status = StatusCodes.Status200OK,
+                    message = "Session opened successfully!",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    status = StatusCodes.Status400BadRequest,
+                    message = ex.Message
+                });
+            }
+        }
+
+        [HttpPut("CloseSession/{sessionId}")]
+        [Authorize(Roles = "MN, CK")]
+        public async Task<IActionResult> CloseSessionAsync([FromRoute] int sessionId)
+        {
+            try
+            {
+                var result = await _sessionService.CloseSessionAsync(sessionId);
+                if (result == null)
+                {
+                    return BadRequest(new
+                    {
+                        status = StatusCodes.Status400BadRequest,
+                        message = "Session not found!"
+                    });
+                }
+
+                return Ok(new
+                {
+                    status = StatusCodes.Status200OK,
+                    message = "Session closed successfully and attendance status updated!",
+                    data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    status = StatusCodes.Status400BadRequest,
+                    message = ex.Message
+                });
+            }
         }
 
     }

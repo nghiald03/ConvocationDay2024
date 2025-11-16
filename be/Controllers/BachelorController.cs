@@ -247,5 +247,37 @@ namespace FA23_Convocation2023_API.Controllers
                 });
             }
         }
+
+        [HttpPut("TransferLateStudent")]
+        [Authorize(Roles = "MN")]
+        public async Task<IActionResult> TransferLateStudentAsync([FromBody] TransferLateStudentRequest request)
+        {
+            try
+            {
+                var result = await _bachService.TransferLateStudentAsync(request.StudentCode, request.NewSessionId);
+                return Ok(new
+                {
+                    status = StatusCodes.Status200OK,
+                    message = "Student transferred successfully and marked as late!",
+                    data = new
+                    {
+                        studentCode = result.StudentCode,
+                        fullName = result.FullName,
+                        newSessionId = result.SessionId,
+                        attendanceStatus = result.AttendanceStatus.ToString(),
+                        newChair = result.Chair,
+                        newChairParent = result.ChairParent
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    status = StatusCodes.Status400BadRequest,
+                    message = ex.Message
+                });
+            }
+        }
     }
 }

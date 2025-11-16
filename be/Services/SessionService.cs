@@ -45,7 +45,8 @@ namespace FA23_Convocation2023_API.Services
                     SessionId = session.SessionId,
                     Session1 = session.Session1,
                     SessionInDay = session.SessionInDay,
-                    Description = session.Description
+                    Description = session.Description,
+                    Status = session.Status
                 });
             }
             return listSession;
@@ -117,6 +118,66 @@ namespace FA23_Convocation2023_API.Services
             {
                 Console.WriteLine(ex.Message);
                 return false;
+            }
+        }
+
+        // Open a session
+        public async Task<Session> OpenSessionAsync(int sessionId)
+        {
+            try
+            {
+                var session = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == sessionId);
+                if (session == null)
+                {
+                    return null;
+                }
+
+                session.Status = FA23_Convocation2023_API.Enums.SessionStatus.Open;
+                _context.Sessions.Update(session);
+                await _context.SaveChangesAsync();
+                return session;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+        }
+
+        // Close a session and auto-update attendance status
+        public async Task<Session> CloseSessionAsync(int sessionId)
+        {
+            try
+            {
+                var session = await _context.Sessions
+                    .Include(s => s.Bachelors)
+                    .FirstOrDefaultAsync(s => s.SessionId == sessionId);
+
+                if (session == null)
+                {
+                    return null;
+                }
+
+                // Update session status
+                session.Status = FA23_Convocation2023_API.Enums.SessionStatus.Closed;
+
+                // Auto-update attendance status for students who haven't checked in
+                foreach (var bachelor in session.Bachelors)
+                {
+                    if (bachelor.CheckIn != true && bachelor.AttendanceStatus == FA23_Convocation2023_API.Enums.AttendanceStatus.NotCheckedIn)
+                    {
+                        bachelor.AttendanceStatus = FA23_Convocation2023_API.Enums.AttendanceStatus.Absent;
+                    }
+                }
+
+                _context.Sessions.Update(session);
+                await _context.SaveChangesAsync();
+                return session;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
             }
         }
     }

@@ -2,6 +2,7 @@
 #nullable disable
 using System;
 using System.Collections.Generic;
+using FA23_Convocation2023_API.Enums;
 
 namespace FA23_Convocation2023_API.Models
 {
@@ -17,6 +18,7 @@ namespace FA23_Convocation2023_API.Models
         public int? Session1 { get; set; }
         public int? SessionInDay { get; set; }
         public string? Description { get; set; }
+        public SessionStatus Status { get; set; } = SessionStatus.NotOpen;
 
         public virtual ICollection<Bachelor> Bachelors { get; set; }
         public virtual ICollection<CheckIn> CheckIns { get; set; }

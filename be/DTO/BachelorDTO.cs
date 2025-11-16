@@ -1,4 +1,6 @@
-﻿namespace FA23_Convocation2023_API.DTO
+﻿using FA23_Convocation2023_API.Enums;
+
+namespace FA23_Convocation2023_API.DTO
 {
     public class BachelorDTO
     {
@@ -10,6 +12,7 @@
         public string HallName {  get; set; }
         public int SessionNum {  get; set; }
         public int? SessionInDay { get; set; }
+        public AttendanceStatus AttendanceStatus { get; set; }
 
         public string Chair {  get; set; }
         public string ChairParent { get; set;}
