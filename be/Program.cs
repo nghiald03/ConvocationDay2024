@@ -69,19 +69,37 @@ namespace FA23_Convocation2023_API
                 options.AddPolicy("CORSPolicy", builder => 
                 builder.AllowAnyMethod().AllowAnyHeader().AllowCredentials().SetIsOriginAllowed((hosts) => true));
             });
-            // Chỗ này chỉ để config lúc login xong mình sẽ
-            // lấy token, ở trên có nút Authorize, ấn vô
-            // sẽ mở modal để mình bỏ token để phân quyền á, kiểu v
-            // Nói chung chỉ để config cái hộp đấy thoi à
+            // Configure Swagger with JWT Bearer authentication
             builder.Services.AddSwaggerGen(options =>
             {
-                options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+                // Add JWT Bearer security definition
+                options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    Description = "Standard Authorization header using the Bearer scheme (\"bearer {token}\")",
-                    In = ParameterLocation.Header,
+                    Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
                     Name = "Authorization",
-                    Type = SecuritySchemeType.ApiKey
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT"
                 });
+
+                // Add security requirement to all endpoints
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
+
+                // Optional: Add operation filter for more granular control
                 options.OperationFilter<SecurityRequirementsOperationFilter>();
             });
             // Chỗ này để add authen thôi, với config tạo cái token á
