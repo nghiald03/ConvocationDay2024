@@ -18,13 +18,18 @@ import { ledAPI } from '@/config/axios';
 import toast from 'react-hot-toast';
 
 type Hall = { hallId: string | number; hallName: string };
-type Session = { sessionId: string | number; session1: string };
+type Session = {
+  sessionId: string | number;
+  session1: string;
+  sessionInDay: string;
+};
 
 type PickerValue = {
   hallId: string;
   hallName?: string;
   sessionId: string;
   sessionLabel?: string;
+  sessionInDay?: string;
 };
 
 export type HallSessionPickerProps = {
@@ -188,7 +193,7 @@ export default function HallSessionPicker({
                   <SelectLabel>Session</SelectLabel>
                   {sessions.map((s) => (
                     <SelectItem key={s.sessionId} value={String(s.sessionId)}>
-                      {s.session1}
+                      {s.sessionInDay} (Session tổng: {s.session1})
                     </SelectItem>
                   ))}
                 </SelectGroup>
