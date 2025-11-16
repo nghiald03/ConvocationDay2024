@@ -30,6 +30,7 @@ export type CheckinRow = {
   checkinId: string | number;
   hallName: string;
   sessionNum: number;
+  sessionInDay: string;
   status: boolean;
 };
 
@@ -131,7 +132,7 @@ export default function CheckinPage() {
       const item = rows.find((r) => r.checkinId === vars.checkinId);
       if (item) {
         toast.success(
-          `Thay trạng thái checkin của hội trường ${item.hallName} session ${item.sessionNum} thành công!`
+          `Thay trạng thái checkin của hội trường ${item.hallName} session ${item.sessionInDay} thành công!`
         );
       }
     },
@@ -178,7 +179,7 @@ export default function CheckinPage() {
 
         if (send) {
           const request = mapLocalToApi({
-            message: `Session ${row.sessionNum} hội trường ${row.hallName} đã mở. Các bạn có thể bắt đầu check-in.`,
+            message: `Session ${row.sessionInDay} hội trường ${row.hallName} đã mở. Các bạn có thể bắt đầu check-in.`,
             priority: 'high',
             repeatCount: 2,
           });
@@ -197,6 +198,7 @@ export default function CheckinPage() {
     { accessorKey: 'checkinId', header: 'ID' },
     { accessorKey: 'hallName', header: 'Hội trường' },
     { accessorKey: 'sessionNum', header: 'Session' },
+    { accessorKey: 'sessionInDay', header: 'Session trong ngày' },
     {
       accessorKey: 'status',
       header: 'Action',

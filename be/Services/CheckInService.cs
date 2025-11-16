@@ -198,6 +198,7 @@ namespace FA23_Convocation2023_API.Services
                     CheckinId = check.CheckinId,
                     HallName = hall.HallName,
                     SessionNum = session.Session1,
+                    SessionInDay = session.SessionInDay,
                     Status = check.Status
                 });
             }

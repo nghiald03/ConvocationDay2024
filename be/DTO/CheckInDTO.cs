@@ -6,5 +6,6 @@
         public string HallName { get; set; }
         public int? SessionNum { get; set; }
         public bool? Status { get; set; }
+        public int? SessionInDay { get; set; }
     }
 }
