@@ -165,7 +165,7 @@ namespace FA23_Convocation2023_API.Controllers
                 return CreatedAtAction(
                     nameof(GetNotification),
                     new { id = createdNotification.NotificationId },
-                    new { message = "Notification created successfully", notificationId = createdNotification.NotificationId }
+                    new { message = "Thông báo được tạo thành công", notificationId = createdNotification.NotificationId }
                 );
             }
             catch (Exception ex)

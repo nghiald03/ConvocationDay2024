@@ -98,7 +98,7 @@ const TableCustom = ({
         >
           {title}
         </div>
-        <div>
+        <div className='w-[400px]'>
           {/* <Input
             placeholder='Filter Status...'
             value={
@@ -168,7 +168,7 @@ const TableCustom = ({
           {isLoading && (
             <TableRow>
               <TableCell colSpan={columns.length} className='h-32 text-center'>
-                <Image src='/LoadingAnimation.webm' alt='loading'></Image>
+                {/* <Image src='/LoadingAnimation.webm' alt='loading'></Image> */}
               </TableCell>
             </TableRow>
           )}

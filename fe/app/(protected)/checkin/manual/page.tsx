@@ -45,6 +45,7 @@ import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import swal from 'sweetalert';
 import { useDebounce } from 'use-debounce';
+import { MultiHallStatusDisplay } from '@/components/multiHallStatusDisplay';
 
 export default function ManualCheckinPage() {
   const queryClient = useQueryClient();
@@ -67,7 +68,10 @@ export default function ManualCheckinPage() {
   const [isMN, setIsMN] = useState(false);
   useEffect(() => {
     try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('accessToken')
+          : null;
       if (!token) {
         setIsMN(false);
         return;
@@ -293,7 +297,10 @@ export default function ManualCheckinPage() {
 
   const handleSendNotify = (row: any) => {
     if (!isMN) {
-      toast.error('Bạn không có quyền gửi thông báo', { duration: 3000, position: 'top-right' });
+      toast.error('Bạn không có quyền gửi thông báo', {
+        duration: 3000,
+        position: 'top-right',
+      });
       return;
     }
     const hallLabel =
@@ -326,6 +333,7 @@ export default function ManualCheckinPage() {
           );
         },
       },
+      { accessorKey: 'sessionInDay', header: 'Phiên trong ngày' },
       { accessorKey: 'chair', header: 'Ghế' },
       { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
       {
@@ -367,35 +375,6 @@ export default function ManualCheckinPage() {
     ]
   );
 
-  if (isLoading) {
-    return (
-      <>
-        <Card className='animate-fade-up'>
-          <CardContent className='p-3'>
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink href='/'>Trang chủ</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Checkin thủ công</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </CardContent>
-        </Card>
-        <Card className='mt-3'>
-          <CardContent className='p-3 '>
-            <div className='flex flex-1 w-full p-20'>
-              <div className='loader p-10'></div>
-            </div>
-          </CardContent>
-        </Card>
-      </>
-    );
-  }
-
   return (
     <>
       <Card className='animate-fade-up'>
@@ -416,6 +395,7 @@ export default function ManualCheckinPage() {
 
       <Card className='mt-3 animate-fade-up'>
         <CardContent className='p-3'>
+          <MultiHallStatusDisplay />
           <TableCustom
             title='Danh sách tân cử nhân'
             isLoading={isLoading}
@@ -433,12 +413,12 @@ export default function ManualCheckinPage() {
             header={
               <div className='flex gap-2 w-full'>
                 <Input
-                  className='w-[400px] h-full'
+                  className=' h-full'
                   placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
                   defaultValue={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-                <Select onValueChange={setHall}>
+                {/* <Select onValueChange={setHall}>
                   <SelectTrigger color='primary' className='w-[180px]'>
                     <SelectValue
                       color='primary'
@@ -481,7 +461,7 @@ export default function ManualCheckinPage() {
                         ))}
                     </SelectGroup>
                   </SelectContent>
-                </Select>
+                </Select> */}
               </div>
             }
           />

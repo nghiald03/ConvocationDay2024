@@ -251,6 +251,7 @@ export default function Page() {
       accessorKey: 'sessionNum',
       header: 'Session',
     },
+    { accessorKey: 'sessionInDay', header: 'Session trong ngày' },
     {
       accessorKey: 'chair',
       header: 'Ghế',

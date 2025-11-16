@@ -35,6 +35,7 @@ const EXPECTED_HEADERS = [
   'Nganh_hoc',
   'Hall',
   'Session',
+  'SessionInDay',
   'Vi_tri_ghe',
   'Vi_tri_ghe_phu_huynh',
 ] as const;
@@ -80,6 +81,7 @@ export default function AddBachelorFromFile() {
     { accessorKey: 'mail', header: 'Mail' },
     { accessorKey: 'hallName', header: 'Hội trường' },
     { accessorKey: 'sessionNum', header: 'Session' },
+    { accessorKey: 'sessionInDay', header: 'SessionInDay' },
     { accessorKey: 'chair', header: 'Ghế' },
     { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
   ];
@@ -176,6 +178,16 @@ export default function AddBachelorFromFile() {
           });
 
           // Map field theo TÊN CỘT thực tế
+          const rawSessionInDay = getByHeader(row, 'SessionInDay');
+          const parsedSessionInDay =
+            rawSessionInDay === undefined ||
+            rawSessionInDay === null ||
+            String(rawSessionInDay).trim() === ''
+              ? null
+              : Number.isNaN(Number(rawSessionInDay))
+              ? null
+              : Number(rawSessionInDay);
+
           const bachelor: Bachelor = {
             image: getByHeader(row, 'Image'),
             fullName: getByHeader(row, 'Ho_va_ten'),
@@ -184,6 +196,8 @@ export default function AddBachelorFromFile() {
             major: getByHeader(row, 'Nganh_hoc'),
             hallName: getByHeader(row, 'Hall'),
             sessionNum: getByHeader(row, 'Session'),
+            sessionInDay:
+              parsedSessionInDay === null ? null : String(parsedSessionInDay),
             chair: getByHeader(row, 'Vi_tri_ghe'),
             chairParent: getByHeader(row, 'Vi_tri_ghe_phu_huynh'),
           };
@@ -234,6 +248,7 @@ export default function AddBachelorFromFile() {
         image: item.image,
         hallName: item.hallName,
         sessionNum: item.sessionNum,
+        sessionInDay: item.sessionInDay ?? null,
         chair: item.chair?.toString(),
         chairParent: item.chairParent?.toString(),
       }));

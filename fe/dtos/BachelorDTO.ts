@@ -16,4 +16,5 @@ export type Bachelor = {
   timeCheckIn?: string;
   hall?: string | null;
   session?: string | null;
+  sessionInDay?: string | null;
 };
