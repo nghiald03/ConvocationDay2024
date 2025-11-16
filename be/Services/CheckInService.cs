@@ -1,6 +1,7 @@
 ﻿using Azure.Core;
 using FA23_Convocation2023_API.DTO;
 using FA23_Convocation2023_API.Models;
+using FA23_Convocation2023_API.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace FA23_Convocation2023_API.Services
@@ -358,6 +359,78 @@ namespace FA23_Convocation2023_API.Services
                 PageSize = pageSize,
                 HasPreviousPage = pageIndex > 1,
                 HasNextPage = pageIndex < (int)Math.Ceiling(totalItems / (double)pageSize)
+            };
+        }
+
+        // Get students not checked-in in open sessions
+        public async Task<PagedResult<ListBachelor>> GetStudentsNotCheckedInOpenSessionsAsync(
+            int? hallId = null,
+            int? sessionId = null,
+            string? keySearch = null,
+            int pageIndex = 1,
+            int pageSize = 10)
+        {
+            var query = _context.Bachelors
+                .Include(b => b.Hall)
+                .Include(b => b.Session)
+                .Where(b => b.CheckIn != true &&
+                           b.Session.Status == FA23_Convocation2023_API.Enums.SessionStatus.Open)
+                .AsQueryable();
+
+            // Filter by HallId if provided
+            if (hallId.HasValue)
+            {
+                query = query.Where(b => b.HallId == hallId.Value);
+            }
+
+            // Filter by SessionId if provided
+            if (sessionId.HasValue)
+            {
+                query = query.Where(b => b.SessionId == sessionId.Value);
+            }
+
+            // Filter by search key (StudentCode or FullName)
+            if (!string.IsNullOrWhiteSpace(keySearch))
+            {
+                query = query.Where(b => b.StudentCode.Contains(keySearch) || b.FullName.Contains(keySearch));
+            }
+
+            var totalItems = await query.CountAsync();
+
+            var items = await query
+                .Skip((pageIndex - 1) * pageSize)
+                .Take(pageSize)
+                .Select(b => new ListBachelor
+                {
+                    Id = b.Id,
+                    StudentCode = b.StudentCode,
+                    FullName = b.FullName,
+                    Mail = b.Mail,
+                    Faculty = b.Faculty,
+                    Major = b.Major,
+                    Image = b.Image,
+                    Status = b.Status,
+                    StatusBaChelor = b.StatusBaChelor,
+                    HallName = b.Hall.HallName,
+                    SessionNum = b.Session.Session1,
+                    SessionInDay = b.SessionInDay ?? b.Session.SessionInDay,
+                    Chair = b.Chair,
+                    ChairParent = b.ChairParent,
+                    CheckIn = b.CheckIn,
+                    TimeCheckIn = b.TimeCheckIn
+                })
+                .ToListAsync();
+
+            var paginatedResult = new PaginatedList<ListBachelor>(items, totalItems, pageIndex, pageSize);
+            return new PagedResult<ListBachelor>
+            {
+                Items = paginatedResult.Items,
+                TotalItems = paginatedResult.TotalCount,
+                TotalPages = paginatedResult.TotalPages,
+                CurrentPage = paginatedResult.CurrentPage,
+                PageSize = paginatedResult.PageSize,
+                HasPreviousPage = paginatedResult.HasPreviousPage,
+                HasNextPage = paginatedResult.HasNextPage
             };
         }
 

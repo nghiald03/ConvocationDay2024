@@ -17,7 +17,7 @@ namespace FA23_Convocation2023_API.Services
             _context = context;
         }
 
-        public async Task<PagedResult<BachelorDTO>> SearchBachelorsAsync(string keySearch, int pageIndex, int pageSize)
+        public async Task<PagedResult<BachelorDTO>> SearchBachelorsAsync(string? keySearch, int pageIndex, int pageSize)
         {
 
             var query = _context.Bachelors.Include(b => b.Hall).Include(b => b.Session)
@@ -57,7 +57,7 @@ namespace FA23_Convocation2023_API.Services
 
 
 
-        public async Task<PagedResult<ListBachelor>> GetAllBachelorAsync(int pageIndex, int pageSize, string keySearch = null, int? sessionId = null, int? hallId = null)
+        public async Task<PagedResult<ListBachelor>> GetAllBachelorAsync(int pageIndex, int pageSize, string? keySearch = null, int? sessionId = null, int? hallId = null)
         {
             var query = _context.Bachelors.Include(b => b.Hall).Include(b => b.Session)
                 .AsQueryable();

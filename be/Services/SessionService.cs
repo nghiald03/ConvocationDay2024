@@ -20,7 +20,7 @@ namespace FA23_Convocation2023_API.Services
         }
 
         //create session
-        public async Task<Session> CreateSession(int sessionNum, string description = null, int? sessionInDay = null)
+        public async Task<Session> CreateSession(int sessionNum, string? description = null, int? sessionInDay = null)
         {
             var session = new Session
             {
@@ -52,7 +52,7 @@ namespace FA23_Convocation2023_API.Services
             return listSession;
         }
 
-        public async Task<Session> UpdateSessionAsync(int sessionId, int sessionNum, string? description = null, int? sessionInDay = null) {
+        public async Task<Session?> UpdateSessionAsync(int sessionId, int sessionNum, string? description = null, int? sessionInDay = null) {
             try {
                 var existingSession = await _context.Sessions.FirstOrDefaultAsync(s => s.SessionId == sessionId);
                 if (existingSession == null)
@@ -122,7 +122,7 @@ namespace FA23_Convocation2023_API.Services
         }
 
         // Open a session
-        public async Task<Session> OpenSessionAsync(int sessionId)
+        public async Task<Session?> OpenSessionAsync(int sessionId)
         {
             try
             {
@@ -145,7 +145,7 @@ namespace FA23_Convocation2023_API.Services
         }
 
         // Close a session and auto-update attendance status
-        public async Task<Session> CloseSessionAsync(int sessionId)
+        public async Task<Session?> CloseSessionAsync(int sessionId)
         {
             try
             {
