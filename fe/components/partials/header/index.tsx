@@ -7,6 +7,7 @@ import ProfileInfo from './profile-info';
 import ThemeSwitcher from './theme-switcher';
 
 import HeaderLogo from './header-logo';
+import WarningDialog from '@/components/warningDialog';
 
 const DashCodeHeader = () => {
   return (
@@ -14,6 +15,7 @@ const DashCodeHeader = () => {
       <HeaderContent>
         <div className=' flex gap-3 items-center'>
           <HeaderLogo />
+          <WarningDialog />
           <SidebarToggle />
           <HeaderSearch />
         </div>
