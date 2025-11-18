@@ -82,6 +82,7 @@ export default function Page() {
   // State
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState<boolean>(false);
   const [open, setOpen] = useState<boolean>(false);
   const [current, setCurrent] = useState<ImageMeta | null>(null);
@@ -200,9 +201,25 @@ export default function Page() {
     onSuccess: async () => {
       toast.success('Đã xóa ảnh');
       setOpen(false);
+      setSelectedIds(new Set());
       await queryClient.invalidateQueries({ queryKey: ['images'] });
     },
     onError: () => toast.error('Xóa ảnh thất bại'),
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) =>
+      uploader.delete('/api/images', { data: { ids } }),
+    onSuccess: async (res: any) => {
+      const count = res?.data?.deleted?.length ?? 0;
+      toast.success(`Đã xóa ${count} ảnh`);
+      setSelectedIds(new Set());
+      await queryClient.invalidateQueries({ queryKey: ['images'] });
+    },
+    onError: (e: any) => {
+      console.error(e);
+      toast.error('Xóa hàng loạt thất bại');
+    },
   });
 
   // ===== Handlers =====
@@ -286,6 +303,22 @@ export default function Page() {
       deleteMutation.mutate(current.id);
   };
 
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id);
+      else s.add(id);
+      return s;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return toast.error('Chưa chọn ảnh để xóa');
+    if (!confirm(`Xóa ${ids.length} ảnh đã chọn?`)) return;
+    bulkDeleteMutation.mutate(ids);
+  };
+
   const copyUrl = async (url: string) => {
     try {
       // Build full URL: if url is already absolute, use it; otherwise prefix with current origin
@@ -359,6 +392,16 @@ export default function Page() {
                 }
               >
                 <RefreshCcw className='size-4 mr-2' /> Làm mới
+              </Button>
+              <Button
+                color='destructive'
+                size='sm'
+                onClick={handleBulkDelete}
+                disabled={
+                  bulkDeleteMutation.isPending || selectedIds.size === 0
+                }
+              >
+                <Trash2 className='size-4 mr-2' /> Xóa đã chọn
               </Button>
               <Button
                 variant='outline'
@@ -535,10 +578,23 @@ export default function Page() {
               {filtered.map((img) => (
                 <figure
                   key={img.id}
-                  className='group border rounded-xl overflow-hidden bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60'
+                  className='group border rounded-xl overflow-hidden bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60 relative'
                 >
+                  <div className='absolute z-20 top-2 left-2'>
+                    <input
+                      type='checkbox'
+                      checked={selectedIds.has(img.id)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleToggleSelect(img.id);
+                      }}
+                      aria-label={`Chọn ${img.originalName}`}
+                      className='w-4 h-4 rounded border'
+                    />
+                  </div>
+
                   <div
-                    className='relative aspect-square bg-muted overflow-hidden'
+                    className='relative aspect-square bg-muted overflow-hidden cursor-pointer'
                     onClick={() => {
                       setOpen(true);
                       setCurrent(img);
