@@ -12,7 +12,11 @@ services:
       - sql_data:/var/opt/mssql
     restart: unless-stopped
     healthcheck:
-      test: [ 'CMD-SHELL', "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStronggg@Passw0rd -Q 'SELECT 1' -C" ]
+      test:
+        [
+          'CMD-SHELL',
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStronggg@Passw0rd -Q 'SELECT 1' -C",
+        ]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -57,6 +61,7 @@ services:
     volumes:
       - fe_uploads:/app/uploads
       - fe_cache:/app/.cache/tts
+      - fe_data:/app/data
 
     restart: unless-stopped
   # apiimageupload:
