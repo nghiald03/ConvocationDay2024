@@ -52,22 +52,6 @@ export function getMenuList(pathname: string): Group[] {
       roleAccess: ['MN', 'NO'],
       menus: [
         {
-          id: 'notification',
-          href: '/notify',
-          label: 'Thông báo',
-          active: pathname === '/notify',
-          icon: 'heroicons-outline:bell',
-          submenus: [],
-        },
-        {
-          id: 'notification',
-          href: '/notify/current-number',
-          label: 'Gọi số chụp ảnh',
-          active: pathname === '/notify/current-number',
-          icon: 'heroicons-outline:phone-arrow-up-right',
-          submenus: [],
-        },
-        {
           id: 'notification-display',
           href: '/notification-display',
           label: 'Hiển thị thông báo',
@@ -170,6 +154,14 @@ export function getMenuList(pathname: string): Group[] {
           label: 'Quản lí danh sách TCN',
           active: pathname.includes('/manage/manage-bachelor'),
           icon: 'lucide:user-cog',
+          submenus: [],
+        },
+        {
+          id: 'notification',
+          href: '/notify',
+          label: 'Thông báo',
+          active: pathname === '/notify',
+          icon: 'heroicons-outline:bell',
           submenus: [],
         },
         {
