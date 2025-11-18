@@ -14,14 +14,18 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Sparkles } from 'lucide-react';
-import { ledAPI } from '@/config/axios';
+import { ledAPI, checkinAPI } from '@/config/axios';
 import toast from 'react-hot-toast';
 
 type Hall = { hallId: string | number; hallName: string };
 type Session = {
-  sessionId: string | number;
-  session1: string;
-  sessionInDay: string;
+  sessionId: number | string;
+  sessionNumber?: number | string; // sessionNumber in backend
+  sessionInDay?: number | string;
+  sessionDescription?: string | null;
+  hallId?: number | string;
+  hallName?: string;
+  status?: boolean;
 };
 
 type PickerValue = {
@@ -58,24 +62,36 @@ export default function HallSessionPicker({
     staleTime: 5 * 60 * 1000,
   });
 
-  const {
-    data: sessionList,
-    error: sessionErr,
-    isLoading: sessionsLoading,
-  } = useQuery({
-    queryKey: ['sessionList'],
-    queryFn: () => ledAPI.getSessionList(),
-    staleTime: 5 * 60 * 1000,
-  });
-
   const halls: Hall[] = useMemo(
     () => (Array.isArray(hallList?.data?.data) ? hallList.data.data : []),
     [hallList]
   );
 
+  // Fetch sessions for selected hall only
+  const {
+    data: sessionsByHall,
+    error: sessionsErr,
+    isLoading: sessionsLoading,
+  } = useQuery({
+    queryKey: ['sessions-by-hall', hall],
+    enabled: !!hall,
+    queryFn: async () => {
+      // backend endpoint: /api/Checkin/by-hall/{hallId}
+      const res = await checkinAPI.getSessionsByHall(Number(hall));
+      // result may be either { data: [...] } or direct array depending on axios wrapper
+      return res?.data ?? res;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
   const sessions: Session[] = useMemo(
-    () => (Array.isArray(sessionList?.data?.data) ? sessionList.data.data : []),
-    [sessionList]
+    () =>
+      Array.isArray(sessionsByHall)
+        ? sessionsByHall
+        : Array.isArray(sessionsByHall?.data)
+        ? sessionsByHall.data
+        : [],
+    [sessionsByHall]
   );
 
   // Load từ localStorage
@@ -95,8 +111,8 @@ export default function HallSessionPicker({
   // Thông báo lỗi fetch
   useEffect(() => {
     if (hallErr) toast.error('Lỗi lấy danh sách hội trường');
-    if (sessionErr) toast.error('Lỗi lấy danh sách session');
-  }, [hallErr, sessionErr]);
+    if (sessionsErr) toast.error('Lỗi lấy danh sách session');
+  }, [hallErr, sessionsErr]);
 
   // Bắn onChange + lưu localStorage khi đủ 2 select
   useEffect(() => {
@@ -111,7 +127,11 @@ export default function HallSessionPicker({
       hallId: String(hall),
       hallName: hallObj?.hallName,
       sessionId: String(session),
-      sessionLabel: sesObj?.session1,
+      sessionLabel: sesObj
+        ? `Phiên ${sesObj.sessionInDay ?? ''} (Session: ${
+            sesObj.sessionNumber ?? ''
+          })`
+        : undefined,
     };
 
     try {
@@ -124,6 +144,11 @@ export default function HallSessionPicker({
   }, [hall, session, halls, sessions, onChange, storageKey]);
 
   const disabled = hallsLoading || sessionsLoading;
+
+  // Clear session when hall changes
+  useEffect(() => {
+    setSession('');
+  }, [hall]);
 
   return (
     <Card className='relative shadow-lg border-0 overflow-hidden'>
@@ -179,7 +204,7 @@ export default function HallSessionPicker({
             <Select
               value={session}
               onValueChange={setSession}
-              disabled={disabled || sessions.length === 0}
+              disabled={!hall || sessionsLoading || sessions.length === 0}
             >
               <SelectTrigger
                 id='session-select'
@@ -193,7 +218,10 @@ export default function HallSessionPicker({
                   <SelectLabel>Session</SelectLabel>
                   {sessions.map((s) => (
                     <SelectItem key={s.sessionId} value={String(s.sessionId)}>
-                      {s.sessionInDay} (Session tổng: {s.session1})
+                      {`Session ${s.sessionInDay ?? ''} (Session TONG: ${
+                        s.sessionNumber ?? s.sessionId
+                      })`}{' '}
+                      {s.sessionDescription ? ' - ' + s.sessionDescription : ''}
                     </SelectItem>
                   ))}
                 </SelectGroup>

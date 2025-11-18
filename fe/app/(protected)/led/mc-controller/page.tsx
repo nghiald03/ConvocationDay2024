@@ -19,6 +19,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { ledAPI } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
 import { Icon } from '@iconify/react';
@@ -31,6 +33,8 @@ import {
   Sparkles,
   ChevronLeft,
   ChevronRight,
+  Maximize,
+  Minimize,
 } from 'lucide-react';
 
 // ====== Helpers cho ảnh ======
@@ -95,6 +99,15 @@ export default function Page() {
     if (typeof window === 'undefined') return '';
     return window.localStorage.getItem('session') || '';
   });
+
+  const [showPrevious, setShowPrevious] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const stored = window.localStorage.getItem('showPrevious');
+    return stored === null ? true : stored === 'true';
+  });
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const controlRef = React.useRef<HTMLDivElement>(null);
 
   const [hallList, setHallList] = useState<{ value: string; label: string }[]>(
     []
@@ -190,6 +203,11 @@ export default function Page() {
     window.localStorage.setItem('session', session);
   }, [session]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('showPrevious', String(showPrevious));
+  }, [showPrevious]);
+
   const hallLabel = useMemo(() => {
     return (
       hallList.find((item) => item.value.toString() === hall.toString())
@@ -203,6 +221,28 @@ export default function Page() {
         ?.label || 'Chưa chọn'
     );
   }, [sessionList, session]);
+
+  // ---- Fullscreen handlers
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement && controlRef.current) {
+      controlRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // ---- Mutations
   const getBachelorCurrent = useMutation({
@@ -298,7 +338,7 @@ export default function Page() {
   }, [hall, session]);
 
   return (
-    <div className='min-h-screen  p-4'>
+    <div className='min-h-screen p-4'>
       <div className='mx-auto space-y-4'>
         <Card className='shadow-lg border-2 border-orange-200/50 dark:border-orange-900/50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm'>
           <CardContent className='p-4'>
@@ -346,108 +386,148 @@ export default function Page() {
                 setSession(v.sessionId);
               }}
             />
+
+            <div className='flex items-center justify-between gap-4 p-4 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-800'>
+              <div className='flex items-center gap-3'>
+                <Switch
+                  id='show-previous'
+                  checked={showPrevious}
+                  onCheckedChange={setShowPrevious}
+                />
+                <Label
+                  htmlFor='show-previous'
+                  className='text-base font-medium text-orange-800 dark:text-orange-200 cursor-pointer'
+                >
+                  Hiển thị tân cử nhân trước đó
+                </Label>
+              </div>
+
+              <Button
+                onClick={toggleFullscreen}
+                variant='outline'
+                size='lg'
+                className='border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+              >
+                {isFullscreen ? (
+                  <>
+                    <Minimize className='w-5 h-5 mr-2' />
+                    Thoát toàn màn hình
+                  </>
+                ) : (
+                  <>
+                    <Maximize className='w-5 h-5 mr-2' />
+                    Toàn màn hình
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
         {hall && session && (
-          <div className='animate-fade-up'>
-            <Card className='shadow-2xl border-2 border-orange-200/50 dark:border-orange-900/50  bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm'>
-              <CardContent className='p-6'>
-                <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+          <div className='animate-fade-up' ref={controlRef}>
+            <Card
+              className={`shadow-2xl border-2 border-orange-200/50 dark:border-orange-900/50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm ${
+                isFullscreen ? 'h-screen flex flex-col' : ''
+              }`}
+            >
+              <CardContent
+                className={`p-6 ${
+                  isFullscreen ? 'flex-1 flex items-center' : ''
+                }`}
+              >
+                <div
+                  className={`grid gap-6 ${
+                    showPrevious
+                      ? 'grid-cols-1 lg:grid-cols-3'
+                      : 'grid-cols-1 lg:grid-cols-2'
+                  } ${isFullscreen ? 'w-full' : ''}`}
+                >
                   {/* BACK - Side Card */}
-                  <Card className='shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-70 hover:opacity-100 bg-white dark:bg-slate-900'>
-                    <CardTitle className='pt-4 px-4'>
-                      <div className='flex items-center justify-center gap-2 text-sm text-orange-600 dark:text-orange-400'>
-                        <ChevronLeft className='w-4 h-4' />
-                        <span>Trước đó</span>
-                      </div>
-                    </CardTitle>
-                    <CardContent className='p-4'>
-                      <div className='relative aspect-[16/9] rounded-lg overflow-hidden bg-orange-50 dark:bg-orange-950/20 ring-2 ring-orange-200/50 dark:ring-orange-800/50'>
-                        <SafeImg
-                          src={bachelorBack?.image}
-                          alt='Ảnh tân cử nhân trước'
-                          className='object-cover w-full h-full'
-                          width={600}
-                          height={800}
-                        />
-                      </div>
-                    </CardContent>
-                    {bachelorBack ? (
-                      <CardDescription className='pb-4 px-4 space-y-1'>
-                        <p className='text-center font-semibold text-md line-clamp-1 text-orange-900 dark:text-orange-100'>
-                          {bachelorBack.fullName}
-                        </p>
-                        <p className='text-center text-md text-orange-600 dark:text-orange-400'>
-                          {bachelorBack.studentCode}
-                        </p>
-                        <p className='text-center text-sm text-muted-foreground line-clamp-2'>
-                          {bachelorBack.major}
-                        </p>
-                      </CardDescription>
-                    ) : (
-                      <CardDescription className='pb-4 text-center text-xs opacity-50'>
-                        Không có dữ liệu
-                      </CardDescription>
-                    )}
-                  </Card>
+                  {showPrevious && (
+                    <Card className='shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-60 hover:opacity-90 bg-white dark:bg-slate-900 self-center'>
+                      <CardTitle className='pt-3 px-3'>
+                        <div className='flex items-center justify-center gap-2 text-sm text-orange-600 dark:text-orange-400'>
+                          <ChevronLeft className='w-4 h-4' />
+                          <span>Trước đó</span>
+                        </div>
+                      </CardTitle>
+                      <CardContent className='p-3'>
+                        <div className='relative aspect-[16/9] rounded-lg overflow-hidden bg-orange-50 dark:bg-orange-950/20 ring-2 ring-orange-200/50 dark:ring-orange-800/50'>
+                          <SafeImg
+                            src={bachelorBack?.image}
+                            alt='Ảnh tân cử nhân trước'
+                            className='object-cover w-full h-full'
+                            width={400}
+                            height={533}
+                          />
+                        </div>
+                      </CardContent>
+                      {bachelorBack ? (
+                        <CardDescription className='pb-3 px-3 space-y-1'>
+                          <p className='text-center font-semibold text-sm line-clamp-1 text-orange-900 dark:text-orange-100'>
+                            {bachelorBack.fullName}
+                          </p>
+                          <p className='text-center text-sm text-orange-600 dark:text-orange-400'>
+                            {bachelorBack.studentCode}
+                          </p>
+                          <p className='text-center text-xs text-muted-foreground line-clamp-2'>
+                            {bachelorBack.major}
+                          </p>
+                        </CardDescription>
+                      ) : (
+                        <CardDescription className='pb-3 text-center text-xs opacity-50'>
+                          Không có dữ liệu
+                        </CardDescription>
+                      )}
+                    </Card>
+                  )}
 
                   {/* CURRENT - Featured Card */}
-                  <Card className='relative shadow-2xl border-4 border-orange-500 dark:border-orange-600 scale-101 lg:scale-102 z-10 bg-white dark:bg-slate-900'>
+                  <Card className='relative shadow-2xl border-4 border-orange-500 dark:border-orange-600 scale-100 lg:scale-100 z-10 bg-white dark:bg-slate-900'>
                     {/* Gradient Border Effect */}
                     <div className='absolute -inset-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 rounded-xl opacity-75 blur animate-pulse'></div>
 
                     <div className='relative bg-white dark:bg-slate-900 rounded-lg'>
                       {/* Badge */}
                       <div className='absolute -top-3 left-1/2 -translate-x-1/2 z-20'>
-                        <Badge className='bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-2 shadow-lg flex items-center gap-2 text-base'>
-                          <Sparkles className='w-5 h-5' />
+                        <Badge className='bg-gradient-to-r from-orange-500 to-orange-600 text-white px-10 py-3 shadow-lg flex items-center gap-2 text-xl'>
+                          <Sparkles className='w-12 h-7' />
                           <span className='font-bold'>HIỆN TẠI</span>
-                          <Sparkles className='w-5 h-5' />
+                          <Sparkles className='w-12 h-7' />
                         </Badge>
                       </div>
 
-                      <CardTitle className='pt-10 px-4'>
-                        <div className='flex items-center justify-center gap-3'>
-                          <div className='p-2 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow-md'>
-                            <GraduationCap className='w-6 h-6 text-white' />
-                          </div>
-                          <span className='text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent'>
-                            Tân Cử Nhân
-                          </span>
-                        </div>
-                      </CardTitle>
-
-                      <CardContent className='p-4'>
+                      <CardContent className='p-6'>
                         <div className='relative aspect-[16/9] rounded-xl overflow-hidden bg-orange-50 dark:bg-orange-950/20 ring-4 ring-orange-500/50 shadow-xl'>
                           <SafeImg
                             src={bachelorCurrent?.image}
                             alt='Ảnh tân cử nhân hiện tại'
                             className='object-cover w-full h-full'
-                            width={800}
-                            height={1066}
+                            width={1000}
+                            height={1333}
                           />
                           {/* Shine Effect */}
-                          <div className='absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent animate-shimmer'></div>
+                          {/* <div className='absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent '></div> */}
                         </div>
                       </CardContent>
 
                       {bachelorCurrent ? (
-                        <CardDescription className='pb-6 px-4 space-y-2'>
-                          <div className='bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 rounded-lg p-4 space-y-2 border border-orange-200 dark:border-orange-800'>
-                            <p className='text-center font-bold text-xl text-orange-900 dark:text-orange-100'>
+                        <CardDescription className='pb-6 px-6 space-y-4'>
+                          <div className='bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 rounded-lg p-6 space-y-3 border border-orange-200 dark:border-orange-800'>
+                            <p className='text-center font-bold text-3xl text-orange-900 dark:text-orange-100'>
                               {bachelorCurrent.fullName}
                             </p>
-                            <p className='text-center font-semibold text-lg text-orange-600 dark:text-orange-400'>
+                            <p className='text-center font-semibold text-3xl text-orange-600 dark:text-orange-400'>
                               {bachelorCurrent.studentCode}
                             </p>
-                            <p className='text-center text-sm text-orange-700 dark:text-orange-300 line-clamp-2'>
+                            <p className='text-center font-bold text-3xl text-orange-700 dark:text-orange-300 line-clamp-2'>
                               {bachelorCurrent.major}
                             </p>
                           </div>
                         </CardDescription>
                       ) : (
-                        <CardDescription className='pb-6 text-center text-sm opacity-50'>
+                        <CardDescription className='pb-6 text-center text-base opacity-50'>
                           Không có dữ liệu
                         </CardDescription>
                       )}
@@ -455,38 +535,38 @@ export default function Page() {
                   </Card>
 
                   {/* NEXT - Side Card */}
-                  <Card className='shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-70 hover:opacity-100 bg-white dark:bg-slate-900'>
-                    <CardTitle className='pt-4 px-4'>
+                  <Card className='shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-60 hover:opacity-90 bg-white dark:bg-slate-900 self-center'>
+                    <CardTitle className='pt-3 px-3'>
                       <div className='flex items-center justify-center gap-2 text-sm text-orange-600 dark:text-orange-400'>
                         <span>Tiếp theo</span>
                         <ChevronRight className='w-4 h-4' />
                       </div>
                     </CardTitle>
-                    <CardContent className='p-4'>
+                    <CardContent className='p-3'>
                       <div className='relative aspect-[16/9] rounded-lg overflow-hidden bg-orange-50 dark:bg-orange-950/20 ring-2 ring-orange-200/50 dark:ring-orange-800/50'>
                         <SafeImg
                           src={bachelorNext?.image}
                           alt='Ảnh tân cử nhân sau'
                           className='object-cover w-full h-full'
-                          width={600}
-                          height={800}
+                          width={400}
+                          height={533}
                         />
                       </div>
                     </CardContent>
                     {bachelorNext ? (
-                      <CardDescription className='pb-4 px-4 space-y-1'>
-                        <p className='text-center font-semibold text-md line-clamp-1 text-orange-900 dark:text-orange-100'>
+                      <CardDescription className='pb-3 px-3 space-y-1'>
+                        <p className='text-center font-semibold text-sm line-clamp-1 text-orange-900 dark:text-orange-100'>
                           {bachelorNext.fullName}
                         </p>
-                        <p className='text-center text-md text-orange-600 dark:text-orange-400'>
+                        <p className='text-center text-sm text-orange-600 dark:text-orange-400'>
                           {bachelorNext.studentCode}
                         </p>
-                        <p className='text-center text-sm text-muted-foreground line-clamp-2'>
+                        <p className='text-center text-xs text-muted-foreground line-clamp-2'>
                           {bachelorNext.major}
                         </p>
                       </CardDescription>
                     ) : (
-                      <CardDescription className='pb-4 text-center text-xs opacity-50'>
+                      <CardDescription className='pb-3 text-center text-xs opacity-50'>
                         Không có dữ liệu
                       </CardDescription>
                     )}
@@ -495,7 +575,11 @@ export default function Page() {
               </CardContent>
 
               {/* Control Buttons */}
-              <CardFooter className='flex justify-center items-center gap-3 py-6 bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/20 dark:to-slate-900 border-t-2 border-orange-200 dark:border-orange-900'>
+              <CardFooter
+                className={`flex justify-center items-center gap-4 py-6 bg-gradient-to-r from-orange-50 to-white dark:from-orange-950/20 dark:to-slate-900 border-t-2 border-orange-200 dark:border-orange-900 ${
+                  isFullscreen ? 'py-8' : ''
+                }`}
+              >
                 <Button
                   size='lg'
                   variant='outline'
@@ -503,13 +587,13 @@ export default function Page() {
                   onClick={() => {
                     if (!getBachelorBack.isPending) getBachelorBack.mutate();
                   }}
-                  className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+                  className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 px-6 py-6 text-base'
                 >
-                  <ChevronLeft className='w-5 h-5 mr-2' />
+                  <ChevronLeft className='w-6 h-6 mr-2' />
                   Quay lại
                 </Button>
 
-                <div className='px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg shadow-lg font-semibold text-sm max-w-xs truncate'>
+                <div className='px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg shadow-lg font-semibold text-lg max-w-md truncate'>
                   {bachelorCurrent
                     ? `${bachelorCurrent.fullName} - ${bachelorCurrent.studentCode}`
                     : 'Không có dữ liệu'}
@@ -522,10 +606,10 @@ export default function Page() {
                     if (!getBachelorNext.isPending) getBachelorNext.mutate();
                   }}
                   disabled={!bachelorNext || getBachelorNext.isPending}
-                  className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+                  className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 px-6 py-6 text-base'
                 >
                   Tiếp theo
-                  <ChevronRight className='w-5 h-5 ml-2' />
+                  <ChevronRight className='w-6 h-6 ml-2' />
                 </Button>
               </CardFooter>
             </Card>

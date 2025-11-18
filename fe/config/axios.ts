@@ -111,6 +111,10 @@ export const checkinAPI = {
       { isMorning: isMorning }
     );
   },
+  // Get checkin sessions by hall id
+  getSessionsByHall: async (hallId: number) => {
+    return await axiosInstance.get(`/Checkin/by-hall/${hallId}`);
+  },
 };
 
 export const manageAPI = {
