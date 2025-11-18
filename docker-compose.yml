@@ -80,3 +80,4 @@ volumes:
   sql_data:
   fe_uploads:
   fe_cache:
+  fe_data:
