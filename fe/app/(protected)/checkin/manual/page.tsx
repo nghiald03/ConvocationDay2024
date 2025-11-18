@@ -413,13 +413,13 @@ export default function ManualCheckinPage() {
             header={
               <div className='flex gap-2 w-full'>
                 <Input
-                  className=' h-full'
+                  size={'md'}
                   placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
                   defaultValue={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-                {/* <Select onValueChange={setHall}>
-                  <SelectTrigger color='primary' className='w-[180px]'>
+                <Select onValueChange={setHall}>
+                  <SelectTrigger color='primary' className='w-[300px]'>
                     <SelectValue
                       color='primary'
                       placeholder='Chọn hội trường'
@@ -441,7 +441,7 @@ export default function ManualCheckinPage() {
                   </SelectContent>
                 </Select>
                 <Select onValueChange={setSession}>
-                  <SelectTrigger className='w-[180px]'>
+                  <SelectTrigger className='w-[300px]'>
                     <SelectValue placeholder='Chọn session' />
                   </SelectTrigger>
                   <SelectContent>
@@ -461,7 +461,7 @@ export default function ManualCheckinPage() {
                         ))}
                     </SelectGroup>
                   </SelectContent>
-                </Select> */}
+                </Select>
               </div>
             }
           />

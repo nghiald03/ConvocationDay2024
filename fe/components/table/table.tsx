@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  ColumnDef,
   SortingState,
   VisibilityState,
   flexRender,
@@ -11,7 +12,6 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 
-import TablePagination from '@/app/(protected)/table/react-table/example2/table-pagination';
 import {
   Table,
   TableBody,
@@ -24,11 +24,18 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { Fragment, useState } from 'react';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { Icon } from '../ui/icon';
+
+import TablePagination from './table-pagination';
+import LoaderData from '../loaderData';
+import FetchingError from '../fetchingError';
+import { safeIncludes } from '@/utils/checkIncludesString';
 
 export type TableProps = {
   data: any[];
-  columns: any[];
+  columns: ColumnDef<any, CustomColumnMeta>[];
   isLoading?: boolean;
+  isError?: boolean;
   title: string;
   header?: React.ReactNode;
   overflow?: boolean;
@@ -42,6 +49,12 @@ export type TableProps = {
   hasPreviousPage?: boolean;
   setPageSize?: (pageSize: number) => void;
   setPageIndex?: (pageIndex: number) => void;
+  // Thêm prop mới cho styling hàng
+  rowClassName?: (row: any) => string;
+};
+
+type CustomColumnMeta = {
+  align?: 'start' | 'center' | 'end';
 };
 
 const TableCustom = ({
@@ -54,11 +67,13 @@ const TableCustom = ({
   totalItems,
   totalPages,
   data,
+  isError,
   columns,
   isLoading,
   title,
   header,
   overflow,
+  rowClassName, // Thêm prop mới vào destructuring
 }: TableProps) => {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -69,6 +84,7 @@ const TableCustom = ({
   const table = useReactTable({
     data,
     columns,
+
     state: {
       sorting,
       columnVisibility,
@@ -92,56 +108,111 @@ const TableCustom = ({
       <div className='flex items-center py-4 '>
         <div
           className={cn(
-            'flex-1  font-normal text-default-900',
-            !isDesktop ? 'text-sm' : 'text-base'
+            'flex-1  !font-bold text-gray-800',
+            !isDesktop ? 'text-sm' : 'text-xl'
           )}
         >
           {title}
         </div>
-        <div className='w-[400px]'>
-          {/* <Input
-            placeholder='Filter Status...'
-            value={
-              (table.getColumn('status')?.getFilterValue() as string) ?? ''
-            }
-            onChange={(event) =>
-              table.getColumn('status')?.setFilterValue(event.target.value)
-            }
-            className='max-w-sm'
-          /> */}
-          {header}
-        </div>
+        <div>{header}</div>
       </div>
 
-      <Table>
-        <TableHeader className='bg-default-200'>
+      <Table className='border border-default-200'>
+        <TableHeader className='bg-lime-50'>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <TableRow key={headerGroup.id} className='text-end'>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
+                <TableHead
+                  key={header.id}
+                  onClick={header.column.getToggleSortingHandler()}
+                  className={cn(
+                    safeIncludes(header.column.columnDef.meta, 'actions') ||
+                      safeIncludes(header.column.columnDef.meta, 'select')
+                      ? 'w-1'
+                      : '',
+                    'border border-default-200'
+                  )}
+                >
+                  {!header.isPlaceholder && (
+                    <div
+                      className={cn(
+                        'flex gap-1 font-bold text-sm',
+                        safeIncludes(header.column.columnDef.meta, 'end')
+                          ? 'justify-end'
+                          : safeIncludes(header.column.columnDef.meta, 'center')
+                          ? 'justify-center'
+                          : 'justify-start'
+                      )}
+                    >
+                      {/* Label */}
+                      {flexRender(
                         header.column.columnDef.header,
                         header.getContext()
                       )}
+                      {/* Icon */}
+                      {{
+                        asc: (
+                          <Icon icon='fa-solid:sort-up' className='text-sm' />
+                        ),
+                        desc: (
+                          <Icon icon='fa-solid:sort-down' className='text-sm' />
+                        ),
+                      }[header.column.getIsSorted() as string] ?? null}
+                    </div>
+                  )}
                 </TableHead>
               ))}
             </TableRow>
           ))}
         </TableHeader>
         <TableBody className={cn(overflow && 'overflow-scroll')}>
-          {!isLoading &&
-          table.getRowModel() &&
-          table.getRowModel().rows?.length ? (
+          {isLoading ? (
+            <TableRow>
+              <TableCell
+                colSpan={columns.length}
+                className='h-24 text-center p-4'
+              >
+                <LoaderData isLoading={isLoading} />
+              </TableCell>
+            </TableRow>
+          ) : isError ? (
+            <TableRow>
+              <TableCell
+                colSpan={columns.length}
+                className='h-24 text-center p-4'
+              >
+                <FetchingError isError={isError} />
+              </TableCell>
+            </TableRow>
+          ) : !isLoading &&
+            !isError &&
+            table.getRowModel() &&
+            table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
               <Fragment key={row.id}>
                 <TableRow
                   data-state={row.getIsSelected() ? 'selected' : undefined}
-                  className='cursor-pointer'
+                  className={cn(
+                    'cursor-pointer',
+                    (row.id === 'select' || row.id === 'actions') &&
+                      'justify-center items-center',
+                    'border border-default-100',
+                    // Thêm class tùy chỉnh cho hàng nếu có
+                    rowClassName && rowClassName(row.original)
+                  )}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        cell.column.columnDef.meta === 'end'
+                          ? 'text-right'
+                          : cell.column.columnDef.meta === 'center'
+                          ? 'text-center'
+                          : 'text-left',
+                        'border border-default-100'
+                      )}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
@@ -150,7 +221,7 @@ const TableCustom = ({
                   ))}
                 </TableRow>
                 {row.getIsExpanded() && (
-                  <TableRow>
+                  <TableRow className='bg-neutral-50'>
                     <TableCell colSpan={columns.length} className=' p-4'>
                       {row.original.expandedContent}
                     </TableCell>
@@ -160,40 +231,46 @@ const TableCustom = ({
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className='h-24 text-center'>
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-          {isLoading && (
-            <TableRow>
-              <TableCell colSpan={columns.length} className='h-32 text-center'>
-                {/* <Image src='/LoadingAnimation.webm' alt='loading'></Image> */}
+              <TableCell
+                colSpan={columns.length}
+                className='h-24 text-center p-4'
+              >
+                <div className='flex flex-col items-center justify-center align-middle h-full '>
+                  <Icon
+                    icon='oui:cross-in-circle-empty'
+                    className='text-5xl text-gray-500 mb-4'
+                  ></Icon>
+                  <p className='text-lg font-bold text-gray-500'>
+                    Không có dữ liệu
+                  </p>
+                </div>
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
-      {/* Pagination could be added here if you uncomment and configure TablePagination */}
+
       {pageIndex &&
-        pageSize &&
-        totalItems &&
-        totalPages &&
-        hasNextPage !== undefined &&
-        hasPreviousPage !== undefined &&
-        setPageSize &&
-        setPageIndex && (
-          <TablePagination
-            hasNextPage={hasNextPage}
-            hasPreviousPage={hasPreviousPage}
-            pageIndex={pageIndex}
-            pageSize={pageSize}
-            setPageIndex={setPageIndex}
-            setPageSize={setPageSize}
-            totalItems={totalItems}
-            totalPages={totalPages}
-          ></TablePagination>
-        )}
+      pageSize &&
+      totalItems &&
+      totalPages &&
+      !isLoading &&
+      !isError &&
+      hasNextPage !== undefined &&
+      hasPreviousPage !== undefined &&
+      setPageSize &&
+      setPageIndex ? (
+        <TablePagination
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+          pageIndex={pageIndex}
+          pageSize={pageSize}
+          setPageIndex={setPageIndex}
+          setPageSize={setPageSize}
+          totalItems={totalItems}
+          totalPages={totalPages}
+        />
+      ) : null}
     </div>
   );
 };

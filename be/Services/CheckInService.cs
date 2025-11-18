@@ -53,11 +53,11 @@ namespace FA23_Convocation2023_API.Services
             {
                 if (checkin?.Status == null)
                 {
-                    throw new Exception("Session is not currently open for check-in!");
+                    throw new Exception("Session này chưa được mở, vui lòng đến đúng session của bạn");
                 }
                 else
                 {
-                    throw new Exception("Session has been closed for check-in!");
+                    throw new Exception("Session đã đóng, tân cử nhân đã bỏ lỡ session này");
                 }
             }
 
