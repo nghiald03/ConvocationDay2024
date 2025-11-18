@@ -305,7 +305,7 @@ export default function ManualCheckinPage() {
     }
     const hallLabel =
       row.hallName != null && row.hallName !== '' ? row.hallName : 'hội trường';
-    const message = `Xin mời Tân cử nhân ${row.fullName} với mã số sinh viên ${row.studentCode} tới hội trường ${hallLabel} thuộc phiên ${row.sessionNum} để làm thủ tục checkin trước khi cổng checkin đóng lại.`;
+    const message = `Xin mời Tân cử nhân ${row.fullName} với mã số sinh viên ${row.studentCode} tới hội trường ${hallLabel} thuộc phiên ${row.sessionInDay} để làm thủ tục checkin trước khi cổng checkin đóng lại.`;
 
     sendNotifyMutation.mutate({ message });
   };
@@ -319,7 +319,7 @@ export default function ManualCheckinPage() {
       { accessorKey: 'hallName', header: 'Hội trường' },
       {
         accessorKey: 'sessionNum',
-        header: 'Session',
+        header: 'Phiên tổng',
         cell: ({ row }) => {
           const v = row.getValue<number>('sessionNum');
           return (
@@ -333,7 +333,7 @@ export default function ManualCheckinPage() {
           );
         },
       },
-      { accessorKey: 'sessionInDay', header: 'Phiên trong ngày' },
+      { accessorKey: 'sessionInDay', header: 'Phiên theo ngày' },
       { accessorKey: 'chair', header: 'Ghế' },
       { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
       {
