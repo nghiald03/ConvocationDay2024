@@ -312,6 +312,31 @@ export default function Page() {
     });
   };
 
+  // Whether all currently visible (filtered) images are selected
+  const allVisibleSelected = useMemo(() => {
+    return filtered.length > 0 && filtered.every((i) => selectedIds.has(i.id));
+  }, [filtered, selectedIds]);
+
+  // Toggle select/deselect all visible images. When selecting, preserve
+  // previously-selected items that are not visible; when deselecting,
+  // only remove the visible ones.
+  const handleToggleSelectAll = () => {
+    setSelectedIds((prev) => {
+      if (filtered.length === 0) return new Set(prev);
+      const visibleIds = filtered.map((i) => i.id);
+      const allSelected = visibleIds.every((id) => prev.has(id));
+      const s = new Set(prev);
+      if (allSelected) {
+        // remove visible ids
+        visibleIds.forEach((id) => s.delete(id));
+      } else {
+        // add visible ids
+        visibleIds.forEach((id) => s.add(id));
+      }
+      return s;
+    });
+  };
+
   const handleBulkDelete = () => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return toast.error('Chưa chọn ảnh để xóa');
@@ -384,6 +409,25 @@ export default function Page() {
               </p>
             </div>
             <div className='flex items-center gap-2'>
+              <div className='flex items-center gap-2 mr-2'>
+                <label className='inline-flex items-center text-sm cursor-pointer select-none'>
+                  <input
+                    type='checkbox'
+                    className='w-4 h-4 mr-2 rounded border'
+                    checked={allVisibleSelected}
+                    onChange={handleToggleSelectAll}
+                    disabled={filtered.length === 0}
+                    aria-label='Chọn tất cả ảnh'
+                  />
+                  <span>Chọn tất cả</span>
+                </label>
+                <Badge
+                  className='ml-1'
+                  color={selectedIds.size > 0 ? 'secondary' : undefined}
+                >
+                  {selectedIds.size}
+                </Badge>
+              </div>
               <Button
                 variant='outline'
                 size='sm'

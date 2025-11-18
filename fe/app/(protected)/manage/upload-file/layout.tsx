@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Checkin Page',
+  title: 'Quản lí hình ảnh đã tải lên',
   description: '',
 };
 const Layout = ({ children }: { children: React.ReactNode }) => {
