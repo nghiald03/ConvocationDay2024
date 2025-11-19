@@ -81,6 +81,7 @@ function SafeImg({
       width={width}
       height={height}
       className={className}
+      unoptimized
       onError={(e) => {
         const el = e.currentTarget as HTMLImageElement;
         el.style.display = 'none';
