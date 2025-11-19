@@ -249,7 +249,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("TransferLateStudent")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Roles = "MN, CK")]
         public async Task<IActionResult> TransferLateStudentAsync([FromBody] TransferLateStudentRequest request)
         {
             try

@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Runtime.Intrinsics.X86;
-using static System.Collections.Specialized.BitVector32;
-using static System.Net.Mime.MediaTypeNames;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FA23_Convocation2023_API.Controllers
 {
@@ -25,37 +25,23 @@ namespace FA23_Convocation2023_API.Controllers
             messageHub = _messageHub;
             _context = context;
         }
+
+        // ==========================================
+        // 1. GET LOCATION
+        // ==========================================
         [HttpGet("GetLocationBachelor")]
         public async Task<IActionResult> GetLocationBachelor([FromQuery] string studentCode)
         {
             var bachelor = await _context.Bachelors.FirstOrDefaultAsync(b => b.StudentCode == studentCode);
+
             if (bachelor == null)
             {
-                return NotFound(new
-                {
-                    status = StatusCodes.Status404NotFound,
-                    message = "Not Found",
-                    data = ""
-                });
-            }
-            if (bachelor != null && bachelor.CheckIn == false)
-            {
-                return Ok(new
-                {
-                    status = StatusCodes.Status200OK,
-                    message = "Bachelor does not Checkin. Please checkin",
-                    data = ""
-                });
+                return NotFound(new { status = StatusCodes.Status404NotFound, message = "Not Found", data = "" });
             }
 
-            if (bachelor != null && bachelor.Status == false)
+            if (bachelor.CheckIn != true || bachelor.Status != true)
             {
-                return Ok(new
-                {
-                    status = StatusCodes.Status200OK,
-                    message = "Bachelor does not Checkin. Please checkin",
-                    data = ""
-                });
+                return Ok(new { status = StatusCodes.Status200OK, message = "Bachelor does not Checkin or Status is false.", data = "" });
             }
 
             return Ok(new
@@ -65,443 +51,263 @@ namespace FA23_Convocation2023_API.Controllers
                 data = bachelor
             });
         }
+
+        // ==========================================
+        // 2. GET ALL (Sort Convert To Int)
+        // ==========================================
         [HttpGet("GetAllLocationBachelor")]
         public async Task<IActionResult> GetAllLocationBachelor()
         {
-            var bachelor = await _context.Bachelors.ToListAsync();
-            if (bachelor == null)
-            {
-                return NotFound(new
-                {
-                    status = StatusCodes.Status404NotFound,
-                    message = "Not Found",
-                    data = ""
-                });
-            }
-            var results = new List<object>();
-            foreach (var bache in bachelor)
-            {
-                if (bache.CheckIn == false)
-                {
-                    var result = new
-                    {
-                        id = bache.Id,
-                        studentCode = bache.StudentCode,
-                        fullname = bache.FullName,
-                        mail = bache.Mail,
-                        major = bache.Major,
-                        hallName = bache.HallId,
-                        sessionNum = bache.SessionId,
-                        chair = bache.Chair,
-                        chairParent = bache.ChairParent,
-                        message = "Bachelor does not Checkin. Please checkin"
-                    };
-                    results.Add(result);
-                }
-                else if (bache.Status == false)
-                {
-                    var result = new
-                    {
-                        id = bache.Id,
-                        studentCode = bache.StudentCode,
-                        fullname = bache.FullName,
-                        mail = bache.Mail,
-                        major = bache.Major,
-                        hallName = bache.HallId,
-                        sessionNum = bache.SessionId,
-                        chair = bache.Chair,
-                        chairParent = bache.ChairParent,
-                        message = "Bachelor does not Checkin. Please checkin"
-                    };
-                    results.Add(result);
-                }
-                else
-                {
-                    var result = new
-                    {
-                        id = bache.Id,
-                        studentCode = bache.StudentCode,
-                        fullname = bache.FullName,
-                        mail = bache.Mail,
-                        major = bache.Major,
-                        hallName = bache.HallId,
-                        sessionNum = bache.SessionId,
-                        chair = bache.Chair,
-                        chairParent = bache.ChairParent,
-                        message = "Ok"
-                    };
-                    results.Add(result);
-                }
+            // Ép kiểu Chair sang Int để sort đúng (1, 2, ... 10)
+            // Lưu ý: Dữ liệu Chair phải là số, không được chứa chữ
+            var bachelors = await _context.Bachelors
+                                          .OrderBy(b => Convert.ToInt32(b.Chair))
+                                          .ToListAsync();
 
+            if (bachelors == null || !bachelors.Any())
+            {
+                return NotFound(new { status = StatusCodes.Status404NotFound, message = "Not Found", data = "" });
             }
-            
+
+            var results = bachelors.Select(bache => new
+            {
+                id = bache.Id,
+                studentCode = bache.StudentCode,
+                fullname = bache.FullName,
+                mail = bache.Mail,
+                major = bache.Major,
+                hallName = bache.HallId,
+                sessionNum = bache.SessionId,
+                chair = bache.Chair,
+                chairParent = bache.ChairParent,
+                message = (bache.CheckIn != true || bache.Status != true) ? "Bachelor does not Checkin/Active" : "Ok"
+            }).ToList();
+
             return Ok(new
             {
                 status = StatusCodes.Status200OK,
                 message = "Location of bachelor",
-                data = results.ToList()
+                data = results
             });
         }
 
+        // ==========================================
+        // 3. GET 1ST (Sort Convert To Int)
+        // ==========================================
         [HttpGet("GetBachelor1st")]
         public async Task<IActionResult> Get1stBachelorToShow([FromQuery] int hall, [FromQuery] int session)
         {
-            var user1 = await _context.Bachelors.FirstOrDefaultAsync(b1 => b1.Status == true && b1.HallId == hall && b1.SessionId == session);
-            var listUser = await _context.Bachelors.Where(b1 => b1.Status == true && b1.HallId.Equals(hall) && b1.SessionId == session).ToListAsync();     
-            if(listUser.Count > 1) 
+            var listUser = await _context.Bachelors
+                                         .Where(b => b.Status == true && b.HallId == hall && b.SessionId == session)
+                                         // Sort bằng số int
+                                         .OrderBy(b => Convert.ToInt32(b.Chair))
+                                         .ToListAsync();
+
+            if (listUser.Count == 0)
             {
-                int userIdToSearch = (user1.Id) + 1;
-                Bachelor user2 = null;
-                while (user2 == null)
-                {
-                    user2 = await _context.Bachelors.FirstOrDefaultAsync(u => (u.Id == userIdToSearch) && (u.Status == true) && u.HallId == hall && u.SessionId == session);
-                    userIdToSearch++;
-                }
-                user1.StatusBaChelor = "Current";
+                return NotFound(new { status = StatusCodes.Status404NotFound, message = "Not Found", data = "" });
+            }
+
+            var user1 = listUser[0];
+            user1.StatusBaChelor = "Current";
+
+            Bachelor user2 = null;
+            if (listUser.Count > 1)
+            {
+                user2 = listUser[1];
                 user2.StatusBaChelor = "Next";
-                await _context.SaveChangesAsync();
-                var result = new
-                {
-                    User1 = user1,
-                    User2 = user2
-                };
-                await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + user1.ToString(), user1.ToString());
-                return Ok(new
-                {
-                    status = StatusCodes.Status200OK,
-                    message = "Get all bachelors successfully!",
-                    data = result
-                });
             }
-            //if (user1 == null || user2 == null)
-            //{
-            //    return NotFound(new
-            //    {
-            //        status = StatusCodes.Status404NotFound,
-            //        message = "Not Found",
-            //        data = ""
-            //    });
-            //}
-            if (listUser.Count == 1)
+
+            await _context.SaveChangesAsync();
+
+            await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + user1.ToString(), user1.ToString());
+
+            return Ok(new
             {
-                user1.StatusBaChelor = "Current";
-                await _context.SaveChangesAsync();
-                var result1 = new
-                {
-                    User1 = user1
-                };
-                await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + user1.ToString(), user1.ToString());
-                return Ok(new
-                {
-                    status = StatusCodes.Status200OK,
-                    message = "1 bachelor load successfully!",
-                    data = result1
-                });
-            }
-            return NotFound(new
-            {
-                status = StatusCodes.Status404NotFound,
-                message = "Not Found",
-                data = ""
+                status = StatusCodes.Status200OK,
+                message = "Get bachelors successfully!",
+                data = new { User1 = user1, User2 = user2 }
             });
         }
 
+        // ==========================================
+        // 4. NEXT (Logic Convert To Int)
+        // ==========================================
         [HttpGet("GetBachelorNext")]
         public async Task<IActionResult> GetBaChelorNext([FromQuery] int hall, [FromQuery] int session)
         {
-            var bachelorLast = await _context.Bachelors.Where(b => b.Status == true && b.HallId == hall && b.SessionId == session).OrderBy(b => b.Id).LastOrDefaultAsync();
-            var bachelor1 = await _context.Bachelors.FirstOrDefaultAsync(b1 => b1.StatusBaChelor == "Current" && b1.HallId == hall && b1.SessionId == session && b1.Status == true);
-            //var bachelor2 = await _context.Bachelors.FirstOrDefaultAsync(b2 => b2.Id == idNext && b2.HallName.Equals(hall) && b2.SessionNum == session);
-            if (bachelor1.Id == bachelorLast.Id)
-            {
-                return Ok(new
-                {
-                    status = StatusCodes.Status404NotFound,
-                    message = "IN THE LAST BACHELOR, CAN NOT NEXT",
-                    data = ""
-                });
-            }
-            Bachelor bachelor2 = null;
-            int numBachelor2 = bachelor1.Id + 1;
-            while(bachelor2 == null)
-            {
-                bachelor2 = await _context.Bachelors.FirstOrDefaultAsync(b2 => b2.Id == numBachelor2 && b2.HallId == hall && b2.SessionId == session && b2.Status == true);
-                numBachelor2++;
-            }
-            int numBachelor3 = bachelor2.Id + 1;
-            Bachelor bachelor3 = null;
-            if (bachelorLast != null)
-            {
-                if (bachelorLast.Id == bachelor2.Id)
-                {
-                    bachelor1.StatusBaChelor = "Back";
-                    bachelor2.StatusBaChelor = "Current";
-                    await _context.SaveChangesAsync();
-                    var result0 = new
-                    {
-                        Bachelor1 = bachelor1,
-                        Bachelor2 = bachelor2,
-                        Bachelor3 = "",
+            var currentBachelor = await _context.Bachelors
+                .FirstOrDefaultAsync(b => b.StatusBaChelor == "Current" && b.HallId == hall && b.SessionId == session && b.Status == true);
 
-                    };
-                    await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + bachelor2.ToString(), bachelor2.ToString());
-                    return Ok(new
-                    {
-                        status = StatusCodes.Status200OK,
-                        message = "CURRENT IS IN THE LAST OF INDEX",
-                        data = result0
-                    });
-                }
-            }
-            while (bachelor3 == null)
+            if (currentBachelor == null)
             {
-                bachelor3 = await _context.Bachelors.FirstOrDefaultAsync(u => (u.Id == numBachelor3) && (u.Status == true) && u.HallId == hall && u.SessionId == session);
+                return NotFound(new { status = StatusCodes.Status404NotFound, message = "Current bachelor not found", data = "" });
+            }
 
-                numBachelor3++;
-            }
-            if (bachelor1 == null || bachelor2 == null || bachelor3 == null)
+            // Parse ghế hiện tại ra số để so sánh
+            int currentChairNum = int.Parse(currentBachelor.Chair);
+
+            // Tìm người có ghế > ghế hiện tại (So sánh số học)
+            var nextBachelor = await _context.Bachelors
+                .Where(b => b.HallId == hall &&
+                            b.SessionId == session &&
+                            b.Status == true &&
+                            Convert.ToInt32(b.Chair) > currentChairNum) // So sánh số
+                .OrderBy(b => Convert.ToInt32(b.Chair)) // Sắp xếp số tăng dần
+                .FirstOrDefaultAsync();
+
+            if (nextBachelor == null)
             {
-                return NotFound(new
-                {
-                    status = StatusCodes.Status404NotFound,
-                    message = "Not Found",
-                    data = ""
-                });
+                return Ok(new { status = StatusCodes.Status200OK, message = "IN THE LAST BACHELOR, CAN NOT NEXT", data = "" });
             }
-            bachelor1.StatusBaChelor = "Back";
-            bachelor2.StatusBaChelor = "Current";
-            bachelor3.StatusBaChelor = "Next";
+
+            // Tìm người kế tiếp thứ 3
+            int nextChairNum = int.Parse(nextBachelor.Chair);
+            var nextNextBachelor = await _context.Bachelors
+                .Where(b => b.HallId == hall &&
+                            b.SessionId == session &&
+                            b.Status == true &&
+                            Convert.ToInt32(b.Chair) > nextChairNum) // So sánh số
+                .OrderBy(b => Convert.ToInt32(b.Chair))
+                .FirstOrDefaultAsync();
+
+            // Update trạng thái
+            currentBachelor.StatusBaChelor = "Back";
+            nextBachelor.StatusBaChelor = "Current";
+            if (nextNextBachelor != null) nextNextBachelor.StatusBaChelor = "Next";
+
             await _context.SaveChangesAsync();
 
-            var result = new
-            {
-                Bachelor1 = bachelor1,
-                Bachelor2 = bachelor2,
-                Bachelor3 = bachelor3,
+            await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + nextBachelor.ToString(), nextBachelor.ToString());
 
-            };
-            await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + bachelor2.ToString(), bachelor2.ToString());
             return Ok(new
             {
                 status = StatusCodes.Status200OK,
-                message = "Get 3 bachelors here!",
-                data = result
+                message = "Get 3 bachelors (moved next)!",
+                data = new
+                {
+                    Bachelor1 = currentBachelor,
+                    Bachelor2 = nextBachelor,
+                    Bachelor3 = nextNextBachelor ?? (object)""
+                }
             });
         }
+
+        // ==========================================
+        // 5. BACK (Logic Convert To Int)
+        // ==========================================
         [HttpGet("GetBachelorBack")]
         public async Task<IActionResult> GetBaChelorBack([FromQuery] int hall, [FromQuery] int session)
         {
-            var bachelorFirst = await _context.Bachelors.FirstOrDefaultAsync(b1 => b1.Status == true && b1.HallId == hall && b1.SessionId == session);
+            var currentBachelor = await _context.Bachelors
+                .FirstOrDefaultAsync(b => b.StatusBaChelor == "Current" && b.HallId == hall && b.SessionId == session && b.Status == true);
 
-            //var bachelor1 = await _context.Bachelors.FirstOrDefaultAsync(b1 => b1.Id == idBack && b1.HallName.Equals(hall) && b1.SessionNum == session);
-            
-            var bachelor2 = await _context.Bachelors.FirstOrDefaultAsync(b2 => b2.StatusBaChelor == "Current" && b2.HallId == hall && b2.SessionId == session && b2.Status == true);
-            if(bachelor2.Id == bachelorFirst.Id)
+            if (currentBachelor == null)
             {
-                return Ok(new
-                {
-                    status = StatusCodes.Status404NotFound,
-                    message = "IN THE FIRST BACHELOR, CAN NOT BACK",
-                    data = ""
-                });
-            }    
-            Bachelor bachelor1 = null;
-                int numBachelor1 = bachelor2.Id - 1;
-                while (bachelor1 == null && bachelorFirst.Id != bachelor2.Id)
-                {
-                    bachelor1 = await _context.Bachelors.FirstOrDefaultAsync(b2 => b2.Id == numBachelor1 && b2.HallId == hall && b2.SessionId == session && b2.Status == true);
-                    numBachelor1--;
-                }
-            
-            
-            Bachelor bachelor0 = null;
-            if (bachelorFirst.Id == bachelor1.Id)
-            {
-                bachelor1.StatusBaChelor = "Current";
-                bachelor2.StatusBaChelor = "Next";
-                await _context.SaveChangesAsync();
-                var result0 = new
-                {
-                    Bachelor1 = "",
-                    Bachelor2 = bachelor1,
-                    Bachelor3 = bachelor2,
-
-                };
-                await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + bachelor1.ToString(), bachelor1.ToString());
-                return Ok(new
-                {
-                    status = StatusCodes.Status200OK,
-                    message = "CURRENT IS IN THE FIRST OF INDEX",
-                    data = result0
-                });
-            }
-            int numBachelor0 = bachelor1.Id - 1;
-            while (bachelor0 == null)
-            {
-                bachelor0 = await _context.Bachelors.FirstOrDefaultAsync(u => (u.Id == numBachelor0) && (u.Status == true) && u.HallId == hall && u.SessionId == session);
-
-                numBachelor0--;
-            }
-            if (bachelor1 == null || bachelor2 == null || bachelor0 == null)
-            {
-                return NotFound(new
-                {
-                    status = StatusCodes.Status404NotFound,
-                    message = "Not Found",
-                    data = ""
-                });
+                return NotFound(new { status = StatusCodes.Status404NotFound, message = "Current bachelor not found", data = "" });
             }
 
-            bachelor0.StatusBaChelor = "Back";
-            bachelor1.StatusBaChelor = "Current";
-            bachelor2.StatusBaChelor = "Next";
+            int currentChairNum = int.Parse(currentBachelor.Chair);
+
+            // Tìm người có ghế < ghế hiện tại (So sánh số học)
+            var prevBachelor = await _context.Bachelors
+                .Where(b => b.HallId == hall &&
+                            b.SessionId == session &&
+                            b.Status == true &&
+                            Convert.ToInt32(b.Chair) < currentChairNum) // So sánh số
+                .OrderByDescending(b => Convert.ToInt32(b.Chair)) // Giảm dần theo số
+                .FirstOrDefaultAsync();
+
+            if (prevBachelor == null)
+            {
+                return Ok(new { status = StatusCodes.Status200OK, message = "IN THE FIRST BACHELOR, CAN NOT BACK", data = "" });
+            }
+
+            // Tìm người trước nữa
+            int prevChairNum = int.Parse(prevBachelor.Chair);
+            var prevPrevBachelor = await _context.Bachelors
+                .Where(b => b.HallId == hall &&
+                            b.SessionId == session &&
+                            b.Status == true &&
+                            Convert.ToInt32(b.Chair) < prevChairNum)
+                .OrderByDescending(b => Convert.ToInt32(b.Chair))
+                .FirstOrDefaultAsync();
+
+            // Update trạng thái
+            currentBachelor.StatusBaChelor = "Next";
+            prevBachelor.StatusBaChelor = "Current";
+            if (prevPrevBachelor != null) prevPrevBachelor.StatusBaChelor = "Back";
+
             await _context.SaveChangesAsync();
 
-            var result = new
-            {
-                Bachelor1 = bachelor0,
-                Bachelor2 = bachelor1,
-                Bachelor3 = bachelor2,
+            await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + prevBachelor.ToString(), prevBachelor.ToString());
 
-            };
-            await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + bachelor1.ToString(), bachelor1.ToString());
             return Ok(new
             {
                 status = StatusCodes.Status200OK,
-                message = "Get 3 bachelors here!",
-                data = result
+                message = "Get 3 bachelors (moved back)!",
+                data = new
+                {
+                    Bachelor1 = prevPrevBachelor ?? (object)"",
+                    Bachelor2 = prevBachelor,
+                    Bachelor3 = currentBachelor
+                }
             });
-
         }
+
+        // ==========================================
+        // 6. GET CURRENT (Logic Convert To Int)
+        // ==========================================
         [HttpGet("GetBachelorCurrent")]
         public async Task<IActionResult> GetBaChelorCurrrent([FromQuery] int hall, [FromQuery] int session)
         {
-            var bachelorFirst = await _context.Bachelors.FirstOrDefaultAsync(b1 => b1.Status == true && b1.HallId == hall && b1.SessionId == session);
-            var bachelorLast = await _context.Bachelors.Where(b => b.Status == true && b.HallId == hall && b.SessionId == session).OrderBy(b => b.Id).LastOrDefaultAsync();
-            var bachelorCurrent = await _context.Bachelors.FirstOrDefaultAsync(b1 => b1.Status == true && b1.HallId == hall && b1.SessionId == session && b1.StatusBaChelor == "Current");
-            if (bachelorCurrent == null) 
+            var currentBachelor = await _context.Bachelors
+                .FirstOrDefaultAsync(b => b.StatusBaChelor == "Current" && b.HallId == hall && b.SessionId == session && b.Status == true);
+
+            if (currentBachelor == null)
             {
-                return NotFound(new
-                {
-                    status = StatusCodes.Status404NotFound,
-                    message = "Do not have any bachelor check in done",
-                    data = ""
-                });
+                return NotFound(new { status = StatusCodes.Status404NotFound, message = "No active current bachelor found", data = "" });
             }
-                    
-            if (bachelorCurrent != null)
+
+            int currentChairNum = int.Parse(currentBachelor.Chair);
+
+            // Back: Tìm nhỏ hơn gần nhất
+            var backBachelor = await _context.Bachelors
+                .Where(b => b.HallId == hall &&
+                            b.SessionId == session &&
+                            b.Status == true &&
+                            Convert.ToInt32(b.Chair) < currentChairNum)
+                .OrderByDescending(b => Convert.ToInt32(b.Chair))
+                .FirstOrDefaultAsync();
+
+            // Next: Tìm lớn hơn gần nhất
+            var nextBachelor = await _context.Bachelors
+                .Where(b => b.HallId == hall &&
+                            b.SessionId == session &&
+                            b.Status == true &&
+                            Convert.ToInt32(b.Chair) > currentChairNum)
+                .OrderBy(b => Convert.ToInt32(b.Chair))
+                .FirstOrDefaultAsync();
+
+            // Update DB để đồng bộ
+            if (backBachelor != null) backBachelor.StatusBaChelor = "Back";
+            currentBachelor.StatusBaChelor = "Current";
+            if (nextBachelor != null) nextBachelor.StatusBaChelor = "Next";
+
+            await _context.SaveChangesAsync();
+
+            await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + currentBachelor.ToString(), currentBachelor.ToString());
+
+            return Ok(new
             {
-                if (bachelorCurrent.Id == bachelorFirst.Id && bachelorCurrent.Id == bachelorLast.Id)
+                status = StatusCodes.Status200OK,
+                message = "Get 3 bachelors (reload current)",
+                data = new
                 {
-                    bachelorCurrent.StatusBaChelor = "Current";
-                    await _context.SaveChangesAsync();
-                    var result1 = new
-                    {
-                        Bachelor1 = bachelorCurrent,
-                    };
-                    await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + bachelorCurrent.ToString(), bachelorCurrent.ToString());
-
-                    return Ok(new
-                    {
-                        status = StatusCodes.Status200OK,
-                        message = "Only 1 bachelor have status true",
-                        data = result1
-                    });
+                    Bachelor1 = backBachelor ?? (object)"",
+                    Bachelor2 = currentBachelor,
+                    Bachelor3 = nextBachelor ?? (object)""
                 }
-                int numBachelorBack = bachelorCurrent.Id - 1;
-                int numBachelorNext = bachelorCurrent.Id + 1;
-                if (bachelorCurrent.Id != bachelorLast.Id && bachelorCurrent.Id != bachelorFirst.Id)
-                {
-                    Bachelor bachelorBack = null;
-                    Bachelor bachelorNext = null;
-                    while (bachelorBack == null)
-                    {
-                        bachelorBack = await _context.Bachelors.FirstOrDefaultAsync(bb => (bb.Id == numBachelorBack) && (bb.Status == true) && bb.HallId == hall && bb.SessionId == session);
-                        numBachelorBack--;
-                    }
-                    while (bachelorNext == null)
-                    {
-                        bachelorNext = await _context.Bachelors.FirstOrDefaultAsync(bn => (bn.Id == numBachelorNext) && (bn.Status == true) && bn.HallId == hall && bn.SessionId == session);
-                        numBachelorNext++;
-                    }
-                    bachelorBack.StatusBaChelor = "Back";
-                    bachelorCurrent.StatusBaChelor = "Current";
-                    bachelorNext.StatusBaChelor = "Next";
-                    await _context.SaveChangesAsync();
-                    var result = new
-                    {
-                        Bachelor1 = bachelorBack,
-                        Bachelor2 = bachelorCurrent,
-                        Bachelor3 = bachelorNext,
-
-                    };
-                    await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + bachelorCurrent.ToString(), bachelorCurrent.ToString());
-                    return Ok(new
-                    {
-                        status = StatusCodes.Status200OK,
-                        message = "Get 3 bachelors here!",
-                        data = result
-                    });
-                }
-                if(bachelorCurrent.Id == bachelorLast.Id && bachelorCurrent.Id != bachelorFirst.Id)
-                {
-                    Bachelor bachelorBack = null;
-                    while (bachelorBack == null)
-                    {
-                        bachelorBack = await _context.Bachelors.FirstOrDefaultAsync(bb => (bb.Id == numBachelorBack) && (bb.Status == true) && bb.HallId == hall && bb.SessionId == session);
-                        numBachelorBack--;
-                    }
-                    bachelorBack.StatusBaChelor = "Back";
-                    bachelorCurrent.StatusBaChelor = "Current";
-                    await _context.SaveChangesAsync();
-                    var result0 = new
-                    {
-                        Bachelor1 = bachelorBack,
-                        Bachelor2 = bachelorCurrent,
-                        Bachelor3 = "",
-
-                    };
-                    await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + bachelorCurrent.ToString(), bachelorCurrent.ToString());
-                    return Ok(new
-                    {
-                        status = StatusCodes.Status200OK,
-                        message = "CURRENT IS IN THE LAST OF INDEX",
-                        data = result0
-                    });
-                }
-                if (bachelorCurrent.Id != bachelorLast.Id && bachelorCurrent.Id == bachelorFirst.Id)
-                {
-                    Bachelor bachelorNext = null;
-                    while (bachelorNext == null)
-                    {
-                        bachelorNext = await _context.Bachelors.FirstOrDefaultAsync(bn => (bn.Id == numBachelorNext) && (bn.Status == true) && bn.HallId == hall && bn.SessionId == session);
-                        numBachelorNext++;
-                    }
-                    bachelorCurrent.StatusBaChelor = "Current";
-                    bachelorNext.StatusBaChelor = "Next";
-                    await _context.SaveChangesAsync();
-                    var result0 = new
-                    {
-                        Bachelor1 = "",
-                        Bachelor2 = bachelorCurrent,
-                        Bachelor3 = bachelorNext,
-
-                    };
-                    await messageHub.Clients.All.SendAsync("SendMessage", "CurrentBachelor " + bachelorCurrent.ToString(), bachelorCurrent.ToString());
-                    return Ok(new
-                    {
-                        status = StatusCodes.Status200OK,
-                        message = "CURRENT IS IN THE FIRST OF INDEX",
-                        data = result0
-                    });
-                }
-
-            }
-            return NotFound(new
-            {
-                status = StatusCodes.Status404NotFound,
-                message = "Not Found",
-                data = ""
             });
         }
     }
