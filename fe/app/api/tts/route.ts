@@ -8,7 +8,7 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   // Lấy biến môi trường ở scope ngoài để dùng chung cho catch block nếu cần
-  const XI_KEY = process.env.ELEVENLABS_API_KEY;
+  const XI_KEY = 'sk_277594a044985f3533f1612de31cc678d474343f8ca4c8ae';
 
   try {
     const { text, voiceId, modelId, outputFormat } = await req.json();
