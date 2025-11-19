@@ -115,6 +115,14 @@ export const checkinAPI = {
   getSessionsByHall: async (hallId: number) => {
     return await axiosInstance.get(`/Checkin/by-hall/${hallId}`);
   },
+  // Get sessions by hall name (returns array of sessions with sessionId, sessionNumber, sessionInDay...)
+  getSessionsByHallName: async (hallName: string) => {
+    const params = new URLSearchParams();
+    params.append('hallName', hallName);
+    return await axiosInstance.get(
+      `/Checkin/by-hall-name?${params.toString()}`
+    );
+  },
 };
 
 export const manageAPI = {
@@ -139,6 +147,18 @@ export const manageAPI = {
   updateStatusCheckin: async (data: any) => {
     return await axiosInstance.put('/Checkin/UpdateStatusCheckin', data);
   },
+  // Create a new Session
+  createSession: async (data: {
+    sessionNum: number;
+    sessionInDay: number;
+    description?: string;
+  }) => {
+    return await axiosInstance.post('/Session/CreateSession', data);
+  },
+  // Create a new Checkin record for a hall and session
+  createCheckin: async (data: { hallId: number; sessionId: number }) => {
+    return await axiosInstance.post('/Checkin/CreateCheckin', data);
+  },
   uncheckAll: async () => {
     return await axiosInstance.put('/Checkin/UncheckAll');
   },
@@ -147,6 +167,13 @@ export const manageAPI = {
   },
   resetDatabase: async () => {
     return await axiosInstance.post('/Database/reset-database');
+  },
+  // Transfer a late student to another session
+  transferLateStudent: async (data: {
+    studentCode: string;
+    newSessionId: number;
+  }) => {
+    return await axiosInstance.put('/Bachelor/TransferLateStudent', data);
   },
 };
 

@@ -200,6 +200,7 @@ namespace FA23_Convocation2023_API.Services
                     SessionNum = session.Session1,
                     SessionInDay = session.SessionInDay,
                     Status = check.Status
+
                 });
             }
             return result;

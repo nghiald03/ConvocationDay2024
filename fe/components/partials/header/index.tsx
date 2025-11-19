@@ -15,7 +15,7 @@ const DashCodeHeader = () => {
       <HeaderContent>
         <div className=' flex gap-3 items-center'>
           <HeaderLogo />
-          <WarningDialog />
+          {/* <WarningDialog /> */}
           <SidebarToggle />
           <HeaderSearch />
         </div>

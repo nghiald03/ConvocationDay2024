@@ -441,14 +441,7 @@ namespace FA23_Convocation2023_API.Services
                     throw new Exception("Target session not found!");
                 }
 
-                // Check if new session is open (has a CheckIn record with Status = true)
-                var newSessionCheckIn = await _context.CheckIns
-                    .FirstOrDefaultAsync(c => c.SessionId == newSessionId);
 
-                if (newSessionCheckIn == null || newSessionCheckIn.Status != true)
-                {
-                    throw new Exception("Target session is not currently open!");
-                }
 
                 // Update bachelor's session and mark as late
                 existingBachelor.SessionId = newSessionId;

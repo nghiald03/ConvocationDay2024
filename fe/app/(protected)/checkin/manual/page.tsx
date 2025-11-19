@@ -36,11 +36,12 @@ import {
   CreateNotificationRequest,
   ledAPI,
   notificationAPI,
+  manageAPI,
 } from '@/config/axios';
 import { Bachelor } from '@/dtos/BachelorDTO';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import toast from 'react-hot-toast';
 import swal from 'sweetalert';
@@ -155,49 +156,127 @@ export default function ManualCheckinPage() {
     },
   });
 
-  const handleCheckin = async (row: any) => {
-    const studentCode: string = row.studentCode;
+  const promptTransferToAnotherSession = useCallback(
+    async (row: any) => {
+      const hallName = row.hallName;
+      if (!hallName) {
+        toast.error('Không tìm thấy hội trường để chuyển phiên');
+        return;
+      }
 
-    const confirm = await swal({
-      title: 'Checkin',
-      text: `Bạn có muốn checkin cho tân cử nhân ${row.fullName} không?`,
-      icon: 'warning',
-      buttons: ['Không', 'Checkin'],
-      dangerMode: true,
-    });
+      // Fetch sessions by hall name
+      const res = await checkinAPI.getSessionsByHallName(hallName);
+      const sessions: any[] = Array.isArray(res) ? res : res?.data ?? [];
 
-    if (!confirm) return;
+      if (!sessions || sessions.length === 0) {
+        toast.error('Không tìm thấy phiên khả dụng cho hội trường này');
+        return;
+      }
 
-    // Disable switch của MSSV này
-    setProcessingIds((prev) => new Set(prev).add(studentCode));
+      // Build select element for swal
+      const select = document.createElement('select');
+      select.style.width = '100%';
+      sessions.forEach((s) => {
+        const opt = document.createElement('option');
+        opt.value = String(s.sessionId ?? s.sessionId);
+        const label = `Phiên ${s.sessionInDay ?? ''} (Session: ${
+          s.sessionNumber ?? s.session1 ?? s.sessionNum ?? ''
+        })`;
+        opt.text = label;
+        select.appendChild(opt);
+      });
 
-    try {
-      const nData = { studentCode, status: !row.checkIn };
+      const confirm = await swal({
+        title: 'Phiên đã đóng — Chuyển phiên',
+        text: 'Chọn phiên thay thế cho tân cử nhân',
+        content: select as any,
+        buttons: ['Hủy', 'Chuyển'],
+      });
+
+      if (!confirm) return;
+
+      const newSessionId = Number(select.value);
+      if (!newSessionId) {
+        toast.error('Phiên không hợp lệ');
+        return;
+      }
+
+      // Call transfer API
       await toast.promise(
-        checkinAction.mutateAsync(nData),
+        manageAPI.transferLateStudent({
+          studentCode: row.studentCode,
+          newSessionId,
+        }),
         {
-          loading: 'Đang checkin...',
-          success: `Checkin cho ${row.fullName} thành công`,
-          error: (err: any) => {
-            const msg = err?.response?.data ?? 'Lỗi không xác định';
-            if (msg === 'Tân cử nhân đã bỏ lỡ session này') {
-              setMSSV(studentCode);
-              setError(msg);
-            }
-            return `Không thể checkin vì ${msg}`;
-          },
+          loading: 'Đang chuyển phiên...',
+          success: 'Chuyển phiên thành công',
+          error: 'Không thể chuyển phiên',
         },
         { position: 'top-right', duration: 3000 }
       );
-    } finally {
-      // Gỡ disable dù thành công hay lỗi
-      setProcessingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(studentCode);
-        return next;
+
+      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+    },
+    [queryClient]
+  );
+
+  const handleCheckin = useCallback(
+    async (row: any) => {
+      const studentCode: string = row.studentCode;
+
+      const confirm = await swal({
+        title: 'Checkin',
+        text: `Bạn có muốn checkin cho tân cử nhân ${row.fullName} không?`,
+        icon: 'warning',
+        buttons: ['Không', 'Checkin'],
+        dangerMode: true,
       });
-    }
-  };
+
+      if (!confirm) return;
+
+      // Disable switch của MSSV này
+      setProcessingIds((prev) => new Set(prev).add(studentCode));
+
+      try {
+        const nData = { studentCode, status: !row.checkIn };
+        // Prefer explicit mutate + try/catch so we can handle specific 400 messages
+        await checkinAction.mutateAsync(nData);
+        toast.success(`Checkin cho ${row.fullName} thành công`, {
+          position: 'top-right',
+          duration: 3000,
+        });
+      } catch (err: any) {
+        const msg =
+          err?.response?.data?.message ??
+          err?.response?.data ??
+          err?.message ??
+          '';
+
+        // If session closed / student missed the session -> prompt transfer
+        if (typeof msg === 'string' && msg.includes('bỏ lỡ')) {
+          // prompt transfer flow
+          try {
+            await promptTransferToAnotherSession(row);
+          } catch (e) {
+            // ignore transfer errors here
+          }
+        } else {
+          toast.error(`Không thể checkin vì ${msg}`, {
+            position: 'top-right',
+            duration: 3000,
+          });
+        }
+      } finally {
+        // Gỡ disable dù thành công hay lỗi
+        setProcessingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(studentCode);
+          return next;
+        });
+      }
+    },
+    [checkinAction, promptTransferToAnotherSession]
+  );
 
   // ---- Đăng ký session bù
   const updateBachelorMissingSession = useMutation({
@@ -295,20 +374,25 @@ export default function ManualCheckinPage() {
     },
   });
 
-  const handleSendNotify = (row: any) => {
-    if (!isMN) {
-      toast.error('Bạn không có quyền gửi thông báo', {
-        duration: 3000,
-        position: 'top-right',
-      });
-      return;
-    }
-    const hallLabel =
-      row.hallName != null && row.hallName !== '' ? row.hallName : 'hội trường';
-    const message = `Xin mời Tân cử nhân ${row.fullName} với mã số sinh viên ${row.studentCode} tới hội trường ${hallLabel} thuộc phiên ${row.sessionInDay} để làm thủ tục checkin trước khi cổng checkin đóng lại.`;
+  const handleSendNotify = useCallback(
+    (row: any) => {
+      if (!isMN) {
+        toast.error('Bạn không có quyền gửi thông báo', {
+          duration: 3000,
+          position: 'top-right',
+        });
+        return;
+      }
+      const hallLabel =
+        row.hallName != null && row.hallName !== ''
+          ? row.hallName
+          : 'hội trường';
+      const message = `Xin mời Tân cử nhân ${row.fullName} với mã số sinh viên ${row.studentCode} tới hội trường ${hallLabel} thuộc phiên ${row.sessionInDay} để làm thủ tục checkin trước khi cổng checkin đóng lại.`;
 
-    sendNotifyMutation.mutate({ message });
-  };
+      sendNotifyMutation.mutate({ message });
+    },
+    [isMN, sendNotifyMutation]
+  );
 
   const columns: ColumnDef<any>[] = useMemo(
     () => [
@@ -372,6 +456,8 @@ export default function ManualCheckinPage() {
       updateBachelorMissingSession.isPending,
       sendNotifyMutation.isPending,
       isMN,
+      handleCheckin,
+      handleSendNotify,
     ]
   );
 

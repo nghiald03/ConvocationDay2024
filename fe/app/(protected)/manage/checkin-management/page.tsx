@@ -13,8 +13,30 @@ import { Switch } from '@/components/ui/switch';
 import {
   manageAPI,
   notificationAPI,
+  ledAPI,
+  checkinAPI,
   type CreateNotificationRequest,
 } from '@/config/axios';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import React from 'react';
@@ -60,6 +82,11 @@ function mapLocalToApi(local: {
 export default function CheckinPage() {
   const queryClient = useQueryClient();
 
+  // Dialog state + form
+  const [openCreate, setOpenCreate] = React.useState(false);
+  const [selectedHall, setSelectedHall] = React.useState<string>('');
+  const [description, setDescription] = React.useState('');
+
   /* =========================
      Query: get list
   ========================= */
@@ -74,6 +101,16 @@ export default function CheckinPage() {
       const res = (await manageAPI.getCheckinList()) as CheckinListResponse;
       return res.data.data;
     },
+  });
+
+  // Halls list for select
+  const { data: hallListRes } = useQuery({
+    queryKey: ['hallListForCreateSession'],
+    queryFn: () => ledAPI.getHallList(),
+    select: (res) =>
+      (res?.data?.data as { hallId: number | string; hallName: string }[]) ||
+      [],
+    staleTime: 5 * 60 * 1000,
   });
 
   /* =========================
@@ -91,6 +128,20 @@ export default function CheckinPage() {
           'Không thể gửi thông báo. Vui lòng thử lại.'
       );
     },
+  });
+  // Mutation: create session
+  const createSessionMutation = useMutation({
+    mutationFn: (payload: {
+      sessionNum: number;
+      sessionInDay: number;
+      description?: string;
+    }) => manageAPI.createSession(payload),
+  });
+
+  // Mutation: create checkin
+  const createCheckinMutation = useMutation({
+    mutationFn: (payload: { hallId: number; sessionId: number }) =>
+      manageAPI.createCheckin(payload),
   });
 
   /* =========================
@@ -191,6 +242,82 @@ export default function CheckinPage() {
     }
   };
 
+  // Handler: create session + create checkin
+  const handleCreateSession = async () => {
+    if (!selectedHall) {
+      toast.error('Vui lòng chọn hội trường');
+      return;
+    }
+
+    const hallIdNum = Number(selectedHall);
+
+    try {
+      // 1. fetch existing sessions for the hall
+      const res = await checkinAPI.getSessionsByHall(hallIdNum);
+      const sessionsArray = Array.isArray(res) ? res : res?.data ?? [];
+
+      const maxSessionNum = sessionsArray.reduce((acc: number, cur: any) => {
+        const v = Number(cur.sessionNumber ?? cur.sessionNum ?? 0);
+        return isNaN(v) ? acc : Math.max(acc, v);
+      }, 0);
+
+      const maxSessionInDay = sessionsArray.reduce((acc: number, cur: any) => {
+        const v = Number(cur.sessionInDay ?? 0);
+        return isNaN(v) ? acc : Math.max(acc, v);
+      }, 0);
+
+      const nextSessionNum = maxSessionNum + 1;
+      const nextSessionInDay = maxSessionInDay + 1;
+
+      // create session and use returned sessionId
+      const createRes = await toast.promise(
+        createSessionMutation.mutateAsync({
+          sessionNum: nextSessionNum,
+          sessionInDay: nextSessionInDay,
+          description: description || `session bù cho hall ${selectedHall}`,
+        }),
+        {
+          loading: 'Đang tạo session...',
+          success: 'Tạo session thành công',
+          error: 'Không thể tạo session',
+        }
+      );
+
+      const sessionId =
+        Number(
+          createRes?.data?.data?.sessionId ?? createRes?.data?.sessionId ?? NaN
+        ) || undefined;
+
+      if (!sessionId) {
+        toast.error(
+          'Không tìm thấy session vừa tạo (sessionId). Vui lòng kiểm tra server.'
+        );
+        setOpenCreate(false);
+        return;
+      }
+
+      // create checkin record
+      await toast.promise(
+        createCheckinMutation.mutateAsync({ hallId: hallIdNum, sessionId }),
+        {
+          loading: 'Đang tạo checkin...',
+          success: 'Tạo checkin thành công',
+          error: 'Không thể tạo checkin',
+        }
+      );
+
+      // Refresh checkin list
+      queryClient.invalidateQueries({ queryKey: ['checkinList'] });
+
+      toast.success('Tạo session + checkin thành công');
+      setOpenCreate(false);
+      setSelectedHall('');
+      setDescription('');
+    } catch (err) {
+      // errors are handled by toast.promise above
+    }
+  };
+
   /* =========================
      Columns
   ========================= */
@@ -246,11 +373,79 @@ export default function CheckinPage() {
 
       <Card className='mt-3'>
         <CardContent className='p-3'>
-          <TableCustom
-            title='Danh sách session trao bằng'
-            data={rows}
-            columns={columns}
-          />
+          <div className='flex items-center justify-between mb-4'>
+            <h3 className='text-lg font-medium'>Danh sách session trao bằng</h3>
+            <div className='flex items-center gap-2'>
+              <Button color='primary' onClick={() => setOpenCreate(true)}>
+                Tạo session mới
+              </Button>
+            </div>
+          </div>
+          <TableCustom title='' columns={columns} data={rows} />
+
+          <Dialog open={openCreate} onOpenChange={(v) => setOpenCreate(v)}>
+            <DialogContent className='sm:max-w-[520px]'>
+              <DialogHeader>
+                <DialogTitle>Tạo session mới</DialogTitle>
+                <DialogDescription>
+                  Tạo một session thay thế (session bù) cho hội trường.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className='grid gap-4 py-4'>
+                <div className='grid grid-cols-6 items-center gap-4 w-full'>
+                  <Label className='text-right col-span-1'>Hội trường</Label>
+                  <div className='col-span-5'>
+                    <Select
+                      value={selectedHall}
+                      onValueChange={(v) => setSelectedHall(v)}
+                    >
+                      <SelectTrigger className='w-full h-11 border-2'>
+                        <SelectValue placeholder='Chọn hội trường' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>Hội trường</SelectLabel>
+                          {(hallListRes || []).map((h: any) => (
+                            <SelectItem key={h.hallId} value={String(h.hallId)}>
+                              {h.hallName}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className='grid grid-cols-6 items-center gap-4 w-full'>
+                  <Label className='text-right col-span-1'>Mô tả</Label>
+                  <div className='col-span-5'>
+                    <Input
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder='Mô tả (ví dụ: session bù cho hall X)'
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button variant='outline' onClick={() => setOpenCreate(false)}>
+                  Hủy
+                </Button>
+                <Button
+                  color='primary'
+                  onClick={handleCreateSession}
+                  disabled={
+                    createSessionMutation.isPending ||
+                    createCheckinMutation.isPending
+                  }
+                >
+                  Tạo
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </>
