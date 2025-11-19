@@ -54,7 +54,6 @@ export async function POST(req: NextRequest) {
       process.env.TTS_CACHE_DIR || path.join(process.cwd(), '.cache', 'tts');
     const voice_settings = {
       stability: 1.0,
-      similarity_boost: 0.75,
       style: 0,
       use_speaker_boost: true,
       speed: 0.8,

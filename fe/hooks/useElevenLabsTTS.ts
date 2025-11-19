@@ -1,74 +1,62 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 
 type FailReason = { code: string; message: string };
 type SpeakOptions = {
-  repeat?: number; // số lần lặp nguyên sequence (chime + TTS). Mặc định 1.
-  chimeUrl?: string; // URL file WAV mở đầu (vd: '/sounds/chime.wav')
-  chimeVolume?: number; // 1.0 = bình thường. Mặc định 1.0
-  gain?: number; // hệ số khuếch đại TTS. Mặc định 1.6
-  fadeInMsChime?: number; // fade-in chime (ms). Mặc định 200ms
-  fadeInMsTTS?: number; // fade-in TTS (ms). Mặc định 200ms
+  repeat?: number;
+  chimeUrl?: string;
+  chimeVolume?: number;
+  gain?: number; // Hệ số khuếch đại TTS
+  fadeInMsChime?: number;
+  fadeInMsTTS?: number;
 };
 
-type CacheKey = string;
-
-function makeCacheKey(text: string): CacheKey {
-  // Có thể nối thêm voiceId/modelId/format nếu route cho phép override
-  return `xi:${text}`;
-}
-
 export function useElevenLabsTTS(onFail?: (reason: FailReason) => void) {
-  // Hàng đợi phát lần lượt
   const queueRef = useRef<Promise<void>>(Promise.resolve());
-
-  // Nguồn đang phát (để stop ngay)
   const playingSourceRef = useRef<AudioBufferSourceNode | null>(null);
-
-  // Giữ một AudioContext dùng chung
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Cache chime & TTS
-  const chimeCacheRef = useRef<Map<string, AudioBuffer>>(new Map());
-  const ttsCacheRef = useRef<Map<CacheKey, AudioBuffer>>(new Map());
+  // Cleanup khi unmount
+  useEffect(() => {
+    return () => {
+      stop();
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close();
+      }
+    };
+  }, []);
 
-  const ensureAudioCtx = () => {
+  const ensureAudioCtx = async () => {
     let audioCtx = audioCtxRef.current;
     if (!audioCtx) {
-      audioCtx = new (window.AudioContext ||
-        (window as any).webkitAudioContext)();
+      // QUAN TRỌNG: latencyHint: 'playback' giúp tăng buffer size nội bộ,
+      // giảm tải CPU cho máy yếu -> Âm thanh mượt hơn hẳn.
+      const AudioContextClass =
+        window.AudioContext || (window as any).webkitAudioContext;
+      audioCtx = new AudioContextClass({ latencyHint: 'playback' });
       audioCtxRef.current = audioCtx;
     }
-    // Khởi động context nếu đang suspended (tránh autoplay block)
+
     if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
+      await audioCtx.resume();
     }
     return audioCtx;
   };
 
-  /** Tải & decode WAV/MP3 thành AudioBuffer (có cache) */
+  /** Tải mỗi lần gọi -> Không lưu cache RAM -> Xài xong vứt */
   const getAudioBufferFromUrl = async (url: string): Promise<AudioBuffer> => {
-    const audioCtx = ensureAudioCtx();
-    const cache = chimeCacheRef.current;
-    if (cache.has(url)) return cache.get(url)!;
-
+    const audioCtx = await ensureAudioCtx();
+    // Trình duyệt sẽ tự HTTP Cache file này (disk cache), không tốn RAM của tab
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to load audio: ${url}`);
     const ab = await res.arrayBuffer();
-    const buf = await audioCtx.decodeAudioData(ab);
-    cache.set(url, buf);
-    return buf;
+    return await audioCtx.decodeAudioData(ab);
   };
 
-  /** Gọi API ElevenLabs 1 lần -> decode -> cache theo text */
+  /** Gọi API -> Decode -> Return -> Không lưu lại */
   const getTTSBuffer = async (text: string): Promise<AudioBuffer | null> => {
-    const audioCtx = ensureAudioCtx();
-    const key = makeCacheKey(text);
-
-    if (ttsCacheRef.current.has(key)) {
-      return ttsCacheRef.current.get(key)!;
-    }
+    const audioCtx = await ensureAudioCtx();
 
     const res = await fetch('/api/tts', {
       method: 'POST',
@@ -82,13 +70,10 @@ export function useElevenLabsTTS(onFail?: (reason: FailReason) => void) {
       try {
         const payload = await res.json();
         message = payload?.detail || payload?.error || message;
-
         if (typeof message === 'string' && message.startsWith('{')) {
           const inner = JSON.parse(message);
-          const status = inner?.detail?.status;
-          const msg = inner?.detail?.message;
-          if (status) code = String(status).toUpperCase();
-          if (msg) message = msg;
+          if (inner?.detail?.status) code = String(inner.detail.status);
+          if (inner?.detail?.message) message = inner.detail.message;
         }
       } catch {}
       onFail?.({ code, message });
@@ -97,102 +82,93 @@ export function useElevenLabsTTS(onFail?: (reason: FailReason) => void) {
 
     const blob = await res.blob();
     const arrayBuffer = await blob.arrayBuffer();
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-
-    ttsCacheRef.current.set(key, audioBuffer);
-    return audioBuffer;
+    // Decode tốn CPU, nhưng vì không cache nên sẽ không tốn RAM lâu dài
+    return await audioCtx.decodeAudioData(arrayBuffer);
   };
 
-  /**
-   * Phát một AudioBuffer với gain và fade-in.
-   * - baseGain: hệ số to/nhỏ tổng (1.0 = bình thường, >1.0 to hơn)
-   * - fadeInMs: thời gian fade-in (ms). 0 = không fade.
-   */
-  const playBuffer = (
+  const playBuffer = async (
     buffer: AudioBuffer,
-    baseGain: number,
+    targetGain: number,
     fadeInMs: number
   ) => {
-    const audioCtx = ensureAudioCtx();
+    const audioCtx = await ensureAudioCtx();
 
-    // dừng source trước nếu đang phát
-    if (playingSourceRef.current) {
-      try {
-        playingSourceRef.current.stop();
-      } catch {}
-      playingSourceRef.current = null;
-    }
+    // Stop source cũ nếu có
+    stop();
 
     const source = audioCtx.createBufferSource();
     const gainNode = audioCtx.createGain();
 
-    // Thiết lập fade-in
+    source.buffer = buffer;
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
     const now = audioCtx.currentTime;
+    // Lookahead 50ms: Cứu tinh cho máy yếu, tránh tiếng nấc cụt đầu
+    const startTime = now + 0.05;
     const fadeInSec = Math.max(0, (fadeInMs || 0) / 1000);
 
-    // Bắt đầu từ 0, ramp lên baseGain trong fadeInSec
-    gainNode.gain.setValueAtTime(0.0001, now); // giá trị rất nhỏ để tránh pop
+    gainNode.gain.setValueAtTime(0, now);
     if (fadeInSec > 0) {
-      gainNode.gain.linearRampToValueAtTime(baseGain, now + fadeInSec);
+      gainNode.gain.setValueAtTime(0.001, startTime);
+      gainNode.gain.linearRampToValueAtTime(targetGain, startTime + fadeInSec);
     } else {
-      gainNode.gain.setValueAtTime(baseGain, now);
+      gainNode.gain.setValueAtTime(targetGain, startTime);
     }
 
-    source.buffer = buffer;
-    source.connect(gainNode).connect(audioCtx.destination);
+    playingSourceRef.current = source;
+    source.start(startTime);
 
-    const done = new Promise<void>((resolve) => {
+    return new Promise<void>((resolve) => {
       source.onended = () => {
-        if (playingSourceRef.current === source)
+        if (playingSourceRef.current === source) {
           playingSourceRef.current = null;
+        }
+        // Ngắt kết nối để Garbage Collector dọn dẹp node này ngay lập tức
+        try {
+          source.disconnect();
+          gainNode.disconnect();
+        } catch {}
         resolve();
       };
     });
-
-    playingSourceRef.current = source;
-    source.start(0);
-
-    return done;
   };
 
-  /** Phát chime (nếu có) + TTS, lặp lại N lần mà KHÔNG gọi lại API */
   const speak = (text: string, opts?: SpeakOptions) => {
     const repeat = Math.max(1, opts?.repeat ?? 1);
     const chimeUrl = opts?.chimeUrl;
     const chimeVolume = Math.max(0, opts?.chimeVolume ?? 1.0);
-    const gain = Math.max(0.1, opts?.gain ?? 1.6);
-
-    // fade-in mặc định 200ms cho cả chime và TTS
-    const fadeInMsChime = Math.max(0, opts?.fadeInMsChime ?? 200);
-    const fadeInMsTTS = Math.max(0, opts?.fadeInMsTTS ?? 200);
+    const ttsGain = Math.max(0.1, 1.0);
+    const fadeInMsChime = opts?.fadeInMsChime ?? 200;
+    const fadeInMsTTS = opts?.fadeInMsTTS ?? 200;
 
     queueRef.current = queueRef.current
       .then(async () => {
         if (!text?.trim()) return;
 
-        // chuẩn bị AudioBuffer (chime & TTS)
-        let chimeBuffer: AudioBuffer | null = null;
-        if (chimeUrl) {
-          try {
-            chimeBuffer = await getAudioBufferFromUrl(chimeUrl);
-          } catch (e: any) {
-            onFail?.({
-              code: 'CHIME_LOAD_FAIL',
-              message: String(e?.message || e),
-            });
-          }
-        }
+        // Tải song song cả 2 để tiết kiệm thời gian chờ
+        const [chimeBuffer, ttsBuffer] = await Promise.all([
+          chimeUrl
+            ? getAudioBufferFromUrl(chimeUrl).catch(() => null)
+            : Promise.resolve(null),
+          getTTSBuffer(text),
+        ]);
 
-        const ttsBuffer = await getTTSBuffer(text);
-        if (!ttsBuffer) return; // thất bại đã báo onFail ở trên
+        if (!ttsBuffer) return;
 
-        // lặp lại sequence N lần: [chime] -> [TTS]
         for (let i = 0; i < repeat; i++) {
+          // Kiểm tra an toàn
+          if (!audioCtxRef.current) break;
+
           if (chimeBuffer) {
-            // chime thường ngắn -> phát trước với chimeVolume và fade-in riêng
             await playBuffer(chimeBuffer, chimeVolume, fadeInMsChime);
           }
-          await playBuffer(ttsBuffer, gain, fadeInMsTTS);
+          await playBuffer(ttsBuffer, ttsGain, fadeInMsTTS);
+
+          // Nghỉ 1 chút giữa các lần lặp để nhả Main Thread cho UI cập nhật
+          if (i < repeat - 1) {
+            await new Promise((r) => setTimeout(r, 50));
+          }
         }
       })
       .catch((e) => onFail?.({ code: 'UNEXPECTED', message: String(e) }));
@@ -204,6 +180,7 @@ export function useElevenLabsTTS(onFail?: (reason: FailReason) => void) {
     if (playingSourceRef.current) {
       try {
         playingSourceRef.current.stop();
+        playingSourceRef.current.disconnect();
       } catch {}
       playingSourceRef.current = null;
     }
