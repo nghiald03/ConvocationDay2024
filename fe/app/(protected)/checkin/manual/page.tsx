@@ -86,6 +86,9 @@ export default function ManualCheckinPage() {
 
   // Set MSSV đang xử lý để disable switch theo từng hàng
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
+  // Transfer result dialog state
+  const [transferResult, setTransferResult] = useState<any | null>(null);
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
   // ---- Fetch list, rút gọn queryFn
   const { data: bachelorDT, isLoading } = useQuery({
@@ -201,8 +204,8 @@ export default function ManualCheckinPage() {
         return;
       }
 
-      // Call transfer API
-      await toast.promise(
+      // Call transfer API and capture response to show dialog
+      const transferRes = await toast.promise(
         manageAPI.transferLateStudent({
           studentCode: row.studentCode,
           newSessionId,
@@ -214,6 +217,15 @@ export default function ManualCheckinPage() {
         },
         { position: 'top-right', duration: 3000 }
       );
+
+      // Extract payload safely (some APIs wrap in data.data)
+      const payload =
+        transferRes?.data?.data ?? transferRes?.data ?? transferRes ?? null;
+
+      if (payload) {
+        setTransferResult(payload);
+        setTransferDialogOpen(true);
+      }
 
       queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
     },
@@ -596,6 +608,67 @@ export default function ManualCheckinPage() {
             >
               Đăng kí
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+        <DialogContent className='sm:max-w-[520px]'>
+          <DialogHeader>
+            <DialogTitle>Thông tin chuyển phiên</DialogTitle>
+            <DialogDescription>
+              Kết quả chuyển phiên cho tân cử nhân sau khi chuyển phiên thành
+              công.
+            </DialogDescription>
+          </DialogHeader>
+
+          {transferResult ? (
+            <div className='grid grid-cols-1 gap-2 mt-2'>
+              <div className='flex justify-between'>
+                <span className='font-medium'>MSSV:</span>
+                <span>{transferResult.studentCode ?? '-'}</span>
+              </div>
+              <div className='flex justify-between'>
+                <span className='font-medium'>Họ và tên:</span>
+                <span>{transferResult.fullName ?? '-'}</span>
+              </div>
+              <div className='flex justify-between'>
+                <span className='font-medium'>Session mới:</span>
+                <span>{transferResult.newSession ?? '-'}</span>
+              </div>
+              <div className='flex justify-between'>
+                <span className='font-medium'>Session trong ngày mới:</span>
+                <span>{transferResult.newSessionInDay ?? '-'}</span>
+              </div>
+              <div className='flex justify-between'>
+                <span className='font-medium'>Trạng thái điểm danh:</span>
+                <span>{transferResult.attendanceStatus ?? '-'}</span>
+              </div>
+              <div className='flex justify-between'>
+                <span className='font-medium'>Số ghế:</span>
+                <span>{transferResult.newChair ?? '-'}</span>
+              </div>
+              <div className='flex justify-between'>
+                <span className='font-medium'>Ghế phụ huynh:</span>
+                <span>{transferResult.newChairParent ?? '-'}</span>
+              </div>
+            </div>
+          ) : (
+            <p>Không có dữ liệu để hiển thị.</p>
+          )}
+
+          <DialogFooter>
+            <DialogClose>
+              <Button
+                onClick={() => {
+                  setTransferDialogOpen(false);
+                  setTransferResult(null);
+                }}
+                color='primary'
+              >
+                Đóng
+              </Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

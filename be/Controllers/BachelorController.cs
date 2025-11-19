@@ -264,6 +264,8 @@ namespace FA23_Convocation2023_API.Controllers
                         studentCode = result.StudentCode,
                         fullName = result.FullName,
                         newSessionId = result.SessionId,
+                        newSession = result.Session.Session1,
+                        newSessionInDay = result.Session.SessionInDay,
                         attendanceStatus = result.AttendanceStatus.ToString(),
                         newChair = result.Chair,
                         newChairParent = result.ChairParent
