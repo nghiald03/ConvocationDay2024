@@ -477,6 +477,7 @@ namespace FA23_Convocation2023_API.Services
 
                 existingBachelor.Chair = count.ToString();
                 existingBachelor.ChairParent = "PH" + count.ToString();
+                existingBachelor.SessionInDay = newSession.SessionInDay;
 
                 _context.Bachelors.Update(existingBachelor);
                 await _context.SaveChangesAsync();
