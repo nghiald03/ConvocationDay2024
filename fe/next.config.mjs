@@ -54,10 +54,6 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'cdn11.dienmaycholon.vn',
       },
-      {
-        protocol: 'http',
-        hostname: '143.198.84.82',
-      },
     ],
   },
   swcMinify: true,
