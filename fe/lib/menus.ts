@@ -99,6 +99,14 @@ export function getMenuList(pathname: string): Group[] {
           icon: 'mdi:seat-outline',
           submenus: [],
         },
+        {
+          id: 'chongoi',
+          href: '/seatingArrangement/chongoi',
+          label: 'Sơ đồ chỗ ngồi 2',
+          active: pathname.includes('/seatingArrangement/chongoi'),
+          icon: 'mdi:map-outline',
+          submenus: [],
+        },
       ],
     },
     // {
