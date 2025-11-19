@@ -170,6 +170,7 @@ export default function ManualCheckinPage() {
       // Fetch sessions by hall name
       const res = await checkinAPI.getSessionsByHallName(hallName);
       const sessions: any[] = Array.isArray(res) ? res : res?.data ?? [];
+      console.log('sessions', sessions);
 
       if (!sessions || sessions.length === 0) {
         toast.error('Không tìm thấy phiên khả dụng cho hội trường này');
@@ -184,7 +185,7 @@ export default function ManualCheckinPage() {
         opt.value = String(s.sessionId ?? s.sessionId);
         const label = `Phiên ${s.sessionInDay ?? ''} (Session: ${
           s.sessionNumber ?? s.session1 ?? s.sessionNum ?? ''
-        })`;
+        }) ${s.sessionDescription ? '- ' + s.sessionDescription : ''}`;
         opt.text = label;
         select.appendChild(opt);
       });
