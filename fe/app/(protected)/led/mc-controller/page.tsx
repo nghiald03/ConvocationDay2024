@@ -75,18 +75,24 @@ function SafeImg({
     );
   }
   return (
-    <Image
-      src={src as string}
-      alt={alt}
-      width={width}
-      height={height}
-      className={className}
-      unoptimized
-      onError={(e) => {
-        const el = e.currentTarget as HTMLImageElement;
-        el.style.display = 'none';
-      }}
-    />
+    <div className='relative bg-black'>
+      <Image
+        src={src as string}
+        alt={alt}
+        width={width}
+        height={height}
+        unoptimized
+        className={`bg-black transition-opacity duration-300 ${className}`}
+        onError={(e) => {
+          const el = e.currentTarget as HTMLImageElement;
+          el.style.opacity = '0'; // thay vì display: none
+        }}
+        onLoad={(e) => {
+          const el = e.currentTarget as HTMLImageElement;
+          el.style.opacity = '1';
+        }}
+      />
+    </div>
   );
 }
 
