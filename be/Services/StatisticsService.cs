@@ -27,7 +27,7 @@ namespace FA23_Convocation2023_API.Services
 
             // Lấy danh sách tất cả hall + session đang xuất hiện
             var hallSessionPairs = activeCheckIns
-                .Select(c => new { c.SessionId, c.Session.Session1, c.HallId, c.Hall.HallName })
+                .Select(c => new { c.SessionId, c.Session.Session1, c.HallId, c.Hall.HallName, c.Session.SessionInDay })
                 .Distinct()
                 .ToList();
 
@@ -46,6 +46,7 @@ namespace FA23_Convocation2023_API.Services
                 {
                     SessionId = pair.SessionId ?? 0,
                     SessionNumber = pair.Session1,
+                    SessionInDay = pair.SessionInDay ?? 0, // Cần bổ sung nếu có dữ liệu
                     HallId = pair.HallId ?? 0,
                     HallName = pair.HallName,
                     TotalStudents = totalStudents,

@@ -8,6 +8,8 @@
         public int HallId { get; set; }
         public string HallName { get; set; }
 
+        public int SessionInDay { get; set; }
+
         public int TotalStudents { get; set; }
         public int CheckedInCount { get; set; }
     }

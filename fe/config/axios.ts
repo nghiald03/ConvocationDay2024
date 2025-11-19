@@ -183,6 +183,7 @@ export type ActiveHallSummary = {
   sessionNumber: number;
   hallId: number;
   hallName: string;
+  sessionInDay: number;
   totalStudents: number;
   checkedInCount: number;
 };

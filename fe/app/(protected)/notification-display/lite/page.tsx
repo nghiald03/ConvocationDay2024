@@ -373,7 +373,7 @@ export default function NotificationDisplayLitePage() {
                             <div className='inline-flex items-center justify-center'>
                               <div className='bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-full shadow-lg'>
                                 <span className='text-sm font-bold'>
-                                  PHIÊN SỐ {hall.sessionNumber}
+                                  PHIÊN SỐ {hall.sessionInDay}
                                 </span>
                               </div>
                             </div>
