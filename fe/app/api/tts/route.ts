@@ -4,9 +4,12 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 
-export const runtime = 'nodejs'; // hoặc 'edge' cũng được; NodeJS ok cho fetch stream
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
+  // Lấy biến môi trường ở scope ngoài để dùng chung cho catch block nếu cần
+  const XI_KEY = process.env.ELEVENLABS_API_KEY;
+
   try {
     const { text, voiceId, modelId, outputFormat } = await req.json();
 
@@ -16,7 +19,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const XI_KEY = process.env.ELEVENLABS_API_KEY;
     if (!XI_KEY) {
       return new Response(
         JSON.stringify({ error: 'Server missing ELEVENLABS_API_KEY' }),
@@ -27,10 +29,9 @@ export async function POST(req: NextRequest) {
     const VOICE_ID =
       voiceId || process.env.ELEVENLABS_VOICE_ID || 'A5w1fw5x0uXded1LDvZp';
     const MODEL_ID = modelId || 'eleven_v3';
-    // const MODEL_ID = modelId || 'eleven_flash_v2_5';
     const FORMAT = outputFormat || 'mp3_44100_128';
 
-    // Helper utils for caching and mime detection
+    // Helper utils
     const normalizeText = (s: string) => s.trim().replace(/\s+/g, ' ');
     const guessMime = (fmt: string) => {
       const f = (fmt || '').toLowerCase();
@@ -50,14 +51,17 @@ export async function POST(req: NextRequest) {
     };
     const makeKey = (obj: unknown) =>
       crypto.createHash('sha256').update(JSON.stringify(obj)).digest('hex');
+
     const cacheDir =
       process.env.TTS_CACHE_DIR || path.join(process.cwd(), '.cache', 'tts');
+
     const voice_settings = {
       stability: 1.0,
       style: 0,
       use_speaker_boost: true,
       speed: 0.8,
     };
+
     const keyPayload = {
       text: normalizeText(text),
       voiceId: VOICE_ID,
@@ -65,10 +69,11 @@ export async function POST(req: NextRequest) {
       format: FORMAT,
       voice_settings,
     };
+
     const cacheKey = makeKey(keyPayload);
     const cachePath = path.join(cacheDir, `${cacheKey}${guessExt(FORMAT)}`);
 
-    // Try disk cache first
+    // 1. Try disk cache first
     try {
       const data = await fs.readFile(cachePath);
       return new Response(new Uint8Array(data), {
@@ -79,10 +84,10 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch {
-      // cache miss -> proceed to fetch from ElevenLabs
+      // cache miss -> proceed
     }
 
-    // Gọi endpoint streaming để giảm delay
+    // 2. Gọi endpoint streaming
     const upstream = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}/stream`,
       {
@@ -92,30 +97,33 @@ export async function POST(req: NextRequest) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text, // giữ nguyên text gốc cho chất lượng tự nhiên
+          text,
           model_id: MODEL_ID,
           output_format: FORMAT,
-
-          // Tùy chọn: giảm thêm latency (1,2,3). 3 = thấp nhất, chất lượng hơi giảm
           optimize_streaming_latency: 2,
           voice_settings,
-          // (tuỳ chọn) tinh chỉnh chất giọng
-          // voice_settings: { stability: 0.5, similarity_boost: 0.8, style: 0.3, use_speaker_boost: true },
         }),
       }
     );
 
     if (!upstream.ok || !upstream.body) {
       const msg = await upstream.text().catch(() => upstream.statusText);
+
+      // --- THAY ĐỔI Ở ĐÂY: Trả về key khi ElevenLabs báo lỗi ---
       return new Response(
-        JSON.stringify({ error: 'ElevenLabs failed', detail: msg }),
+        JSON.stringify({
+          error: 'ElevenLabs failed',
+          detail: msg,
+          debug_usedApiKey: XI_KEY, // <--- HIỂN THỊ KEY ĐỂ DEBUG
+        }),
         { status: upstream.status }
       );
     }
 
-    // Cache miss: buffer, write to disk, trả về client
+    // 3. Cache miss: buffer, write to disk, trả về client
     const arrayBuf = await upstream.arrayBuffer();
     const u8 = new Uint8Array(arrayBuf);
+
     try {
       await fs.mkdir(cacheDir, { recursive: true });
       await fs.writeFile(cachePath, u8);
@@ -131,10 +139,12 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: any) {
+    // --- THAY ĐỔI Ở ĐÂY: Trả về key khi có lỗi Unexpected ---
     return new Response(
       JSON.stringify({
         error: 'Unexpected',
         detail: String(err?.message || err),
+        debug_usedApiKey: XI_KEY, // <--- HIỂN THỊ KEY ĐỂ DEBUG
       }),
       { status: 500 }
     );
