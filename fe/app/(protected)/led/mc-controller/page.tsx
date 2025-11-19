@@ -81,7 +81,6 @@ function SafeImg({
       width={width}
       height={height}
       className={className}
-      unoptimized
       onError={(e) => {
         const el = e.currentTarget as HTMLImageElement;
         el.style.display = 'none';
@@ -483,6 +482,44 @@ export default function Page() {
                     </Card>
                   )}
 
+                  {/* NEXT - Side Card */}
+                  <Card className='shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-90 hover:opacity-90 bg-white dark:bg-slate-900 self-center'>
+                    <CardTitle className='pt-3 px-3'>
+                      <div className='flex items-center justify-center gap-2 text-sm text-orange-600 dark:text-orange-400'>
+                        <span>Tiếp theo</span>
+                        <ChevronRight className='w-4 h-4' />
+                      </div>
+                    </CardTitle>
+                    <CardContent className='p-3'>
+                      <div className='relative aspect-[16/9] rounded-lg overflow-hidden bg-orange-50 dark:bg-orange-950/20 ring-2 ring-orange-200/50 dark:ring-orange-800/50'>
+                        <SafeImg
+                          src={bachelorNext?.image}
+                          alt='Ảnh tân cử nhân sau'
+                          className='object-cover w-full h-full'
+                          width={400}
+                          height={533}
+                        />
+                      </div>
+                    </CardContent>
+                    {bachelorNext ? (
+                      <CardDescription className='pb-3 px-3 space-y-1'>
+                        <p className='text-center font-semibold text-sm line-clamp-1 text-orange-900 dark:text-orange-100'>
+                          {bachelorNext.fullName}
+                        </p>
+                        <p className='text-center text-sm text-orange-600 dark:text-orange-400'>
+                          {bachelorNext.studentCode}
+                        </p>
+                        <p className='text-center text-xs text-muted-foreground line-clamp-2'>
+                          {bachelorNext.major}
+                        </p>
+                      </CardDescription>
+                    ) : (
+                      <CardDescription className='pb-3 text-center text-xs opacity-50'>
+                        Không có dữ liệu
+                      </CardDescription>
+                    )}
+                  </Card>
+
                   {/* CURRENT - Featured Card */}
                   <Card className='relative shadow-2xl border-4 border-orange-500 dark:border-orange-600 scale-100 lg:scale-100 z-10 bg-white dark:bg-slate-900'>
                     {/* Gradient Border Effect */}
@@ -532,44 +569,6 @@ export default function Page() {
                         </CardDescription>
                       )}
                     </div>
-                  </Card>
-
-                  {/* NEXT - Side Card */}
-                  <Card className='shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-60 hover:opacity-90 bg-white dark:bg-slate-900 self-center'>
-                    <CardTitle className='pt-3 px-3'>
-                      <div className='flex items-center justify-center gap-2 text-sm text-orange-600 dark:text-orange-400'>
-                        <span>Tiếp theo</span>
-                        <ChevronRight className='w-4 h-4' />
-                      </div>
-                    </CardTitle>
-                    <CardContent className='p-3'>
-                      <div className='relative aspect-[16/9] rounded-lg overflow-hidden bg-orange-50 dark:bg-orange-950/20 ring-2 ring-orange-200/50 dark:ring-orange-800/50'>
-                        <SafeImg
-                          src={bachelorNext?.image}
-                          alt='Ảnh tân cử nhân sau'
-                          className='object-cover w-full h-full'
-                          width={400}
-                          height={533}
-                        />
-                      </div>
-                    </CardContent>
-                    {bachelorNext ? (
-                      <CardDescription className='pb-3 px-3 space-y-1'>
-                        <p className='text-center font-semibold text-sm line-clamp-1 text-orange-900 dark:text-orange-100'>
-                          {bachelorNext.fullName}
-                        </p>
-                        <p className='text-center text-sm text-orange-600 dark:text-orange-400'>
-                          {bachelorNext.studentCode}
-                        </p>
-                        <p className='text-center text-xs text-muted-foreground line-clamp-2'>
-                          {bachelorNext.major}
-                        </p>
-                      </CardDescription>
-                    ) : (
-                      <CardDescription className='pb-3 text-center text-xs opacity-50'>
-                        Không có dữ liệu
-                      </CardDescription>
-                    )}
                   </Card>
                 </div>
               </CardContent>

@@ -49,7 +49,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Roles = "MN, CK, US")]
+        [Authorize(Roles = "MN, CK, US, MC")]
         public async Task<IActionResult> GetAllBachelorAsync(
      [FromQuery] int pageIndex = 1,
      [FromQuery] int pageSize = 10,
