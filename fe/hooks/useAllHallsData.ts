@@ -81,7 +81,10 @@ export function useAllHallsData(): UseAllHallsDataResult {
         if (targetHall) {
           const hallId = targetHall.hallId;
           const currentDataKey = getCurrentDataKey(hallId); // Map payload thành đối tượng Bachelor đầy đủ (Dùng làm dữ liệu cache tức thì)
-
+          console.log(
+            'SignalR payload parsed in useAllHallsData:',
+            currentDataKey
+          );
           const bachelorData: Bachelor = {
             image: parsed.Image,
             fullName: parsed.FullName,
@@ -90,6 +93,7 @@ export function useAllHallsData(): UseAllHallsDataResult {
             mail: parsed.Mail,
             hallName: parsed.HallName,
             sessionNum: parsed.SessionNum,
+            sessionInDay: parsed.SessionInDay ?? null,
             chair: parsed.Chair ?? null,
             chairParent: parsed.ChairParent ?? null,
           }; // A. Cập nhật Session ID mới nhất vào cache riêng
@@ -112,7 +116,9 @@ export function useAllHallsData(): UseAllHallsDataResult {
               oldBachelor.studentCode === studentCode &&
               JSON.stringify(oldBachelor) === JSON.stringify(bachelorData)
             ) {
-              // Nếu dữ liệu (bao gồm cả MSSV) không đổi, không cần làm gì
+              bachelorData.sessionInDay = oldBachelor.sessionInDay;
+              // bachelorData.chair = oldBachelor.chair;
+              // bachelorData.chairParent = oldBachelor.chairParent;
               return;
             } // Cập nhật cache với dữ liệu SignalR (dùng format Bachelor trực tiếp)
 

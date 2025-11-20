@@ -20,16 +20,18 @@ import {
 interface BachelorDetailCardProps {
   hallName: string;
   bachelorCurrent: any | null;
+  sessionNum: string | number;
   isFetching: boolean;
 }
 
 const BachelorDetailCard: React.FC<BachelorDetailCardProps> = ({
   hallName,
   bachelorCurrent,
+  sessionNum,
   isFetching,
 }) => {
   const isAvailable = !!bachelorCurrent && !!bachelorCurrent.fullName;
-
+  console.log('bachelorCurrent in BachelorDetailCard:', bachelorCurrent);
   return (
     <Card
       className={`border-2 transition-all duration-300 ${
@@ -42,7 +44,11 @@ const BachelorDetailCard: React.FC<BachelorDetailCardProps> = ({
         <div className='flex items-center gap-2'>
           <Building2 className='w-5 h-5 text-orange-600 dark:text-orange-400' />
           <CardTitle className='text-lg font-bold text-orange-600 dark:text-orange-400'>
-            Hall: {hallName}
+            Hall: {hallName} - Session{' '}
+            {bachelorCurrent?.sessionInDay
+              ? `#${bachelorCurrent.sessionInDay}`
+              : 'N/A'}{' '}
+            {bachelorCurrent?.chair ? `- STT: ${bachelorCurrent.chair}` : ''}
           </CardTitle>
         </div>
         {isAvailable && (
@@ -114,6 +120,7 @@ const BachelorDetailCard: React.FC<BachelorDetailCardProps> = ({
 // --- Component Chính Tái Sử Dụng ---
 export function MultiHallStatusDisplay() {
   const { allHallsData, hallListLoading, isFetchingAny } = useAllHallsData();
+  console.log('allHallsData in MultiHallStatusDisplay:', allHallsData);
 
   if (hallListLoading) {
     return (
@@ -154,6 +161,7 @@ export function MultiHallStatusDisplay() {
             {allHallsData.map((data) => (
               <BachelorDetailCard
                 key={data.hallInfo.hallId}
+                sessionNum={data.bachelor ? data.bachelor.sessionNum : 'N/A'}
                 hallName={data.hallInfo.hallName}
                 bachelorCurrent={data.bachelor}
                 isFetching={data.isFetching}
