@@ -249,32 +249,18 @@ export default function Page() {
   // ===== Download images (selected) =====
   const downloadMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      // Use client-side zipping via jszip (dynamic import)
-      let JSZip: any;
-      try {
-        JSZip = (await import('jszip')).default;
-      } catch (err) {
-        throw new Error(
-          'Thư viện nén (jszip) chưa được cài đặt. Chạy `bun add jszip` hoặc `npm i jszip`.'
-        );
+      // Ask server to prepare zip and return it
+      const res = await fetch('/api/images/zip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || 'Server error preparing zip');
       }
-
-      const zip = new JSZip();
-
-      for (const id of ids) {
-        const img = images.find((i) => i.id === id);
-        if (!img) continue;
-        const resp = await fetch(img.path);
-        if (!resp.ok) throw new Error(`Không thể tải ${img.originalName}`);
-        const blob = await resp.blob();
-        const arrayBuffer = await blob.arrayBuffer();
-        // Add file to zip using original name (fallback to id)
-        const filename = img.originalName || `image-${id}`;
-        zip.file(filename, arrayBuffer);
-      }
-
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      const url = URL.createObjectURL(zipBlob);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `images-${Date.now()}.zip`;
