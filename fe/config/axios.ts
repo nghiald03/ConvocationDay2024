@@ -5,7 +5,7 @@ import axios from 'axios';
 //   ? `${process.env.NEXT_PUBLIC_SITE_URL}/api`
 //   : 'http://localhost:85/api';
 
-const BASE_URL = 'http://210.245.25.74:85/api';
+const BASE_URL = 'http://210.245.25.74:88/api';
 const axiosInstance = axios.create({
   baseURL: BASE_URL,
 });
