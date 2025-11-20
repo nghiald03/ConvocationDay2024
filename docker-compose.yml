@@ -32,8 +32,8 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     ports:
-      - '85:80' # Expose ASP.NET Core service
-      - '86:443' # HTTPS port (optional)
+      - '88:80' # Expose ASP.NET Core service
+      - '89:443' # HTTPS port (optional)
     environment:
       - 'ConnectionStrings:DefaultConnection=Server=database,1433;Database=ConvocationDB;User Id=sa;Password=YourStronggg@Passw0rd;Encrypt=True;TrustServerCertificate=True;'
       - ASPNETCORE_ENVIRONMENT=Production
