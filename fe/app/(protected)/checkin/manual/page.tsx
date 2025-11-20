@@ -540,7 +540,7 @@ export default function ManualCheckinPage() {
                   </SelectContent>
                 </Select>
                 <Select onValueChange={setSession}>
-                  <SelectTrigger className='w-[300px]'>
+                  <SelectTrigger className='w-[400px]'>
                     <SelectValue placeholder='Chọn session' />
                   </SelectTrigger>
                   <SelectContent>
@@ -555,7 +555,8 @@ export default function ManualCheckinPage() {
                             key={item.sessionId}
                             value={item.sessionId}
                           >
-                            {item.session1}
+                            {item.session1} - {item.sessionInDay} -{' '}
+                            {item.description}
                           </SelectItem>
                         ))}
                     </SelectGroup>
