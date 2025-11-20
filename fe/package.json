@@ -84,6 +84,7 @@
     "html5-qrcode": "^2.3.8",
     "input-otp": "^1.2.4",
     "jotai": "^2.9.3",
+    "jszip": "^3.10.1",
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
     "lodash": "^4.17.21",

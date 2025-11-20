@@ -246,6 +246,53 @@ export default function Page() {
     },
   });
 
+  // ===== Download images (selected) =====
+  const downloadMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      // Use client-side zipping via jszip (dynamic import)
+      let JSZip: any;
+      try {
+        JSZip = (await import('jszip')).default;
+      } catch (err) {
+        throw new Error(
+          'Thư viện nén (jszip) chưa được cài đặt. Chạy `bun add jszip` hoặc `npm i jszip`.'
+        );
+      }
+
+      const zip = new JSZip();
+
+      for (const id of ids) {
+        const img = images.find((i) => i.id === id);
+        if (!img) continue;
+        const resp = await fetch(img.path);
+        if (!resp.ok) throw new Error(`Không thể tải ${img.originalName}`);
+        const blob = await resp.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        // Add file to zip using original name (fallback to id)
+        const filename = img.originalName || `image-${id}`;
+        zip.file(filename, arrayBuffer);
+      }
+
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `images-${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
+    onSuccess: () => {
+      toast.success('Tải xuống hoàn tất');
+    },
+    onError: (e: any) => {
+      toast.error(
+        'Tải xuống thất bại: ' + (e?.message || 'Lỗi không xác định')
+      );
+    },
+  });
+
   const handleFileChange = (files: FileList | null) => {
     if (!files || files.length === 0) {
       setSelectedFiles(null);
@@ -455,6 +502,27 @@ export default function Page() {
               >
                 <FileDown className='size-4 mr-2' />
                 {exportExcelMutation.isPending ? 'Đang xuất…' : 'Xuất Excel'}
+              </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => {
+                  const ids = Array.from(selectedIds);
+                  if (ids.length === 0)
+                    return toast.error('Chưa chọn ảnh để tải');
+                  toast.promise(
+                    downloadMutation.mutateAsync(ids),
+                    {
+                      loading: 'Đang tải xuống...',
+                      success: 'Đã tải xuống',
+                      error: 'Tải xuống thất bại',
+                    },
+                    { position: 'top-right' }
+                  );
+                }}
+                disabled={downloadMutation.isPending || selectedIds.size === 0}
+              >
+                <FileDown className='size-4 mr-2' /> Tải xuống
               </Button>
 
               <Button size='sm' onClick={() => fileInputRef.current?.click()}>
