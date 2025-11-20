@@ -212,7 +212,7 @@ export default function NotifyMockPage() {
 
   // ================== SignalR (tự connect + tự join group trong hook) ==================
   const { connection, connectionState, isConnected } = useSignalR({
-    hubUrl: 'http://143.198.84.82:85/chat-hub', // Đổi theo BE của anh
+    hubUrl: 'http://210.245.25.74:85/chat-hub', // Đổi theo BE của anh
     autoConnect: true,
     forceWebsockets: true, // BE đã hỗ trợ WS → tránh negotiate
     stopDelayMs: 3000,
