@@ -100,6 +100,7 @@ namespace FA23_Convocation2023_API.Services
                     HallName = bachelor.Hall.HallName,
                     SessionNum = bachelor.Session.Session1,
                     SessionInDay = bachelor.SessionInDay ?? bachelor.Session.SessionInDay,
+                    Description = bachelor.Session.Description,
                     Chair = bachelor.Chair,
                     ChairParent = bachelor.ChairParent,
                     CheckIn = bachelor.CheckIn,

@@ -96,38 +96,51 @@ export function useAllHallsData(): UseAllHallsDataResult {
             sessionInDay: parsed.SessionInDay ?? null,
             chair: parsed.Chair ?? null,
             chairParent: parsed.ChairParent ?? null,
-          }; // A. Cập nhật Session ID mới nhất vào cache riêng
+          };
 
-          if (sessionNum) {
-            queryClient.setQueryData(
-              getLatestSessionKey(hallId),
-              String(sessionNum)
-            );
-          } // B. Cập nhật Cache TRỰC TIẾP (Instant UI update)
-
+          // B. Cập nhật Cache TRỰC TIẾP (Instant UI update)
           if (image && studentCode) {
             // Lấy dữ liệu cũ để so sánh
             const oldData = queryClient.getQueryData(currentDataKey) as any;
             const oldBachelor = oldData?.bachelor2 || oldData;
 
-            // Kiểm tra xem dữ liệu có thực sự thay đổi không
+            // Nếu dữ liệu hoàn toàn giống nhau -> không làm gì (tránh gọi API lặp)
             if (
               oldBachelor &&
               oldBachelor.studentCode === studentCode &&
               JSON.stringify(oldBachelor) === JSON.stringify(bachelorData)
             ) {
+              // preserve sessionInDay from old cache if present
               bachelorData.sessionInDay = oldBachelor.sessionInDay;
-              // bachelorData.chair = oldBachelor.chair;
-              // bachelorData.chairParent = oldBachelor.chairParent;
-              return;
-            } // Cập nhật cache với dữ liệu SignalR (dùng format Bachelor trực tiếp)
+              return; // nothing changed -> skip updates
+            }
 
-            queryClient.setQueryData(currentDataKey, bachelorData); // C. Kích hoạt fetch API NGẦM để lấy dữ liệu chính thức
+            // Nếu đến đây, dữ liệu đã thay đổi -> cập nhật cache ngay lập tức
+            queryClient.setQueryData(currentDataKey, bachelorData);
 
-            queryClient.invalidateQueries({
-              queryKey: currentDataKey,
-              refetchType: 'active',
-            });
+            // A. Cập nhật Session ID mới nhất vào cache riêng (chỉ khi sessionNum khác)
+            if (sessionNum) {
+              const prevLatest = queryClient.getQueryData(
+                getLatestSessionKey(hallId)
+              ) as string | undefined;
+              if (String(sessionNum) !== String(prevLatest)) {
+                queryClient.setQueryData(
+                  getLatestSessionKey(hallId),
+                  String(sessionNum)
+                );
+                // Kích hoạt fetch API NGẦM để lấy dữ liệu chính thức cho hall này
+                queryClient.invalidateQueries({
+                  queryKey: currentDataKey,
+                  refetchType: 'active',
+                });
+              }
+            } else {
+              // Nếu không có sessionNum thay đổi, vẫn có thể muốn refetch
+              queryClient.invalidateQueries({
+                queryKey: currentDataKey,
+                refetchType: 'active',
+              });
+            }
           } else if (!image) {
             // Không có hình ảnh (tín hiệu reset) => clear dữ liệu
             queryClient.setQueryData(currentDataKey, null);

@@ -8,6 +8,7 @@ interface StudentData {
   major: string;
   hallName: string;
   sessionNum: number;
+  sessionInDay: number;
   chair: string;
   chairParent: string;
   checkIn: boolean;
@@ -31,6 +32,7 @@ export const exportToExcel = async (
       const major = s.major ?? '';
       const hallName = s.hallName ?? '';
       const sessionNum = s.sessionNum ?? '';
+      const sessionInDay = s.sessionInDay ?? '';
       const chair = s.chair ?? '';
       const chairParent = s.chairParent ?? '';
       const checkIn = s.checkIn === true ? 'Yes' : 'No';
@@ -50,7 +52,9 @@ export const exportToExcel = async (
         Email: mail,
         Major: major,
         'Hall Name': hallName,
+        Description: (s as any).Description ?? (s as any).description ?? '',
         'Session Number': sessionNum,
+        'Session In Day': sessionInDay,
         Chair: chair,
         'Chair Parent': chairParent,
         'Checked In': checkIn,
