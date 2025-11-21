@@ -73,7 +73,7 @@ export default function SafeImg({
         height={height}
         // Khi đang loading: opacity = 0 (hiện nền đen của wrapper)
         // Khi load xong: opacity = 100 (hiện ảnh)
-        className={`transition-opacity duration-100 ease-in-out ${
+        className={`transition-opacity duration-200 ease-in-out ${
           isLoading ? 'opacity-0' : 'opacity-100'
         }`}
         unoptimized
