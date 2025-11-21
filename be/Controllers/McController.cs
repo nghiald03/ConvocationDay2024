@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace FA23_Convocation2023_API.Controllers
 {
     [Route("api/[controller]")]
-    [Authorize(Roles = "MN, MC")]
+    [Authorize(Roles = "MN, MC, CK")]
     [ApiController]
     public class McController : ControllerBase
     {
