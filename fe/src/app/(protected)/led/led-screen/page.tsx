@@ -31,7 +31,7 @@ import { toast } from 'sonner';
 
 // === NEW: import hook
 import { useSignalR } from '@/lib/realtime/use-signal-r';
-import SafeImg from '@/components/safeImg';
+import SafeImage from '@/components/safe-image';
 
 export default function LedScreen() {
   const queryClient = useQueryClient();
@@ -257,7 +257,7 @@ export default function LedScreen() {
             <Card className='w-[100vw] h-[100vh]'>
               <CardContent className='p-0 w-[100vw] h-[100vh]'>
                 {bachelorCurrent?.image && (
-                  <SafeImg
+                  <SafeImage
                     src={bachelorCurrent.image}
                     alt='Mô tả hình ảnh'
                     className='w-full h-full object-cover animate-fade-in animate-duration-1000'
@@ -275,7 +275,7 @@ export default function LedScreen() {
             onDoubleClick={handleDoubleClick}
           >
             <CardContent className='p-3'>
-              <SafeImg
+              <SafeImage
                 src={bachelorCurrent.image}
                 alt='Mô tả hình ảnh'
                 className='w-full h-full object-cover'

@@ -5,7 +5,7 @@ import { resetDatabase } from '@/features/admin/api/reset-database';
 import { deleteAllBachelors } from '@/features/bachelor/api/delete-all-bachelors';
 import { uncheckAll } from '@/features/check-in/api/uncheck-all';
 import { getBachelors } from '@/features/bachelor/api/get-bachelors';
-import { exportToExcel } from '@/utils/bachelorCheckinExport';
+import { exportToExcel } from '@/features/bachelor/ui/export-bachelors-to-excel';
 import { useMutation } from '@tanstack/react-query';
 import React from 'react';
 import toast from 'react-hot-toast';

@@ -1,7 +1,7 @@
 # Frontend Rearchitecture — Tiến trình và bàn giao
 
 Cập nhật: 2026-08-30  
-Workspace: `F:\CODE\ConvocationDay2024`  
+Workspace: `E:\CODE\ConvocationDay2024`
 Frontend: Next.js App Router, React, TypeScript strict, Bun
 
 ## 1. Trạng thái hiện tại
@@ -109,7 +109,27 @@ Các phần đã chuyển đáng chú ý:
 - Thêm `be/.dockerignore` để loại `bin`, `obj`, appsettings thật, test output và log.
 - Frontend Docker context mới khoảng **15 MB**, thay cho lần build cũ tăng lên hơn **860 MB**.
 
+### 2.6. Chuẩn hóa tên file và provider (đợt tiếp tục 2026-08-30)
+
+- Không còn file source có tên PascalCase/camelCase; các route directory camelCase được giữ nguyên để không thay đổi URL công khai.
+- Chuyển provider cấp ứng dụng vào `src/app/providers`.
+- Chuyển authentication/authorization guard vào `src/features/auth/ui`.
+- Chuyển layout shell/content về `src/components/partials/layout`.
+- Xóa `URLProvider`, provider loader rỗng, QR scanner plugin đã bị comment và hai file utility/config không còn consumer.
+- Chuyển utility dùng chung sang `src/lib` và export Excel về feature bachelor sở hữu.
+- Thay `any` trong `safeIncludes` và direction provider bằng `unknown`/literal union tương ứng.
+
 ## 3. Kết quả kiểm tra mới nhất
+
+### Cập nhật feature ownership, thin routes và tests (2026-08-30)
+
+- Bổ sung query keys/options/hooks thuộc feature cho Bachelor và Check-in; filter/pagination trở thành một phần của query key.
+- Tách route quản lý Bachelor, quản lý Check-in và MC controller thành thin route + feature UI.
+- Hoàn thiện `features/media` gồm model, API operations, query options và UI; route upload không còn gọi Axios/fetch trực tiếp.
+- Loại bỏ `src/lib/uploader.ts` pass-through và đưa mọi media endpoint operation về feature sở hữu.
+- Chuẩn hóa thêm error boundary về `unknown` cho Bachelor form/import và Check-in management.
+- Tách LED response normalization thành domain function có thể kiểm thử.
+- Test frontend hiện có 8 test, 15 assertions cho safe redirect, HTTP errors, query options, LED normalization và destructive confirmation contract.
 
 Frontend local:
 
@@ -146,16 +166,12 @@ Không có thay đổi màu sắc/theme trong đợt này, vì vậy workflow đ
 
 Ưu tiên tiếp theo:
 
-1. Chuẩn hóa tên file legacy còn dùng sang kebab-case, đặc biệt provider/component có tên PascalCase hoặc camelCase.
-2. Chuyển provider ứng dụng thực sự dùng chung vào `src/app/providers` hoặc giữ một `src/providers` có interface nhỏ; xóa provider/template không còn dùng.
-3. Audit `src/components` để chuyển UI nghiệp vụ còn sót về feature sở hữu; chỉ giữ primitives và component thực sự dùng chung.
-4. Tách utility legacy trong `src/utils` về feature hoặc `src/lib` theo ownership, sau đó xóa thư mục nếu rỗng.
-5. Đánh giá Nextra docs trong `src/pages`; nếu không ship cùng sản phẩm thì tách khỏi production app để giảm bundle/dependency.
-6. Thay các `any` legacy còn lại bằng error narrowing/domain type, ưu tiên mutation error handlers và import Excel.
-7. Bổ sung query/mutation hooks cho bachelor và check-in để route UI không tự khai báo query key lặp lại.
-8. Tách các route page lớn (manage bachelor, check-in management, MC controller) thành thin route + feature UI.
-9. Bổ sung test cho API boundary normalization, query options, auth/session expiry và destructive actions.
-10. Thêm Playwright smoke test cho login, protected route, check-in, upload và logout.
+1. Audit `src/components` để chuyển UI nghiệp vụ còn sót về feature sở hữu; chỉ giữ primitives và component thực sự dùng chung.
+2. Đánh giá Nextra docs trong `src/pages`; nếu không ship cùng sản phẩm thì tách khỏi production app để giảm bundle/dependency.
+3. Thay các `any` legacy còn lại bằng error narrowing/domain type, ưu tiên notification display, manual check-in và dashboard demo code.
+4. Tách các route page lớn còn lại (notification display, seating map, manual check-in, Noticer) thành thin route + feature UI.
+5. Bổ sung test auth/session expiry và integration tests cần backend/MinIO test fixture.
+6. Thêm Playwright smoke test cho login, protected route, check-in, upload và logout.
 
 ## 6. Việc vận hành chưa thể xác nhận chỉ bằng source code
 
@@ -168,7 +184,7 @@ Không có thay đổi màu sắc/theme trong đợt này, vì vậy workflow đ
 ## 7. Lệnh tiếp tục
 
 ```powershell
-cd F:\CODE\ConvocationDay2024\fe
+cd E:\CODE\ConvocationDay2024\fe
 bun install --frozen-lockfile
 bun run lint
 bun run typecheck
@@ -180,7 +196,7 @@ bun run build
 Docker validation:
 
 ```powershell
-cd F:\CODE\ConvocationDay2024
+cd E:\CODE\ConvocationDay2024
 docker compose config --quiet
 docker compose build be fe
 ```

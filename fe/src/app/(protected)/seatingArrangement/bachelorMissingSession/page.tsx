@@ -1,5 +1,6 @@
 'use client';
 import TableCustom from '@/components/table/table';
+import { bachelorKeys } from '@/features/bachelor/queries/bachelor-query-options';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -58,7 +59,13 @@ export default function Page() {
     error: bachelorDTEr,
     isLoading,
   } = useQuery({
-    queryKey: ['bachelorList'],
+    queryKey: bachelorKeys.list({
+      pageIndex,
+      pageSize,
+      search: searchTextQuery || undefined,
+      hall: hall === '-1' ? undefined : hall,
+      session: session === '-1' ? undefined : session,
+    }),
 
     queryFn: () => {
       if (hall === '-1') {
@@ -190,7 +197,7 @@ export default function Page() {
   ];
 
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+    queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
   }, [hall, session, searchTextQuery, pageIndex, pageSize, queryClient]);
 
   const isDesktop = useMediaQuery('(min-width: 1280px)');

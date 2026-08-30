@@ -58,8 +58,9 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     ports:
-      - '127.0.0.1:88:80'
+      - '127.0.0.1:88:8080'
     environment:
+      ASPNETCORE_HTTP_PORTS: '8080'
       ConnectionStrings__DefaultConnection: Server=database,1433;Database=ConvocationDB;User Id=sa;Password=${DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: 'true'
@@ -74,6 +75,7 @@ services:
     volumes:
       - ./imageAPI/uploads:/legacy/image-api:ro
       - ./fe/uploads:/legacy/frontend:ro
+      - data_protection_keys:/root/.aspnet/DataProtection-Keys
     depends_on:
       database:
         condition: service_healthy
@@ -86,14 +88,14 @@ services:
       context: ./fe
       dockerfile: Dockerfile
       args:
-        API_URL: http://be/api
-        API_ORIGIN: http://be
+        API_URL: http://be:8080/api
+        API_ORIGIN: http://be:8080
     container_name: frontend
     ports:
       - '127.0.0.1:3001:3000'
     environment:
-      API_URL: http://be/api
-      API_ORIGIN: http://be
+      API_URL: http://be:8080/api
+      API_ORIGIN: http://be:8080
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
       ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
     depends_on:
@@ -103,3 +105,4 @@ services:
 volumes:
   sql_data:
   minio_data:
+  data_protection_keys:

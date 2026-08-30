@@ -8,7 +8,7 @@ import { Icon } from '@iconify/react';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/features/notification/model/notification';
 import { useElevenLabsTTS } from '@/features/notification/ui/use-elevenlabs-tts';
-import { useSignalRContext } from '../SignalRContext';
+import { useSignalRContext } from '../signal-r-context';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ActiveHallSummary } from '@/features/statistics/model/active-hall-summary';
 import { activeHallSummaryQueryOptions } from '@/features/statistics/queries/active-hall-summary-query-options';

@@ -37,14 +37,21 @@ public sealed class MediaController : ControllerBase
     public async Task<IActionResult> UploadImages(List<IFormFile> images, [FromForm] string? ownerType, [FromForm] string? ownerId, CancellationToken cancellationToken)
     {
         if (images.Count == 0) return BadRequest(new { code = "media/no-files" });
-        var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var uploaded = new List<object>();
-        foreach (var image in images)
+        try
         {
-            var asset = await _media.UploadImageAsync(image, ownerType ?? "temp", ownerId ?? actorId, actorId, cancellationToken);
-            uploaded.Add(ToDto(asset));
+            var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            var uploaded = new List<object>();
+            foreach (var image in images)
+            {
+                var asset = await _media.UploadImageAsync(image, ownerType ?? "temp", ownerId ?? actorId, actorId, cancellationToken);
+                uploaded.Add(ToDto(asset));
+            }
+            return Created("/api/media", uploaded);
         }
-        return Created("/api/media", uploaded);
+        catch (MediaValidationException exception)
+        {
+            return BadRequest(new { code = "media/invalid-image", message = exception.Message });
+        }
     }
 
     [HttpGet("{id:guid}")]

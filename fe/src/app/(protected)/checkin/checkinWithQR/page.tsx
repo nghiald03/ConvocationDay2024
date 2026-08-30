@@ -12,9 +12,9 @@ import React from 'react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { checkInBachelor } from '@/features/check-in/api/check-in-bachelor';
+import { bachelorKeys } from '@/features/bachelor/queries/bachelor-query-options';
 import toast from 'react-hot-toast';
 import swal from 'sweetalert';
-import Html5QrcodePlugin from './components/Html5QrcodePlugin';
 
 export default function Page() {
   const queryClient = useQueryClient();
@@ -40,7 +40,7 @@ export default function Page() {
         duration: 3000,
         position: 'top-right',
       });
-      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+      queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
   });
 
@@ -95,12 +95,6 @@ export default function Page() {
                 video: 'h-full',
               }}
             />
-            {/* <Html5QrcodePlugin
-              fps={10}
-              qrbox={250}
-              disableFlip={false}
-              qrCodeSuccessCallback={onNewScanResult}
-            ></Html5QrcodePlugin> */}
           </div>
         </CardContent>
       </Card>

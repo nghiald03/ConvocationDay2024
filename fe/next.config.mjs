@@ -8,20 +8,21 @@ const withNextra = nextra({
 });
 const apiUrl = process.env.API_URL || 'http://localhost:88/api';
 const apiOrigin = process.env.API_ORIGIN || 'http://localhost:88';
+const isDevelopment = process.env.NODE_ENV === 'development';
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "object-src 'none'",
   "frame-ancestors 'none'",
   "form-action 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https: http:",
   "font-src 'self' data:",
   "media-src 'self' blob: https: http:",
   "connect-src 'self' https: http: ws: wss:",
-  "upgrade-insecure-requests",
-].join('; ');
+  isDevelopment ? null : 'upgrade-insecure-requests',
+].filter(Boolean).join('; ');
 
 const nextConfig = {
   async rewrites() {

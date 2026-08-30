@@ -1,5 +1,6 @@
 'use client';
 import TableCustom from '@/components/table/table';
+import { bachelorKeys } from '@/features/bachelor/queries/bachelor-query-options';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -135,7 +136,7 @@ export default function ManualCheckinPage() {
       return checkInBachelor(payload);
     },
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+      queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
   });
 
@@ -206,7 +207,7 @@ export default function ManualCheckinPage() {
         setTransferDialogOpen(true);
       }
 
-      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+      queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
     [queryClient]
   );
@@ -282,7 +283,7 @@ export default function ManualCheckinPage() {
         duration: 3000,
         position: 'top-right',
       });
-      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+      queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
     onError: () => {
       toast.error(`Đăng kí thất bại`, {

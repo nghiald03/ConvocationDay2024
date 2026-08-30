@@ -1,9 +1,9 @@
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { Toaster } from '@/components/ui/toaster';
-import ClientQueryProvider from '@/providers/ClientQueryProvider';
-import DirectionProvider from '@/providers/direction-provider';
-import MountedProvider from '@/providers/mounted.provider';
-import { ThemeProvider } from '@/providers/theme-provider';
+import ClientQueryProvider from '@/app/providers/client-query-provider';
+import DirectionProvider from '@/app/providers/direction-provider';
+import MountedProvider from '@/app/providers/mounted-provider';
+import { ThemeProvider } from '@/app/providers/theme-provider';
 import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
 import { getLangDir } from 'rtl-detect';

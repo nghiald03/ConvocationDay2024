@@ -5,7 +5,7 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/compon
 import {Icon} from '@iconify/react';
 import {useEffect, useState} from 'react';
 import {useSignalR} from '@/lib/realtime/use-signal-r';
-import SignalRProvider from './SignalRContext';
+import SignalRProvider from './signal-r-context';
 import {toast} from 'sonner';
 import {useSession} from '@/features/auth/queries/session-provider';
 

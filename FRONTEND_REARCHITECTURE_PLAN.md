@@ -2,7 +2,7 @@
 
 ## 1. Document status
 
-- Status: Proposed
+- Status: Source implementation substantially complete; cleanup, browser tests and operational acceptance remain
 - Created: 2026-08-30
 - Scope: `fe`, authentication integration with `be`, media migration from `imageAPI` and local frontend storage to MinIO
 - Reference implementation: `F:\CODE\tan-thuan-my-viet\apps\web`
@@ -470,6 +470,27 @@ Keep changes reviewable and independently reversible:
 - Do not delete legacy volumes or `imageAPI` data until restore and acceptance checks pass.
 
 ## 13. Definition of done
+
+### 13.1 Source implementation status (2026-08-30)
+
+Implemented and verified in the repository:
+
+- Security containment, environment examples, secret scanning, restricted CORS, secure cookie/CSRF auth and authorization policies.
+- Bun-only frontend gates and GitHub Actions for frontend, backend and container builds.
+- Feature-first `fe/src` architecture, shared HTTP/query infrastructure and minimal app providers.
+- ASP.NET Core Identity integration, SignalR cookie authentication, MinIO private storage, media metadata/security and migration dry-run tooling.
+- Feature-owned Bachelor, Check-in, Hall, Session, LED, Notification, Statistics, Admin and Media modules.
+- Feature-owned Bachelor/Check-in query keys and options; thin routes for Bachelor management, Check-in management, MC controller and Media management.
+- Tests for safe redirects, HTTP error normalization, query keys/options, LED boundary normalization and destructive confirmation headers.
+
+Intentionally not marked complete from source code alone:
+
+- Credential rotation for values previously exposed in Git history.
+- Staging Identity/media migration, checksum reconciliation, backup restore drill and canary acceptance.
+- Real-account permission-matrix and end-to-end operational workflow acceptance.
+- Removal of `imageAPI`, legacy volumes and rollback data before the agreed rollback window expires.
+- Removal of bundled Nextra docs/dashboard demos without a confirmed product-owner decision that they are not shipped surfaces.
+- Playwright smoke tests, which require adding and maintaining browser-test infrastructure.
 
 The rearchitecture is complete only when:
 

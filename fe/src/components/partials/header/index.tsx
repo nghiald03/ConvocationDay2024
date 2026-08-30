@@ -7,7 +7,7 @@ import ProfileInfo from './profile-info';
 import ThemeSwitcher from './theme-switcher';
 
 import HeaderLogo from './header-logo';
-import WarningDialog from '@/components/warningDialog';
+import WarningDialog from '@/components/warning-dialog';
 
 const DashCodeHeader = () => {
   return (

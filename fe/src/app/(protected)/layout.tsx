@@ -2,10 +2,10 @@ import DashCodeFooter from '@/components/partials/footer';
 import DashCodeHeader from '@/components/partials/header';
 import DashCodeSidebar from '@/components/partials/sidebar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import AuthentificationProvider from '@/providers/AuthentificationProvider';
-import LayoutContentProvider from '@/providers/content.provider';
-import LayoutProvider from '@/providers/layout.provider';
-import ProtectProvider from '@/providers/ProtectProvider';
+import LayoutContentProvider from '@/components/partials/layout/layout-content';
+import LayoutShell from '@/components/partials/layout/layout-shell';
+import AuthenticationGuard from '@/features/auth/ui/authentication-guard';
+import AuthorizationGuard from '@/features/auth/ui/authorization-guard';
 import { getServerSession } from '@/features/auth/api/server-session';
 import { SessionProvider } from '@/features/auth/queries/session-provider';
 import { redirect } from 'next/navigation';
@@ -22,19 +22,19 @@ const layout = async ({ children }: { children: React.ReactNode }) => {
   if (!session) redirect('/');
   return (
     <SessionProvider initialSession={session}>
-    <LayoutProvider>
+    <LayoutShell>
       <DashCodeHeader />
       <DashCodeSidebar />
       <LayoutContentProvider>
-        <AuthentificationProvider>
+        <AuthorizationGuard>
           <TooltipProvider delayDuration={200}>
-            <ProtectProvider>{children}</ProtectProvider>
+            <AuthenticationGuard>{children}</AuthenticationGuard>
           </TooltipProvider>
-        </AuthentificationProvider>
+        </AuthorizationGuard>
       </LayoutContentProvider>
       <DashCodeFooter />
       <Toaster />
-    </LayoutProvider>
+    </LayoutShell>
     </SessionProvider>
   );
 };

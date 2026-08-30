@@ -13,8 +13,8 @@ FROM oven/bun:1.2.10-alpine AS build
 WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
-ARG API_URL=http://be/api
-ARG API_ORIGIN=http://be
+ARG API_URL=http://be:8080/api
+ARG API_ORIGIN=http://be:8080
 ENV API_URL=$API_URL
 ENV API_ORIGIN=$API_ORIGIN
 RUN bun run build

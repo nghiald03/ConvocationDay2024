@@ -10,7 +10,6 @@ function readCookie(name: string) {
 }
 
 export async function ensureCsrfToken() {
-  if (readCookie('XSRF-TOKEN')) return;
   csrfPromise ??= fetch('/backend-api/auth/csrf', { credentials: 'include', cache: 'no-store' })
     .then((response) => {
       if (!response.ok) throw new Error('Unable to initialize request verification.');

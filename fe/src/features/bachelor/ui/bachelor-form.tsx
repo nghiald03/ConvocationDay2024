@@ -38,6 +38,8 @@ import { Label } from '@/components/ui/label';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createBachelors } from '@/features/bachelor/api/create-bachelors';
 import { updateBachelor as updateBachelorRequest } from '@/features/bachelor/api/update-bachelor';
+import { bachelorKeys } from '@/features/bachelor/queries/bachelor-query-options';
+import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
 import { Bachelor } from '@/features/bachelor/model/bachelor';
 import type { Hall } from '@/features/hall/model/hall';
 import type { Session } from '@/features/session/model/session';
@@ -102,10 +104,10 @@ export default function AddOrUpdateBachelor({
         position: 'top-right',
       });
 
-      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+      queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
-    onError: (error: any) => {
-      toast.error('Thêm thất bại' + error.respone.data, {
+    onError: (error: unknown) => {
+      toast.error(getHttpErrorMessage(error, 'Thêm thất bại'), {
         duration: 3000,
         position: 'top-right',
       });
@@ -133,10 +135,10 @@ export default function AddOrUpdateBachelor({
         duration: 5000,
         position: 'top-right',
       });
-      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+      queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
-    onError: (error: any) => {
-      toast.error('Cập nhật thất bại' + error.respone.data, {
+    onError: (error: unknown) => {
+      toast.error(getHttpErrorMessage(error, 'Cập nhật thất bại'), {
         duration: 3000,
         position: 'top-right',
       });

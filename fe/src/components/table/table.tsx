@@ -27,9 +27,9 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { Icon } from '../ui/icon';
 
 import TablePagination from './table-pagination';
-import LoaderData from '../loaderData';
-import FetchingError from '../fetchingError';
-import { safeIncludes } from '@/utils/checkIncludesString';
+import LoaderData from '../loader-data';
+import FetchingError from '../fetching-error';
+import { safeIncludes } from '@/lib/safe-includes';
 
 export type TableProps = {
   data: any[];

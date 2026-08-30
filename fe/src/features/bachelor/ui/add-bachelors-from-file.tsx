@@ -21,6 +21,8 @@ import React, { useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 
 import { createBachelors } from '@/features/bachelor/api/create-bachelors';
+import { bachelorKeys } from '@/features/bachelor/queries/bachelor-query-options';
+import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as XLSX from 'xlsx';
 import { Loader2 } from 'lucide-react';
@@ -49,7 +51,7 @@ const EXPECTED_HEADERS = [
  * - Loại ký tự không phải [a-z0-9_]
  * - Gộp nhiều _ thành một
  */
-const normalizeHeader = (s: any) =>
+const normalizeHeader = (s: unknown) =>
   String(s ?? '')
     .trim()
     .normalize('NFD')
@@ -261,14 +263,10 @@ export default function AddBachelorFromFile() {
       setOpen(false);
       setExcelData([]);
       if (inputRef.current) inputRef.current.value = '';
-      queryClient.invalidateQueries({ queryKey: ['bachelorList'] });
+      queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
-    onError: (error: any) => {
-      const msg =
-        error?.response?.data?.message ||
-        error?.response?.data ||
-        error?.message ||
-        'Không rõ lỗi';
+    onError: (error: unknown) => {
+      const msg = getHttpErrorMessage(error, 'Không rõ lỗi');
       toast.error('Thêm thất bại: ' + msg, {
         duration: 5000,
         position: 'top-right',

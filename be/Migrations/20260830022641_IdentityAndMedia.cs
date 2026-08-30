@@ -19,6 +19,10 @@ namespace FA23_Convocation2023_API.Migrations
                 name: "FK_Notification_Users_CreatedBy",
                 table: "Notification");
 
+            migrationBuilder.DropForeignKey(
+                name: "FK__Users__RoleID__49C3F6B7",
+                table: "Users");
+
             migrationBuilder.DropPrimaryKey(
                 name: "PK_Users",
                 table: "Users");
@@ -44,6 +48,13 @@ namespace FA23_Convocation2023_API.Migrations
                 name: "PK_LegacyRoles",
                 table: "LegacyRoles",
                 column: "RoleID");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK__Users__RoleID__49C3F6B7",
+                table: "LegacyUsers",
+                column: "RoleID",
+                principalTable: "LegacyRoles",
+                principalColumn: "RoleID");
 
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
@@ -384,6 +395,10 @@ namespace FA23_Convocation2023_API.Migrations
                 name: "FK_Notification_LegacyUsers_CreatedBy",
                 table: "Notification");
 
+            migrationBuilder.DropForeignKey(
+                name: "FK__Users__RoleID__49C3F6B7",
+                table: "LegacyUsers");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -439,6 +454,13 @@ namespace FA23_Convocation2023_API.Migrations
                 name: "PK_Roles",
                 table: "Roles",
                 column: "RoleID");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK__Users__RoleID__49C3F6B7",
+                table: "Users",
+                column: "RoleID",
+                principalTable: "Roles",
+                principalColumn: "RoleID");
 
             migrationBuilder.UpdateData(
                 table: "Users",

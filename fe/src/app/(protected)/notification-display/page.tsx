@@ -8,7 +8,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import type { Notification } from '@/features/notification/model/notification';
 import { useElevenLabsTTS } from '@/features/notification/ui/use-elevenlabs-tts';
 import { cn } from '@/lib/utils';
-import { useSignalRContext } from './SignalRContext';
+import { useSignalRContext } from './signal-r-context';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { activeHallSummaryQueryOptions } from '@/features/statistics/queries/active-hall-summary-query-options';
