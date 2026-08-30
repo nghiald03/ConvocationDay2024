@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using FA23_Convocation2023_API.Security;
 
 namespace FA23_Convocation2023_API.Controllers
 {
@@ -14,17 +15,20 @@ namespace FA23_Convocation2023_API.Controllers
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<DatabaseController> _logger;
+        private readonly IConfiguration _configuration;
 
-        public DatabaseController(IServiceProvider serviceProvider, ILogger<DatabaseController> logger)
+        public DatabaseController(IServiceProvider serviceProvider, ILogger<DatabaseController> logger, IConfiguration configuration)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
+            _configuration = configuration;
         }
 
         [HttpPost("reset-database")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageSystem)]
         public IActionResult ResetDatabase()
         {
+            if (!_configuration.GetValue<bool>("Operations:AllowDatabaseReset")) return NotFound();
             using (var scope = _serviceProvider.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<Convo24Context>();
@@ -37,6 +41,12 @@ namespace FA23_Convocation2023_API.Controllers
                     {
                         _logger.LogError("Database name is empty. Please check the connection string.");
                         return BadRequest("Invalid database name.");
+                    }
+
+                    if (!System.Text.RegularExpressions.Regex.IsMatch(databaseName, "^[A-Za-z0-9_]+$") ||
+                        Request.Headers["X-Confirm-Destructive"] != $"RESET {databaseName}")
+                    {
+                        return BadRequest(new { code = "operation/confirmation-required", expected = $"RESET {databaseName}" });
                     }
 
                     _logger.LogInformation($"Resetting database: {databaseName}");

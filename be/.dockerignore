@@ -1,0 +1,13 @@
+bin
+obj
+.vs
+TestResults
+coverage
+*.user
+*.log
+appsettings.json
+appsettings.Development.json
+.git
+.gitignore
+Dockerfile*
+README.md

@@ -4,27 +4,53 @@ services:
     container_name: sqlserverconvo
     hostname: database
     environment:
-      - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=YourStronggg@Passw0rd
+      ACCEPT_EULA: Y
+      MSSQL_SA_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the deployment secret store}
     ports:
-      - '1431:1433'
+      - '127.0.0.1:1431:1433'
     volumes:
       - sql_data:/var/opt/mssql
     restart: unless-stopped
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStronggg@Passw0rd -Q 'SELECT 1' -C",
-        ]
+      test: ['CMD-SHELL', '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C']
       interval: 15s
       timeout: 5s
-      retries: 3
+      retries: 5
       start_period: 60s
-    deploy:
-      resources:
-        limits:
-          memory: 8g
+
+  minio:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY in the deployment secret store}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?Set S3_SECRET_KEY in the deployment secret store}
+    volumes:
+      - minio_data:/data
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-07-21T05-28-08Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - >-
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
+        mc mb --ignore-existing local/convocation &&
+        mc anonymous set none local/convocation
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY in the deployment secret store}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?Set S3_SECRET_KEY in the deployment secret store}
+    restart: 'no'
 
   be:
     build:
@@ -32,52 +58,48 @@ services:
       dockerfile: Dockerfile
     container_name: backend
     ports:
-      - '88:80' # Expose ASP.NET Core service
-      - '89:443' # HTTPS port (optional)
+      - '127.0.0.1:88:80'
     environment:
-      - 'ConnectionStrings:DefaultConnection=Server=database,1433;Database=ConvocationDB;User Id=sa;Password=YourStronggg@Passw0rd;Encrypt=True;TrustServerCertificate=True;'
-      - ASPNETCORE_ENVIRONMENT=Production
+      ConnectionStrings__DefaultConnection: Server=database,1433;Database=ConvocationDB;User Id=sa;Password=${DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: 'true'
+      Cors__AllowedOrigins__0: ${APP_ORIGIN:-http://localhost:3001}
+      S3__Endpoint: http://minio:9000
+      S3__PublicEndpoint: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3__Bucket: convocation
+      S3__AccessKey: ${S3_ACCESS_KEY}
+      S3__SecretKey: ${S3_SECRET_KEY}
+      LegacyMedia__Roots__0: /legacy/image-api
+      LegacyMedia__Roots__1: /legacy/frontend
+    volumes:
+      - ./imageAPI/uploads:/legacy/image-api:ro
+      - ./fe/uploads:/legacy/frontend:ro
     depends_on:
       database:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   fe:
     build:
       context: ./fe
       dockerfile: Dockerfile
+      args:
+        API_URL: http://be/api
+        API_ORIGIN: http://be
     container_name: frontend
     ports:
-      - '3001:3000' # Cổng frontend
-
+      - '127.0.0.1:3001:3000'
     environment:
-      - NEXT_PUBLIC_SITE_URL=http://localhost:85
-      - API_URL=http://localhost:85/api
-      - NEXT_PUBLIC_URL_UPLOAD_IMAGE=http://localhost:3214
-      - NEXT_PUBLIC_SIGNALR_URL=http://localhost:85/chat-hub
-      - ELEVENLABS_API_KEY=sk_572f3059a7d2e53ccb63322315b0e97636a00683073658f4
-      - ELEVENLABS_VOICE_ID=A5w1fw5x0uXded1LDvZp
-
-    volumes:
-      - fe_uploads:/app/uploads
-      - fe_cache:/app/.cache/tts
-      - fe_data:/app/data
-
+      API_URL: http://be/api
+      API_ORIGIN: http://be
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
+    depends_on:
+      - be
     restart: unless-stopped
-  # apiimageupload:
-  #   build:
-  #     context: ./imageAPI
-  #     dockerfile: Dockerfile
-  #   container_name: apiimageupload
-  #   ports:
-  #     - '3214:3214'
-  #   volumes:
-  #     - ./imageAPI/uploads:/app/uploads # Gắn thư mục 'uploads'
-  #   depends_on:
-  #     - database
-  #   restart: unless-stopped
+
 volumes:
   sql_data:
-  fe_uploads:
-  fe_cache:
-  fe_data:
+  minio_data:

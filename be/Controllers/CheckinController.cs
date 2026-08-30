@@ -1,6 +1,7 @@
 ﻿using FA23_Convocation2023_API.DTO;
 using FA23_Convocation2023_API.Models;
 using FA23_Convocation2023_API.Services;
+using FA23_Convocation2023_API.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,7 +21,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("UpdateCheckin")]
-        [Authorize(Roles = "MN, CK")]
+        [Authorize(Policy = Permissions.CheckIn)]
         public async Task<IActionResult> UpdateCheckinAsync(CheckinRequest checkinRequest)
         {
             try
@@ -35,6 +36,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("UpdateCheckinStudentCode")]
+        [Authorize(Policy = Permissions.CheckIn)]
         public async Task<IActionResult> UpdateCheckinWithStudentCode(string studentCode)
         {
             try
@@ -49,7 +51,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Roles = "MN, CK")]
+        [Authorize(Policy = Permissions.CheckIn)]
         public async Task<IActionResult> GetAllCheckinAsync()
         {
             var result = await _checkInService.GetAllCheckinAsync();
@@ -62,7 +64,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("UncheckAll")]
-        [Authorize(Roles = "MN, CK")]
+        [Authorize(Policy = Permissions.CheckIn)]
         public async Task<IActionResult> UncheckAllCheckinAsync()
         {
             var result = await _checkInService.UncheckAllCheckinAsync();
@@ -74,7 +76,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpGet("GetAllStatusCheckin")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageBachelors)]
         public async Task<IActionResult> GetAllStatusCheckinAsync()
         {
             var statusCheckin = await _checkInService.GetAllStatusCheckinAsync();
@@ -87,7 +89,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("UpdateStatusCheckin")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageBachelors)]
         public async Task<IActionResult> UpdateStatusCheckinAsync(StatusCheckinRequest request)
         {
             try
@@ -121,7 +123,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         //create new checkin
         [HttpPost("CreateCheckin")]
-        [Authorize()]
+        [Authorize(Policy = Permissions.CheckIn)]
         public async Task<IActionResult> CreateCheckin(CreateCheckInRequest request)
         {
             var result = await _checkInService.CreateCheckinAsync(request.HallId, request.SessionId);

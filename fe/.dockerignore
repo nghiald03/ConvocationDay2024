@@ -1,0 +1,14 @@
+.next
+.cache
+node_modules
+coverage
+uploads
+*.log
+.env
+.env.*
+!.env.example
+tsconfig.tsbuildinfo
+.git
+.gitignore
+Dockerfile*
+README.md

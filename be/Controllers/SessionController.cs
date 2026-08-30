@@ -1,6 +1,7 @@
 ﻿using FA23_Convocation2023_API.DTO;
 using FA23_Convocation2023_API.Models;
 using FA23_Convocation2023_API.Services;
+using FA23_Convocation2023_API.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +22,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         //Create a new session
         [HttpPost("CreateSession")]
+        [Authorize(Policy = Permissions.ManageSessions)]
         public async Task<IActionResult> CreateSessionAsync([FromBody]CreateSessionRequest sessionRequest)
         { 
             var sessionExist = _sessionService.SessionExist(sessionRequest.SessionNum);
@@ -58,6 +60,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("UpdateStatusSession/{sessionId}")] // Update status session
+        [Authorize(Policy = Permissions.ManageSessions)]
         public async Task<IActionResult> UpdateStatusSessionAsync([FromRoute] int sessionId, [FromBody] UpdateSessionRequest updateRequest)
         {
             var result = await _sessionService.UpdateSessionAsync(sessionId, updateRequest.SessionNum, updateRequest.Description, updateRequest.SessionInDay);
@@ -70,6 +73,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpDelete("DeleteSession/{sessionId}")] // Delete session
+        [Authorize(Policy = Permissions.ManageSessions)]
         public async Task<IActionResult> DeleteSessionAsync([FromRoute] int sessionId)
         {
             var result = await _sessionService.DeleteSessionAsync(sessionId);
@@ -82,6 +86,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPost("AutoFillSessionInDay")] // Auto fill sessionInDay for a range of sessions
+        [Authorize(Policy = Permissions.ManageSessions)]
         public async Task<IActionResult> AutoFillSessionInDayAsync([FromBody] AutoFillSessionInDayRequest request)
         {
             if (request.FromSession > request.ToSession)

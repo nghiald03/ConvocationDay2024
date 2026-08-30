@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -67,7 +67,7 @@ namespace FA23_Convocation2023_API.Migrations
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "UserID", "Email", "FullName", "Password", "RoleID" },
-                values: new object[] { "4", "noticer@gmail.com", "Noticer", "123456", "4" });
+                values: new object[] { "4", "noticer@gmail.com", "Noticer", "RESET_REQUIRED", "4" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Notification_BroadcastBy",

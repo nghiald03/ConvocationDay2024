@@ -1,4 +1,4 @@
-﻿IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
+IF OBJECT_ID(N'[__EFMigrationsHistory]') IS NULL
 BEGIN
     CREATE TABLE [__EFMigrationsHistory] (
         [MigrationId] nvarchar(150) NOT NULL,
@@ -114,9 +114,9 @@ GO
 IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'UserID', N'Email', N'FullName', N'Password', N'RoleID') AND [object_id] = OBJECT_ID(N'[Users]'))
     SET IDENTITY_INSERT [Users] ON;
 INSERT INTO [Users] ([UserID], [Email], [FullName], [Password], [RoleID])
-VALUES ('1', 'mana@gmail.com', N'Mana', N'123456', '1'),
-('2', 'checkin@gmail.com', N'CheckIn', N'123456', '2'),
-('3', 'user@gmail.com', N'User', N'123456', '3');
+VALUES ('1', 'mana@gmail.com', N'Mana', N'RESET_REQUIRED', '1'),
+('2', 'checkin@gmail.com', N'CheckIn', N'RESET_REQUIRED', '2'),
+('3', 'user@gmail.com', N'User', N'RESET_REQUIRED', '3');
 IF EXISTS (SELECT * FROM [sys].[identity_columns] WHERE [name] IN (N'UserID', N'Email', N'FullName', N'Password', N'RoleID') AND [object_id] = OBJECT_ID(N'[Users]'))
     SET IDENTITY_INSERT [Users] OFF;
 GO

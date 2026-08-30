@@ -334,14 +334,24 @@ namespace FA23_Convocation2023_API.Services
             return true;
         }
         //delete all bachelor
-        public async Task<bool> DeleteAllBachelorAsync()
+        public async Task<int> DeleteAllBachelorAsync(string actorId)
         {
-            foreach (var bachelor in _context.Bachelors)
+            var bachelors = await _context.Bachelors.ToListAsync();
+            if (bachelors.Count > 0)
             {
-                _context.Bachelors.Remove(bachelor);
+                _context.Bachelors.RemoveRange(bachelors);
             }
+
+            _context.AuditEvents.Add(new AuditEvent
+            {
+                Action = "bachelors.delete_all",
+                ActorId = actorId,
+                TargetType = nameof(Bachelor),
+                TargetId = "all",
+                Details = $"deletedCount={bachelors.Count}"
+            });
             await _context.SaveChangesAsync();
-            return true;
+            return bachelors.Count;
         }
 
         //reset status of all bachelor

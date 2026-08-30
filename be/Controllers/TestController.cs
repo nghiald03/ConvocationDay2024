@@ -1,4 +1,6 @@
 ﻿using FA23_Convocation2023_API.Hubs;
+using FA23_Convocation2023_API.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -16,6 +18,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
         [HttpPost]
         [Route("test")]
+        [Authorize(Policy = Permissions.BroadcastNotifications)]
         public string Get()
         {
             List<string> test = new List<string>();

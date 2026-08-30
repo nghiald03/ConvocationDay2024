@@ -6,7 +6,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System;
 using FA23_Convocation2023_API.DTO;
+using FA23_Convocation2023_API.Security;
 using FA23_Convocation2023_API.Services;
+using System.Security.Claims;
 
 namespace FA23_Convocation2023_API.Controllers
 {
@@ -83,7 +85,7 @@ namespace FA23_Convocation2023_API.Controllers
 
 
         [HttpPost("Add")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageBachelors)]
         public async Task<IActionResult> AddBechelorAsync([FromBody] List<BachelorDTO> bachelorRequest)
         {
             var result = await _bachService.AddBachelorAsync(bachelorRequest);
@@ -104,7 +106,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("Update")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageBachelors)]
         public async Task<IActionResult> UpdateBachelorAsync(BachelorDTO bachelorRequest)
         {
             var hallExist = await _hallService.HallExist(bachelorRequest.HallName);
@@ -127,7 +129,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
         //update list bachelor by hallname and sessionnum
         [HttpPut("UpdateListBachelor/{hallId}/{sessionId}")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageBachelors)]
         public async Task<IActionResult> UpdateListBachelorAsync([FromBody] List<ListBachelor> bachelorRequest, [FromRoute] int hallId, [FromRoute] int sessionId)
         {
             var result = await _bachService.UpdateListBachelorAsync(bachelorRequest, hallId, sessionId);
@@ -140,7 +142,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpDelete("Delete/{StudentCode}")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageBachelors)]
         public async Task<IActionResult> DeleteBachelorAsync([FromRoute] string StudentCode)
         {
             var result = await _bachService.DeleteBachelorAsync(StudentCode);
@@ -163,19 +165,31 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpDelete("DeleteAll")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageBachelors)]
         public async Task<IActionResult> DeleteAllBachelorAsync()
         {
-            var result = await _bachService.DeleteAllBachelorAsync();
+            const string confirmation = "DELETE ALL BACHELORS";
+            if (Request.Headers["X-Confirm-Destructive"] != confirmation)
+            {
+                return BadRequest(new
+                {
+                    code = "operation/confirmation-required",
+                    expected = confirmation
+                });
+            }
+
+            var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown";
+            var deletedCount = await _bachService.DeleteAllBachelorAsync(actorId);
             return Ok(new
             {
                 status = StatusCodes.Status200OK,
-                message = "Delete all bachelor successfully!"
+                message = "Delete all bachelor successfully!",
+                deletedCount
             });
         }
 
         [HttpPut("ResetStatus")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageBachelors)]
         public async Task<IActionResult> ResetStatusAsync()
         {
             await _bachService.ResetStatusAsync();
@@ -215,7 +229,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         //update bachelor nếu đi trễ thì đẩy vào session tạm
         [HttpPut("UpdateBachelorToTempSession/{studentCode}")]
-        [Authorize(Roles = "MN, CK")]
+        [Authorize(Policy = Permissions.CheckIn)]
         public async Task<IActionResult> UpdateBachelorToTempSessionAsync([FromRoute] string studentCode, [FromBody] UpdateBachelorToTempSessionRequest request)
         {
             try
@@ -249,7 +263,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("TransferLateStudent")]
-        [Authorize(Roles = "MN, CK")]
+        [Authorize(Policy = Permissions.CheckIn)]
         public async Task<IActionResult> TransferLateStudentAsync([FromBody] TransferLateStudentRequest request)
         {
             try

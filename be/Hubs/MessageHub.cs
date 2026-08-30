@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using FA23_Convocation2023_API.Security;
 
 namespace FA23_Convocation2023_API.Hubs;
 
@@ -44,12 +45,14 @@ public sealed class MessageHub : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
+    [Authorize(Policy = Permissions.ControlLed)]
     public async Task SendMessage(string methodName, object data)
     {
         await Clients.All.SendAsync(methodName, data);
     }
 
     // Method for Managers to broadcast TTS notifications to Noticers
+    [Authorize(Policy = Permissions.ManageNotifications)]
     public async Task BroadcastTTSToNoticers(object notificationData)
     {
         var userRole = Context.User?.FindFirst(ClaimTypes.Role)?.Value;
@@ -72,12 +75,14 @@ public sealed class MessageHub : Hub
     }
 
     // Method to join/leave the Noticer group explicitly (for announcer systems)
+    [Authorize(Roles = "NO")]
     public async Task JoinNoticerGroup()
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, "NO");
         Console.WriteLine($"[SignalR DEBUG] Connection {Context.ConnectionId} explicitly joined NO group for notifications");
     }
 
+    [Authorize(Roles = "NO")]
     public async Task LeaveNoticerGroup()
     {
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, "NO");

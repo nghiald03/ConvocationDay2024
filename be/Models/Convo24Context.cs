@@ -4,10 +4,13 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using FA23_Convocation2023_API.Media;
 
 namespace FA23_Convocation2023_API.Models
 {
-    public partial class Convo24Context : DbContext
+    public partial class Convo24Context : IdentityDbContext<ApplicationUser, IdentityRole, string>
     {
 
         public Convo24Context(DbContextOptions<Convo24Context> options)
@@ -19,9 +22,12 @@ namespace FA23_Convocation2023_API.Models
         public virtual DbSet<CheckIn> CheckIns { get; set; }
         public virtual DbSet<Hall> Halls { get; set; }
         public virtual DbSet<Notification> Notifications { get; set; }
-        public virtual DbSet<Role> Roles { get; set; }
+        public virtual DbSet<Role> LegacyRoles { get; set; }
         public virtual DbSet<Session> Sessions { get; set; }
-        public virtual DbSet<User> Users { get; set; }
+        public virtual DbSet<User> LegacyUsers { get; set; }
+        public virtual DbSet<MediaAsset> MediaAssets { get; set; }
+        public virtual DbSet<LegacyMediaMapping> LegacyMediaMappings { get; set; }
+        public virtual DbSet<AuditEvent> AuditEvents { get; set; }
 
         // OnConfiguring removed - will use DI configuration from Program.cs
         //        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -29,6 +35,7 @@ namespace FA23_Convocation2023_API.Models
         //    => optionsBuilder.UseSqlServer("Data Source=db.fjourney.site;Initial Catalog=Convocation2023;User ID=sa;Password=<YourStrong@Passw0rda>;TrustServerCertificate=true;MultipleActiveResultSets=True");
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Session>().HasData(
         new Session { SessionId = 100, Session1 = 100 },
@@ -42,12 +49,12 @@ namespace FA23_Convocation2023_API.Models
         new Role { RoleId = "4", RoleName = "NO" }
     );
 
-            // Thêm dữ liệu mẫu cho bảng Users
+            // Legacy identities are retained only as migration sources. They have no usable password.
             modelBuilder.Entity<User>().HasData(
-                new User { UserId = "1", FullName = "Mana", Email = "mana@gmail.com", Password = "123456", RoleId = "1" },
-                new User { UserId = "2", FullName = "CheckIn", Email = "checkin@gmail.com", Password = "123456", RoleId = "2" },
-                new User { UserId = "3", FullName = "User", Email = "user@gmail.com", Password = "123456", RoleId = "3" },
-                new User { UserId = "4", FullName = "Noticer", Email = "noticer@gmail.com", Password = "123456", RoleId = "4" }
+                new User { UserId = "1", FullName = "Mana", Email = "mana@gmail.com", Password = "RESET_REQUIRED", RoleId = "1" },
+                new User { UserId = "2", FullName = "CheckIn", Email = "checkin@gmail.com", Password = "RESET_REQUIRED", RoleId = "2" },
+                new User { UserId = "3", FullName = "User", Email = "user@gmail.com", Password = "RESET_REQUIRED", RoleId = "3" },
+                new User { UserId = "4", FullName = "Noticer", Email = "noticer@gmail.com", Password = "RESET_REQUIRED", RoleId = "4" }
             );
             modelBuilder.Entity<Bachelor>(entity =>
             {
@@ -186,6 +193,41 @@ namespace FA23_Convocation2023_API.Models
                     .WithMany(p => p.Users)
                     .HasForeignKey(d => d.RoleId)
                     .HasConstraintName("FK__Users__RoleID__49C3F6B7");
+            });
+
+            modelBuilder.Entity<MediaAsset>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.ObjectKey).IsUnique();
+                entity.HasIndex(x => x.Sha256);
+                entity.HasIndex(x => new { x.OwnerType, x.OwnerId });
+                entity.Property(x => x.ObjectKey).HasMaxLength(512).IsRequired();
+                entity.Property(x => x.OriginalName).HasMaxLength(255).IsRequired();
+                entity.Property(x => x.ContentType).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.Sha256).HasMaxLength(64).IsRequired();
+                entity.Property(x => x.OwnerType).HasMaxLength(50).IsRequired();
+                entity.Property(x => x.OwnerId).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.UploadedBy).HasMaxLength(450).IsRequired();
+            });
+
+            modelBuilder.Entity<LegacyMediaMapping>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.OldPath).IsUnique();
+                entity.Property(x => x.OldPath).HasMaxLength(1024).IsRequired();
+                entity.Property(x => x.Sha256).HasMaxLength(64).IsRequired();
+                entity.HasOne(x => x.Media).WithMany().HasForeignKey(x => x.MediaId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<AuditEvent>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.CreatedAt);
+                entity.Property(x => x.Action).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.ActorId).HasMaxLength(450).IsRequired();
+                entity.Property(x => x.TargetType).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.TargetId).HasMaxLength(450).IsRequired();
+                entity.Property(x => x.Details).HasMaxLength(2000);
             });
 
             modelBuilder.Entity<Notification>(entity =>

@@ -1,6 +1,7 @@
 using FA23_Convocation2023_API.DTO;
 using FA23_Convocation2023_API.Models;
 using FA23_Convocation2023_API.Services;
+using FA23_Convocation2023_API.Security;
 using FA23_Convocation2023_API.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -53,8 +54,8 @@ namespace FA23_Convocation2023_API.Controllers
                     // Manually load related entities if needed
                     var hall = n.HallId.HasValue ? await _context.Halls.FindAsync(n.HallId.Value) : null;
                     var session = n.SessionId.HasValue ? await _context.Sessions.FindAsync(n.SessionId.Value) : null;
-                    var createdByUser = await _context.Users.FindAsync(n.CreatedBy);
-                    var broadcastByUser = !string.IsNullOrEmpty(n.BroadcastBy) ? await _context.Users.FindAsync(n.BroadcastBy) : null;
+                    var createdByUser = await _context.LegacyUsers.FindAsync(n.CreatedBy);
+                    var broadcastByUser = !string.IsNullOrEmpty(n.BroadcastBy) ? await _context.LegacyUsers.FindAsync(n.BroadcastBy) : null;
 
                     response.Add(new NotificationResponse
                     {
@@ -142,7 +143,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         // POST: api/Notification
         [HttpPost]
-        [Authorize(Roles = "MN,NO")] // Manager or Noticer can create
+        [Authorize(Policy = Permissions.ManageNotifications)]
         public async Task<ActionResult<NotificationResponse>> CreateNotification([FromBody] CreateNotificationRequest request)
         {
             try
@@ -176,7 +177,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         // PUT: api/Notification/{id}
         [HttpPut("{id}")]
-        [Authorize(Roles = "MN,NO")]
+        [Authorize(Policy = Permissions.ManageNotifications)]
         public async Task<ActionResult> UpdateNotification(int id, [FromBody] UpdateNotificationRequest request)
         {
             try
@@ -209,7 +210,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         // DELETE: api/Notification/{id}
         [HttpDelete("{id}")]
-        [Authorize(Roles = "MN")]
+        [Authorize(Policy = Permissions.ManageNotifications)]
         public async Task<ActionResult> DeleteNotification(int id)
         {
             try
@@ -230,7 +231,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         // POST: api/Notification/{id}/broadcast
         [HttpPost("{id}/start-broadcast")]
-        [Authorize(Roles = "NO,MN")] // Noticer and Manager can broadcast
+        [Authorize(Policy = Permissions.BroadcastNotifications)]
         public async Task<ActionResult> StartBroadcast(int id)
         {
             try
@@ -251,7 +252,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         // POST: api/Notification/{id}/complete
         [HttpPost("{id}/complete")]
-        [Authorize(Roles = "NO")]
+        [Authorize(Policy = Permissions.BroadcastNotifications)]
         public async Task<ActionResult> CompleteBroadcast(int id)
         {
             try
@@ -272,7 +273,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         // POST: api/Notification/{id}/cancel
         [HttpPost("{id}/cancel")]
-        [Authorize(Roles = "MN,NO")]
+        [Authorize(Policy = Permissions.ManageNotifications)]
         public async Task<ActionResult> CancelNotification(int id)
         {
             try
@@ -330,7 +331,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         // POST: api/Notification/{id}/broadcast
         [HttpPost("{id}/broadcast")]
-        [Authorize(Roles = "MN")] // Only Managers can broadcast
+        [Authorize(Policy = Permissions.BroadcastNotifications)]
         public async Task<IActionResult> BroadcastNotification(int id)
         {
             try

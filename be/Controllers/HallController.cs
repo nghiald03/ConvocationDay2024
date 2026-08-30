@@ -1,5 +1,7 @@
 ﻿using FA23_Convocation2023_API.DTO;
 using FA23_Convocation2023_API.Services;
+using FA23_Convocation2023_API.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,6 +20,7 @@ namespace FA23_Convocation2023_API.Controllers
 
         //Create a new hall
         [HttpPost("CreateHall")]
+        [Authorize(Policy = Permissions.ManageHalls)]
         public async Task<IActionResult> CreateHallAsync([FromBody]CreateHallRequest hallRequest)
         {
             var hallExist = await _hallService.HallExist(hallRequest.HallName);
@@ -58,6 +61,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpPut("UpdateHall/{hallId}")] // Update hall
+        [Authorize(Policy = Permissions.ManageHalls)]
         public async Task<IActionResult> UpdateHallAsync([FromRoute] int hallId, [FromBody] string hallName)
         {
             var result = await _hallService.UpdateHallAsync(hallId, hallName);
@@ -75,6 +79,7 @@ namespace FA23_Convocation2023_API.Controllers
         }
 
         [HttpDelete("DeleteHall/{hallId}")] // Delete hall
+        [Authorize(Policy = Permissions.ManageHalls)]
         public async Task<IActionResult> DeleteHallAsync([FromRoute] int hallId)
         {
             var result = await _hallService.DeleteHallAsync(hallId);

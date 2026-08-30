@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -27,9 +27,9 @@ namespace FA23_Convocation2023_API.Migrations
                 columns: new[] { "UserID", "Email", "FullName", "Password", "RoleID" },
                 values: new object[,]
                 {
-                    { "1", "mana@gmail.com", "Mana", "123456", "1" },
-                    { "2", "checkin@gmail.com", "CheckIn", "123456", "2" },
-                    { "3", "user@gmail.com", "User", "123456", "3" }
+                    { "1", "mana@gmail.com", "Mana", "RESET_REQUIRED", "1" },
+                    { "2", "checkin@gmail.com", "CheckIn", "RESET_REQUIRED", "2" },
+                    { "3", "user@gmail.com", "User", "RESET_REQUIRED", "3" }
                 });
         }
 

@@ -72,7 +72,7 @@ END
 IF NOT EXISTS (SELECT * FROM [Users] WHERE [UserID] = '4')
 BEGIN
     INSERT INTO [Users] ([UserID], [FullName], [Email], [Password], [RoleID])
-    VALUES ('4', 'Noticer', 'noticer@gmail.com', '123456', '4');
+    VALUES ('4', 'Noticer', 'noticer@gmail.com', 'RESET_REQUIRED', '4');
 END
 
 PRINT 'Notification system setup completed successfully!';

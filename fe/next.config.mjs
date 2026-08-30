@@ -1,5 +1,4 @@
 import nextra from 'nextra';
-import { hostname } from 'os';
 
 /** @type {import('next').NextConfig} */
 
@@ -7,7 +6,42 @@ const withNextra = nextra({
   theme: 'nextra-theme-docs',
   themeConfig: './theme.config.tsx',
 });
+const apiUrl = process.env.API_URL || 'http://localhost:88/api';
+const apiOrigin = process.env.API_ORIGIN || 'http://localhost:88';
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https: http:",
+  "font-src 'self' data:",
+  "media-src 'self' blob: https: http:",
+  "connect-src 'self' https: http: ws: wss:",
+  "upgrade-insecure-requests",
+].join('; ');
+
 const nextConfig = {
+  async rewrites() {
+    return [
+      { source: '/backend-api/:path*', destination: `${apiUrl}/:path*` },
+      { source: '/backend-hub/:path*', destination: `${apiOrigin}/chat-hub/:path*` },
+    ];
+  },
+  async headers() {
+    return [{
+      source: '/:path*',
+      headers: [
+        { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'Permissions-Policy', value: 'camera=(self), microphone=(), geolocation=()' },
+      ],
+    }];
+  },
   images: {
     remotePatterns: [
       {
@@ -57,9 +91,6 @@ const nextConfig = {
     ],
   },
   swcMinify: true,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   output: 'standalone',
 };
 
