@@ -20,6 +20,7 @@
     "migration": "tsx src/migration/cli.ts",
     "contract:export": "tsx scripts/export-openapi.ts",
     "fixture:sqlserver": "tsx scripts/create-sqlserver-fixture.ts",
+    "key:generate": "tsx scripts/generate-auth-secret.ts",
     "secrets:check": "bun ../scripts/secret-check.mjs",
     "verify": "bun run secrets:check && bun run lint && bun run typecheck && bun run test && bun run build && bun run drizzle:check"
   },

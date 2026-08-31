@@ -11,6 +11,14 @@ bun run drizzle:migrate
 bun run dev
 ```
 
+Tạo `BETTER_AUTH_SECRET` bằng bộ sinh số ngẫu nhiên mật mã rồi lưu kết quả vào `.env` cục bộ hoặc secret store:
+
+```bash
+bun run key:generate
+```
+
+Lệnh chỉ in một dòng `BETTER_AUTH_SECRET=...`; lệnh không tự tạo hoặc ghi đè file môi trường.
+
 API dùng prefix `/api`, Swagger ở `/api/docs`, liveness ở `/api/health/live`, readiness PostgreSQL + MinIO ở `/api/health/ready`, Socket.IO namespace `/events` với path `/socket.io`.
 
 ## Data migration

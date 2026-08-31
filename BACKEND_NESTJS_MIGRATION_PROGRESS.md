@@ -123,7 +123,22 @@ Lưu ý: sau các smoke test trên có thêm thay đổi cuối trong auth reset
 
 ## Việc còn lại — thực hiện theo thứ tự
 
+### Cập nhật phiên tiếp tục 2026-08-31
+
+- Đã khôi phục dependency backend/frontend đúng theo `bun.lock` và xác minh lại code hiện tại.
+- Backend đạt `secrets:check`, lint, typecheck, test (9 pass, 1 Socket.IO integration skip khi không có URL), build và `drizzle:check`.
+- Frontend đạt `secrets:check`, lint, typecheck, test (8 pass) và build production.
+- Đã audit các `ApiError`, Nest exception và Socket.IO acknowledgement chính; message trả frontend đang dùng tiếng Việt hoặc được global exception filter thay bằng message tiếng Việt an toàn.
+- Bulk media upload giờ rollback cả metadata PostgreSQL và object MinIO đã tạo trong cùng batch nếu một file phía sau thất bại; có unit test khóa hành vi bù trừ này.
+- Đã thêm contract test đối chiếu toàn bộ method/path trong inventory với OpenAPI, kiểm tra `vi-VN`, error envelope bắt buộc và route trùng lặp.
+- Đã loại bỏ message tiếng Anh còn sót trong cập nhật danh sách tân cử nhân và không còn đưa nguyên văn lỗi PostgreSQL vào `details.errorMessages` của bulk import.
+- Bộ test backend sau các bổ sung đạt 14 pass, 1 Socket.IO integration skip khi không có URL.
+- Đã thêm `bun run key:generate` để sinh `BETTER_AUTH_SECRET` 48 byte bằng CSPRNG, xuất dạng base64url và không tự ghi file môi trường.
+- `drizzle:check` từng lỗi `uv_os_get_passwd returned ENOMEM` trong sandbox giới hạn, nhưng chạy lại ngoài sandbox đã pass (`Everything's fine`).
+
 ### Ưu tiên 1: xác minh lại code hiện tại
+
+Hoàn tất trong phiên tiếp tục 2026-08-31. Giữ các lệnh dưới đây làm checklist hồi quy cho mọi thay đổi tiếp theo.
 
 ```powershell
 Set-Location F:\CODE\ConvocationDay2024\be-nest

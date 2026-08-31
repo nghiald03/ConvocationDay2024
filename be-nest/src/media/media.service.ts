@@ -49,6 +49,24 @@ export class MediaService {
     }
   }
 
+  async uploadMany(
+    files: Express.Multer.File[],
+    ownerType: string,
+    ownerId: string,
+    actorId: string,
+  ) {
+    const uploaded: (typeof mediaAssets.$inferSelect)[] = [];
+    try {
+      for (const file of files) {
+        uploaded.push(await this.upload(file, ownerType, ownerId, actorId));
+      }
+      return uploaded;
+    } catch (error) {
+      await Promise.allSettled(uploaded.map((asset) => this.rollbackUpload(asset)));
+      throw error;
+    }
+  }
+
   async get(id: string) {
     const [asset] = await this.database
       .select()
@@ -138,5 +156,12 @@ export class MediaService {
       });
     }
     return { type, id: ownerId };
+  }
+
+  private async rollbackUpload(asset: typeof mediaAssets.$inferSelect): Promise<void> {
+    await Promise.allSettled([
+      this.storage.delete(asset.objectKey),
+      this.database.delete(mediaAssets).where(eq(mediaAssets.id, asset.id)),
+    ]);
   }
 }

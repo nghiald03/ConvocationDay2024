@@ -5,6 +5,8 @@ import type { AppDatabase } from '../database/database.types.js';
 import { bachelors, checkIns, halls, sessions } from '../database/schema/domain-schema.js';
 import type { BachelorDto, BachelorListItemDto } from './dto/bachelor.dto.js';
 
+class BachelorImportError extends Error {}
+
 function pageResult<T>(items: T[], totalItems: number, currentPage: number, pageSize: number) {
   const totalPages = Math.ceil(totalItems / pageSize);
   return {
@@ -117,7 +119,7 @@ export class BachelorService {
             .from(bachelors)
             .where(sql`lower(${bachelors.studentCode}) = ${item.studentCode.toLowerCase()}`)
             .limit(1);
-          if (duplicate) throw new Error(`Tân cử nhân ${item.studentCode} đã tồn tại!`);
+          if (duplicate) throw new BachelorImportError(`Tân cử nhân ${item.studentCode} đã tồn tại!`);
 
           const hall = await this.findOrCreateHall(transaction, item.hallName);
           const session = await this.findOrCreateSession(
@@ -145,7 +147,11 @@ export class BachelorService {
           });
         });
       } catch (error) {
-        errors.push(error instanceof Error ? error.message : `Không thể thêm tân cử nhân ${item.studentCode}.`);
+        errors.push(
+          error instanceof BachelorImportError
+            ? error.message
+            : `Không thể thêm tân cử nhân ${item.studentCode}.`,
+        );
       }
     }
     return errors;
@@ -224,7 +230,7 @@ export class BachelorService {
             ),
           )
           .returning({ id: bachelors.id });
-        if (!rows.length) errors.push(`Bachelor ${item.studentCode} is not existed!`);
+        if (!rows.length) errors.push(`Tân cử nhân ${item.studentCode} không tồn tại!`);
       }
     });
     return errors;

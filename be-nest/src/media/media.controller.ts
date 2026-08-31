@@ -76,17 +76,13 @@ export class MediaController {
         message: 'Tổng dung lượng tải lên không được vượt quá 25 MB.',
       });
     }
-    const uploaded = [];
-    for (const file of files) {
-      const asset = await this.media.upload(
-        file,
-        ownerType ?? 'temp',
-        ownerId ?? actor.userId,
-        actor.userId,
-      );
-      uploaded.push(this.media.toDto(asset));
-    }
-    return uploaded;
+    const uploaded = await this.media.uploadMany(
+      files,
+      ownerType ?? 'temp',
+      ownerId ?? actor.userId,
+      actor.userId,
+    );
+    return uploaded.map((asset) => this.media.toDto(asset));
   }
 
   @Get(':id')
