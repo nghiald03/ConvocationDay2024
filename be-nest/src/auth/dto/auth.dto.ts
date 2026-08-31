@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
@@ -15,6 +15,11 @@ export class LoginDto {
   @MaxLength(128)
   @ApiProperty({ example: '<mật khẩu từ TEST_ACCOUNT_PASSWORD>', minLength: 1, maxLength: 128 })
   password!: string;
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({ example: true, required: false })
+  rememberMe?: boolean;
 }
 
 export class ChangePasswordDto {

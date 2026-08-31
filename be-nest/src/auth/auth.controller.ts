@@ -44,7 +44,12 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<ActorContext> {
-    const result = await this.auth.login(input.userName, input.password, request.headers);
+    const result = await this.auth.login(
+      input.userName,
+      input.password,
+      input.rememberMe === true,
+      request.headers,
+    );
     forwardSetCookies(result.headers, response);
     return result.data;
   }

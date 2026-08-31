@@ -38,7 +38,13 @@ Seed cũng tạo account cho đủ vai trò:
 - `user.test@convocation.local` (`US`)
 - `notify.test@convocation.local` (`NO`)
 
-Mật khẩu chung lấy từ `TEST_ACCOUNT_PASSWORD`; script Docker local tự sinh biến này trong env tạm ngoài repository. Không hard-code hoặc commit mật khẩu test.
+Mật khẩu chung lấy từ `TEST_ACCOUNT_PASSWORD`. Script Docker local tự sinh biến này cùng các secret development khác trong file `.env.development.local` tại thư mục gốc repository. Nếu env cũ trong thư mục tạm của hệ điều hành đã tồn tại, script sẽ sao chép nó sang vị trí mới để giữ tương thích với Docker volume hiện có. File mới đã được Git bỏ qua nên có thể mở trực tiếp để lấy mật khẩu test, nhưng không được commit nội dung file.
+
+Chỉ tạo hoặc bổ sung file development env mà không khởi động Docker:
+
+```powershell
+.\scripts\start-be-nest-docker.ps1 -GenerateEnvironmentOnly
+```
 
 API dùng prefix `/api`, Swagger ở `/api/docs`, liveness ở `/api/health/live`, readiness PostgreSQL + MinIO ở `/api/health/ready`, Socket.IO namespace `/events` với path `/socket.io`.
 

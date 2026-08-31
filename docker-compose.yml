@@ -112,7 +112,7 @@ services:
       DATABASE_URL: postgresql://convocation:${POSTGRES_PASSWORD}@postgres:5432/convocation_migration
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in the deployment secret store}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:8081}
-      TRUSTED_ORIGINS: ${APP_ORIGIN:-http://localhost:3001}
+      TRUSTED_ORIGINS: ${APP_ORIGIN:-http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001}
       S3_ENDPOINT: http://minio:9000
       S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
       S3_BUCKET: convocation

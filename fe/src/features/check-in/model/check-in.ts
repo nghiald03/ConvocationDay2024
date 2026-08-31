@@ -1,6 +1,7 @@
 export type CheckInBachelorInput = {
   studentCode: string;
   status: boolean;
+  cancellationConfirmation?: string;
 };
 
 export type CheckIn = {

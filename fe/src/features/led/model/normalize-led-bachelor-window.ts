@@ -2,9 +2,12 @@ import type { Bachelor } from '@/features/bachelor/model/bachelor';
 import type { LedBachelorWindow } from './led-bachelors';
 
 export type RawLedBachelorWindow = {
-  bachelor1: Bachelor | string | null;
-  bachelor2: Bachelor | string | null;
-  bachelor3: Bachelor | string | null;
+  bachelor1?: Bachelor | string | null;
+  bachelor2?: Bachelor | string | null;
+  bachelor3?: Bachelor | string | null;
+  Bachelor1?: Bachelor | string | null;
+  Bachelor2?: Bachelor | string | null;
+  Bachelor3?: Bachelor | string | null;
 };
 
 function normalizeBachelor(value: Bachelor | string | null) {
@@ -16,8 +19,8 @@ export function normalizeLedBachelorWindow(
 ): LedBachelorWindow | undefined {
   if (!value) return undefined;
   return {
-    bachelor1: normalizeBachelor(value.bachelor1),
-    bachelor2: normalizeBachelor(value.bachelor2),
-    bachelor3: normalizeBachelor(value.bachelor3),
+    bachelor1: normalizeBachelor(value.bachelor1 ?? value.Bachelor1 ?? null),
+    bachelor2: normalizeBachelor(value.bachelor2 ?? value.Bachelor2 ?? null),
+    bachelor3: normalizeBachelor(value.bachelor3 ?? value.Bachelor3 ?? null),
   };
 }

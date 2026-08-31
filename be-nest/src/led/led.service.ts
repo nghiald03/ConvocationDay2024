@@ -67,12 +67,14 @@ export class LedService {
       const selectedIndex =
         action === 'first'
           ? 0
-          : action === 'next'
-            ? currentIndex + 1
-            : action === 'previous'
-              ? currentIndex - 1
-              : currentIndex;
-      if (action !== 'first' && currentIndex < 0) {
+          : action === 'current' && currentIndex < 0
+            ? 0
+            : action === 'next'
+              ? currentIndex + 1
+              : action === 'previous'
+                ? currentIndex - 1
+                : currentIndex;
+      if (action !== 'first' && action !== 'current' && currentIndex < 0) {
         throw new BadRequestException('Không tìm thấy tân cử nhân đang được hiển thị.');
       }
       if (selectedIndex < 0 || selectedIndex >= rows.length) {
@@ -146,6 +148,9 @@ export class LedService {
       StatusBachelor: row.bachelorStatus,
       HallName: row.hallId,
       SessionNum: row.sessionId,
+      Chair: row.chair,
+      ChairParent: row.chairParent,
+      SessionInDay: row.sessionInDay,
     });
   }
 }

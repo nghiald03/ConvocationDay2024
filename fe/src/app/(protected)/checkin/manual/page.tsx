@@ -79,23 +79,18 @@ export default function ManualCheckinPage() {
   const [transferResult, setTransferResult] = useState<any | null>(null);
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
+  const bachelorListParams = useMemo(() => {
+    const params: BachelorListParams = { pageIndex, pageSize };
+    if (hall !== '-1') params.hall = hall;
+    if (session !== '-1') params.session = session;
+    if (searchTextQuery) params.search = searchTextQuery;
+    return params;
+  }, [hall, pageIndex, pageSize, searchTextQuery, session]);
+
   // ---- Fetch list, rút gọn queryFn
   const { data: bachelorDT, isLoading } = useQuery({
-    queryKey: [
-      'bachelorList',
-      pageIndex,
-      pageSize,
-      hall,
-      session,
-      searchTextQuery,
-    ],
-    queryFn: () => {
-      const params: BachelorListParams = { pageIndex, pageSize };
-      if (hall !== '-1') params.hall = hall;
-      if (session !== '-1') params.session = session;
-      if (searchTextQuery) params.search = searchTextQuery;
-      return getBachelors(params);
-    },
+    queryKey: bachelorKeys.list(bachelorListParams),
+    queryFn: () => getBachelors(bachelorListParams),
 
     refetchOnWindowFocus: false,
   });
@@ -216,27 +211,59 @@ export default function ManualCheckinPage() {
     async (row: any) => {
       const studentCode: string = row.studentCode;
 
+      const nextStatus = !row.checkIn;
+      const confirmationInput = document.createElement('input');
+      confirmationInput.className = 'swal-content__input';
+      confirmationInput.placeholder = studentCode;
+      confirmationInput.autocomplete = 'off';
+
       const confirm = await swal({
-        title: 'Checkin',
-        text: `Bạn có muốn checkin cho tân cử nhân ${row.fullName} không?`,
+        title: nextStatus ? 'Checkin' : 'Hủy checkin',
+        text: nextStatus
+          ? `Bạn có muốn checkin cho tân cử nhân ${row.fullName} không?`
+          : `Nhập đúng MSSV ${studentCode} để xác nhận hủy checkin cho ${row.fullName}.`,
         icon: 'warning',
-        buttons: ['Không', 'Checkin'],
-        dangerMode: true,
+        content: nextStatus ? undefined : (confirmationInput as any),
+        buttons: nextStatus ? ['Không', 'Checkin'] : ['Không', 'Hủy checkin'],
+        dangerMode: !nextStatus,
       });
 
       if (!confirm) return;
+
+      if (
+        !nextStatus &&
+        confirmationInput.value.trim().toLowerCase() !==
+          studentCode.toLowerCase()
+      ) {
+        toast.error('MSSV xác nhận không khớp. Đã giữ nguyên trạng thái checkin.', {
+          position: 'top-right',
+          duration: 4000,
+        });
+        return;
+      }
 
       // Disable switch của MSSV này
       setProcessingIds((prev) => new Set(prev).add(studentCode));
 
       try {
-        const nData = { studentCode, status: !row.checkIn };
+        const nData = {
+          studentCode,
+          status: nextStatus,
+          ...(nextStatus
+            ? {}
+            : { cancellationConfirmation: confirmationInput.value.trim() }),
+        };
         // Prefer explicit mutate + try/catch so we can handle specific 400 messages
         await checkinAction.mutateAsync(nData);
-        toast.success(`Checkin cho ${row.fullName} thành công`, {
+        toast.success(
+          nextStatus
+            ? `Checkin cho ${row.fullName} thành công`
+            : `Hủy checkin cho ${row.fullName} thành công`,
+          {
           position: 'top-right',
           duration: 3000,
-        });
+          }
+        );
       } catch (err: any) {
         const msg =
           err?.response?.data?.message ??

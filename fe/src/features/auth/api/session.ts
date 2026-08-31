@@ -6,7 +6,11 @@ export async function getSession() {
   return normalizeSessionUser(response.data);
 }
 
-export async function login(credentials: { userName: string; password: string }) {
+export async function login(credentials: {
+  userName: string;
+  password: string;
+  rememberMe: boolean;
+}) {
   const response = await httpClient.post<SessionUserPayload>('/auth/login', credentials);
   return normalizeSessionUser(response.data);
 }

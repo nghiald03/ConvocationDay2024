@@ -30,10 +30,11 @@ import {
 import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
 import { sessionQueryOptions } from '@/features/session/queries/session-query-options';
 import { Bachelor } from '@/features/bachelor/model/bachelor';
+import type { LedBachelorWindow } from '@/features/led/model/led-bachelors';
 import { Icon } from '@iconify/react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import {
   GraduationCap,
@@ -125,6 +126,7 @@ export default function McControllerPage() {
   const [bachelorCurrent, setBachelorCurrent] = useState<Bachelor | null>(null);
   const [bachelorBack, setBachelorBack] = useState<Bachelor | null>(null);
   const [bachelorNext, setBachelorNext] = useState<Bachelor | null>(null);
+  const [navigationCooldown, setNavigationCooldown] = useState(0);
 
   // ---- Fetch hall
   const { data: hallData, error: hallError } = useQuery(hallQueryOptions);
@@ -193,6 +195,16 @@ export default function McControllerPage() {
     window.localStorage.setItem('showPrevious', String(showPrevious));
   }, [showPrevious]);
 
+  useEffect(() => {
+    if (navigationCooldown <= 0) return;
+
+    const intervalId = window.setInterval(() => {
+      setNavigationCooldown((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [navigationCooldown]);
+
   const hallLabel = useMemo(() => {
     return (
       hallList.find((item) => item.value.toString() === hall.toString())
@@ -229,6 +241,23 @@ export default function McControllerPage() {
     };
   }, []);
 
+  const applyBachelorWindow = useCallback((payload?: LedBachelorWindow) => {
+    if (!payload) {
+      setBachelorBack(null);
+      setBachelorCurrent(null);
+      setBachelorNext(null);
+      return;
+    }
+
+    setBachelorBack(payload.bachelor1);
+    setBachelorCurrent(payload.bachelor2 || null);
+    setBachelorNext(payload.bachelor3);
+  }, []);
+
+  const startNavigationCooldown = useCallback(() => {
+    setNavigationCooldown(3);
+  }, []);
+
   // ---- Mutations
   const getBachelorCurrent = useMutation({
     mutationFn: async () => {
@@ -238,17 +267,7 @@ export default function McControllerPage() {
       return getCurrentLedBachelors(hall, session);
     },
     onSuccess: (data) => {
-      const payload = data;
-      if (!payload) {
-        setBachelorBack(null);
-        setBachelorCurrent(null);
-        setBachelorNext(null);
-        return;
-      }
-
-      setBachelorBack(payload.bachelor1);
-      setBachelorCurrent(payload.bachelor2 || null);
-      setBachelorNext(payload.bachelor3);
+      applyBachelorWindow(data);
     },
     onError: () => {
       toast.error('Có lỗi khi lấy dữ liệu. Vui lòng chọn hall/session khác!', {
@@ -314,9 +333,14 @@ export default function McControllerPage() {
       toast.error('Chưa chọn hall hoặc session', { duration: 3000 });
       return;
     }
-    getBachelor1st.mutate();
+    getBachelorCurrent.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hall, session]);
+
+  const isNavigationLocked =
+    navigationCooldown > 0 ||
+    getBachelorBack.isPending ||
+    getBachelorNext.isPending;
 
   return (
     <div className='min-h-screen p-4'>
@@ -564,13 +588,18 @@ export default function McControllerPage() {
                 <Button
                   size='lg'
                   variant='outline'
-                  disabled={!bachelorBack || getBachelorBack.isPending}
+                  disabled={!bachelorBack || isNavigationLocked}
                   onClick={() => {
-                    if (!getBachelorBack.isPending) getBachelorBack.mutate();
+                    if (isNavigationLocked) return;
+                    startNavigationCooldown();
+                    getBachelorBack.mutate();
                   }}
                   className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 px-6 py-6 text-base'
                 >
                   <ChevronLeft className='w-6 h-6 mr-2' />
+                  {navigationCooldown > 0 && (
+                    <span>({navigationCooldown}s)</span>
+                  )}
                   Quay lại
                 </Button>
 
@@ -584,12 +613,17 @@ export default function McControllerPage() {
                   size='lg'
                   variant='outline'
                   onClick={() => {
-                    if (!getBachelorNext.isPending) getBachelorNext.mutate();
+                    if (isNavigationLocked) return;
+                    startNavigationCooldown();
+                    getBachelorNext.mutate();
                   }}
-                  disabled={!bachelorNext || getBachelorNext.isPending}
+                  disabled={!bachelorNext || isNavigationLocked}
                   className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 px-6 py-6 text-base'
                 >
                   Tiếp theo
+                  {navigationCooldown > 0 && (
+                    <span>({navigationCooldown}s)</span>
+                  )}
                   <ChevronRight className='w-6 h-6 ml-2' />
                 </Button>
               </CardFooter>

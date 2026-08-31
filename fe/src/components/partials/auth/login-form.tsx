@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icon } from '@/components/ui/icon';
@@ -19,6 +20,8 @@ import Link from 'next/link';
 const schema = z.object({
   email: z.string().email({ message: 'Email bạn nhập không hợp lệ' }),
   password: z.string().min(4, { message: 'Mật khẩu phải có ít nhất 4 ký tự' }),
+}).extend({
+  rememberMe: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -147,16 +150,19 @@ const LoginForm = () => {
     register,
     handleSubmit,
     setError,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: 'all',
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', rememberMe: false },
   });
+  const rememberMe = watch('rememberMe');
 
   const loginMutation = useMutation({
-    mutationFn: ({ email, password }: FormValues) => {
-      const user = { userName: email, password };
+    mutationFn: ({ email, password, rememberMe }: FormValues) => {
+      const user = { userName: email, password, rememberMe };
       return login(user);
     },
     onSuccess: (user) => {
@@ -245,6 +251,27 @@ const LoginForm = () => {
           {errors.password.message}
         </div>
       )}
+
+      <div className='flex items-center gap-2'>
+        <Checkbox
+          id='rememberMe'
+          color='primary'
+          checked={rememberMe}
+          disabled={loginMutation.isPending}
+          onCheckedChange={(checked) => {
+            setValue('rememberMe', checked === true, {
+              shouldDirty: true,
+              shouldTouch: true,
+            });
+          }}
+        />
+        <Label
+          htmlFor='rememberMe'
+          className='cursor-pointer text-sm font-medium text-default-600'
+        >
+          Ghi nhớ đăng nhập
+        </Label>
+      </div>
 
       <Button
         fullWidth

@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Param,
   ParseIntPipe,
   Post,
@@ -57,7 +58,11 @@ export class CheckInController {
   @Put('UpdateCheckin')
   @RequirePermissions(Permission.CheckIn)
   checkIn(@Body() input: CheckInBachelorDto) {
-    return this.checkIns.checkInBachelor(input.studentCode, input.status);
+    return this.checkIns.checkInBachelor(
+      input.studentCode,
+      input.status,
+      input.cancellationConfirmation,
+    );
   }
 
   @Put('UpdateCheckinStudentCode')
@@ -78,7 +83,14 @@ export class CheckInController {
 
   @Put('UncheckAll')
   @RequirePermissions(Permission.CheckIn)
-  async uncheckAll() {
+  async uncheckAll(@Headers('x-confirm-destructive') confirmation: string | undefined) {
+    const expected = 'UNCHECK ALL BACHELORS';
+    if (confirmation !== expected) {
+      throw new BadRequestException({
+        code: 'checkin/destructive-confirmation-required',
+        message: `Hủy toàn bộ check-in yêu cầu header X-Confirm-Destructive: ${expected}.`,
+      });
+    }
     await this.checkIns.uncheckAll();
     return { status: 200, message: 'Hủy check-in của toàn bộ tân cử nhân thành công!' };
   }

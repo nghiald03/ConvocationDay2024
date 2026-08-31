@@ -1,9 +1,10 @@
 [CmdletBinding()]
 param(
-    [string]$FrontendOrigin = 'http://localhost:3001',
+    [string]$FrontendOrigin = 'http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001',
     [string]$EnvironmentFile,
     [string]$ProjectName = 'convocationday2024-nest',
     [int]$WaitTimeoutSeconds = 240,
+    [switch]$GenerateEnvironmentOnly,
     [switch]$NoBuild
 )
 
@@ -11,8 +12,10 @@ $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $composeFile = Join-Path $repositoryRoot 'docker-compose.yml'
+$usesDefaultEnvironmentFile = [string]::IsNullOrWhiteSpace($EnvironmentFile)
+$legacyEnvironmentFile = Join-Path ([IO.Path]::GetTempPath()) 'convocationday2024-be-nest.env'
 if ([string]::IsNullOrWhiteSpace($EnvironmentFile)) {
-    $EnvironmentFile = Join-Path ([IO.Path]::GetTempPath()) 'convocationday2024-be-nest.env'
+    $EnvironmentFile = Join-Path $repositoryRoot '.env.development.local'
 }
 $EnvironmentFile = [IO.Path]::GetFullPath($EnvironmentFile)
 $services = @('postgres', 'minio', 'minio-init', 'be-nest-migrate', 'be-nest')
@@ -45,7 +48,7 @@ function New-RandomHexSecret {
     return ([BitConverter]::ToString($bytes)).Replace('-', '').ToLowerInvariant()
 }
 
-function Write-TemporaryEnvironment {
+function Write-DevelopmentEnvironment {
     param([string]$Path)
 
     $parent = Split-Path -Parent $Path
@@ -80,11 +83,17 @@ function Write-TemporaryEnvironment {
 }
 
 if (-not (Test-Path -LiteralPath $EnvironmentFile)) {
-    Write-TemporaryEnvironment -Path $EnvironmentFile
-    Write-Host "Created temporary Docker environment: $EnvironmentFile" -ForegroundColor Green
+    if ($usesDefaultEnvironmentFile -and (Test-Path -LiteralPath $legacyEnvironmentFile)) {
+        Copy-Item -LiteralPath $legacyEnvironmentFile -Destination $EnvironmentFile
+        Write-Host "Copied the existing development environment to: $EnvironmentFile" -ForegroundColor Green
+    }
+    else {
+        Write-DevelopmentEnvironment -Path $EnvironmentFile
+        Write-Host "Created local development environment: $EnvironmentFile" -ForegroundColor Green
+    }
 }
 else {
-    Write-Host "Using existing temporary Docker environment: $EnvironmentFile"
+    Write-Host "Using existing local development environment: $EnvironmentFile"
 }
 
 if (-not (Select-String -LiteralPath $EnvironmentFile -Pattern '^TEST_ACCOUNT_PASSWORD=' -Quiet)) {
@@ -94,7 +103,7 @@ if (-not (Select-String -LiteralPath $EnvironmentFile -Pattern '^TEST_ACCOUNT_PA
         "TEST_ACCOUNT_PASSWORD=$testAccountPassword$([Environment]::NewLine)",
         [Text.UTF8Encoding]::new($false)
     )
-    Write-Host 'Added a generated test-account password to the temporary Docker environment.' -ForegroundColor Green
+    Write-Host 'Added a generated test-account password to the local development environment.' -ForegroundColor Green
 }
 
 if (-not (Select-String -LiteralPath $EnvironmentFile -Pattern '^BE_NEST_NODE_ENV=' -Quiet)) {
@@ -104,6 +113,11 @@ if (-not (Select-String -LiteralPath $EnvironmentFile -Pattern '^BE_NEST_NODE_EN
         [Text.UTF8Encoding]::new($false)
     )
     Write-Host 'Configured development cookies for the local NestJS container.' -ForegroundColor Green
+}
+
+if ($GenerateEnvironmentOnly) {
+    Write-Host "Development env is ready: $EnvironmentFile" -ForegroundColor Green
+    return
 }
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
@@ -164,7 +178,7 @@ try {
     Write-Host 'NestJS containers are ready; the frontend was not started.' -ForegroundColor Green
     Write-Host 'Backend: http://localhost:8081/api'
     Write-Host 'MinIO:   http://localhost:9000 (console: http://localhost:9001)'
-    Write-Host "Temporary env: $EnvironmentFile"
+    Write-Host "Development env: $EnvironmentFile"
     Write-Host 'Stop the stack with:'
     Write-Host "docker compose --project-name $ProjectName --env-file `"$EnvironmentFile`" --file `"$composeFile`" down"
 }

@@ -23,6 +23,16 @@ import { parseTrustedOrigins } from '../config/environment.js';
 type EventSocket = Socket<ClientToServerEvents, ServerToClientEvents, never, { actor: ActorContext }>;
 type Acknowledge = (result: { ok: boolean; message?: string }) => void;
 
+export function isLoopbackDevelopmentOrigin(origin: string, nodeEnvironment: string): boolean {
+  if (nodeEnvironment !== 'development') return false;
+  try {
+    const url = new URL(origin);
+    return ['localhost', '127.0.0.1'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 @WebSocketGateway({
   namespace: '/events',
   cors: { origin: true, credentials: true },
@@ -51,7 +61,12 @@ export class EventsGateway implements OnGatewayInit {
       try {
         const origin = socket.handshake.headers.origin;
         const trustedOrigins = parseTrustedOrigins(this.config.getOrThrow<string>('TRUSTED_ORIGINS'));
-        if (origin && !trustedOrigins.includes(origin)) {
+        const nodeEnvironment = this.config.get<string>('NODE_ENV', 'development');
+        if (
+          origin &&
+          !trustedOrigins.includes(origin) &&
+          !isLoopbackDevelopmentOrigin(origin, nodeEnvironment)
+        ) {
           const error = new Error('Nguồn kết nối realtime không được tin cậy.');
           Object.assign(error, { data: { code: 'auth/untrusted-origin' } });
           next(error);

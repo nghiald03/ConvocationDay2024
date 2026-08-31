@@ -23,6 +23,10 @@ import {
 import { Icon } from '@/components/ui/icon';
 import HallSessionPicker from '@/features/session/ui/hall-session-picker';
 import { getCurrentLedBachelors } from '@/features/led/api/get-led-bachelors';
+import {
+  isCurrentBachelorForSelection,
+  parseCurrentBachelorMessage,
+} from '@/features/led/model/parse-current-bachelor-message';
 import { Bachelor } from '@/features/bachelor/model/bachelor';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Image from 'next/image';
@@ -32,6 +36,22 @@ import { toast } from 'sonner';
 // === NEW: import hook
 import { useRealtime } from '@/lib/realtime/use-realtime';
 import SafeImage from '@/components/safe-image';
+
+function BachelorIdentityOverlay({ bachelor }: { bachelor: Bachelor }) {
+  return (
+    <div className='absolute left-4 top-4 z-10 max-w-[min(720px,calc(100%-2rem))] rounded bg-black px-4 py-3 text-white shadow-lg'>
+      <div className='truncate text-2xl font-bold leading-tight'>
+        {bachelor.fullName}
+      </div>
+      <div className='mt-1 flex flex-wrap gap-x-4 gap-y-1 text-base font-semibold'>
+        <span>MSSV: {bachelor.studentCode}</span>
+        {bachelor.chair ? <span>Ghế: {bachelor.chair}</span> : null}
+        <span>Hall: {bachelor.hallName}</span>
+        <span>Session: {bachelor.sessionNum}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function LedScreen() {
   const queryClient = useQueryClient();
@@ -55,6 +75,16 @@ export default function LedScreen() {
   // ref tới container ảnh (dùng Fullscreen API)
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // ========= SignalR via hook (NO GROUP JOIN) =========
+  const { connection, isConnected, connectionState, connectionError, startConnection } =
+    useRealtime({
+      endpoint: '/events',
+      autoConnect: false,
+      onConnectionStateChange: () => {
+        // the hook exposes connectionState for rendering/debugging
+      },
+    });
+
   // Persist selection
   useEffect(() => {
     if (hall) window.localStorage.setItem('hall', hall);
@@ -74,6 +104,7 @@ export default function LedScreen() {
       enabled: Boolean(hall && session),
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,
+      refetchInterval: isConnected ? false : 3000,
     }
   );
 
@@ -82,17 +113,6 @@ export default function LedScreen() {
       setBachelorCurrent(bachelorCurrentData?.bachelor2 || null);
     }
   }, [bachelorCurrentData]);
-
-  // ========= SignalR via hook (NO GROUP JOIN) =========
-  const { connection, isConnected, connectionState, startConnection } =
-    useRealtime({
-      endpoint: '/events',
-      autoConnect: false, // << quan trọng: không autoConnect để khỏi auto-join
-      onConnectionStateChange: (s) => {
-        // optional: log state changes
-        // console.log('[SignalR] state:', s);
-      },
-    });
 
   useEffect(() => {
     let mounted = true;
@@ -109,41 +129,22 @@ export default function LedScreen() {
   useEffect(() => {
     if (!connection) return;
 
-    const handler = (message: string) => {
-      const cleaned = message.replace(/^CurrentBachelor\s*/, '').trim();
-      const normalized = cleaned.replace(/\\?"/g, '"').replace(/,? *\}$/, '}');
-
+    const handler = (message: unknown) => {
       try {
-        const parsed = JSON.parse(normalized);
-        const bachelorData: Bachelor = {
-          image: parsed.Image,
-          fullName: parsed.FullName,
-          major: parsed.Major,
-          studentCode: parsed.StudentCode,
-          mail: parsed.Mail,
-          hallName: parsed.HallName,
-          sessionNum: parsed.SessionNum,
-          chair: parsed.Chair ?? null,
-          chairParent: parsed.ChairParent ?? null,
-        };
+        const bachelorData = parseCurrentBachelorMessage(message);
 
-        if (
-          String(bachelorData.hallName) === String(hall) &&
-          String(bachelorData.sessionNum) === String(session) &&
-          bachelorData.image
-        ) {
-          // 🧠 Cập nhật cache — chỉ re-render nếu khác
+        if (bachelorData && isCurrentBachelorForSelection(bachelorData, hall, session)) {
+          setBachelorCurrent(bachelorData);
           queryClient.setQueryData(queryKey, (old: any) => {
-            if (JSON.stringify(old) === JSON.stringify(bachelorData))
-              return old;
-            return { bachelor2: bachelorData };
+            const nextData = { bachelor2: bachelorData };
+            if (JSON.stringify(old) === JSON.stringify(nextData)) return old;
+            return nextData;
           });
         }
       } catch (e) {
         console.error('Error parsing SignalR payload', e, { message });
       }
     };
-
     connection.on('SendMessage', handler);
     return () => {
       connection.off('SendMessage', handler);
@@ -245,6 +246,11 @@ export default function LedScreen() {
               )}
             </AlertDescription>
           </Alert>
+
+          <div className='text-sm text-muted-foreground'>
+            Realtime: {isConnected ? 'connected' : connectionState}
+            {connectionError ? ` (${connectionError})` : null}
+          </div>
         </CardContent>
       </Card>
 
@@ -254,15 +260,18 @@ export default function LedScreen() {
           // Khi document ở chế độ fullscreen, hiển thị toàn màn như trước
           <div className='absolute inset-0 z-[999999999] bg-black flex items-center justify-center'>
             <Card className='w-[100vw] h-[100vh]'>
-              <CardContent className='p-0 w-[100vw] h-[100vh]'>
+              <CardContent className='relative p-0 w-[100vw] h-[100vh]'>
                 {bachelorCurrent?.image && (
-                  <SafeImage
-                    src={bachelorCurrent.image}
-                    alt='Mô tả hình ảnh'
-                    className='w-full h-full object-cover animate-fade-in animate-duration-1000'
-                    width={1920}
-                    height={1080}
-                  />
+                  <>
+                    <BachelorIdentityOverlay bachelor={bachelorCurrent} />
+                    <SafeImage
+                      src={bachelorCurrent.image}
+                      alt='Mô tả hình ảnh'
+                      className='w-full h-full object-cover animate-fade-in animate-duration-1000'
+                      width={1920}
+                      height={1080}
+                    />
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -273,7 +282,8 @@ export default function LedScreen() {
             // vẫn cho phép double click ở vùng này
             onDoubleClick={handleDoubleClick}
           >
-            <CardContent className='p-3'>
+            <CardContent className='relative p-3'>
+              <BachelorIdentityOverlay bachelor={bachelorCurrent} />
               <SafeImage
                 src={bachelorCurrent.image}
                 alt='Mô tả hình ảnh'
@@ -303,3 +313,4 @@ export default function LedScreen() {
     </>
   );
 }
+

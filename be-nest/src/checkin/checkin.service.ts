@@ -12,7 +12,11 @@ export class CheckInService {
     private readonly bachelorService: BachelorService,
   ) {}
 
-  async checkInBachelor(studentCode: string, status: boolean): Promise<string> {
+  async checkInBachelor(
+    studentCode: string,
+    status: boolean,
+    cancellationConfirmation?: string,
+  ): Promise<string> {
     return this.database.transaction(async (transaction) => {
       const [bachelor] = await transaction
         .select()
@@ -30,6 +34,15 @@ export class CheckInService {
         throw new BadRequestException(
           'Tân cử nhân đang được chiếu trên màn hình nên chưa thể cập nhật trạng thái check-in.',
         );
+      }
+      if (!status) {
+        const normalizedConfirmation = cancellationConfirmation?.trim().toLowerCase();
+        if (!bachelor.checkIn) {
+          throw new BadRequestException('Tân cử nhân này chưa check-in nên không thể hủy check-in.');
+        }
+        if (normalizedConfirmation !== bachelor.studentCode.toLowerCase()) {
+          throw new BadRequestException('Vui lòng nhập đúng MSSV để xác nhận hủy check-in.');
+        }
       }
       const [checkIn] = await transaction
         .select()

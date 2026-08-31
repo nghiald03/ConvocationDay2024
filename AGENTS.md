@@ -4,7 +4,15 @@ This file defines the repository-wide rules for AI coding agents. It applies to 
 
 ## Project overview
 
-This is a Next.js App Router frontend using:
+This repository is a multi-service graduation ceremony check-in system. The active services are:
+
+- `fe/`: Next.js App Router frontend
+- `be-nest/`: NestJS backend migration target
+- `be/`: legacy .NET backend
+- `mobile/`: mobile client
+- `imageAPI/`: image service
+
+The frontend in `fe/` uses:
 
 - Next.js and React with strict TypeScript
 - Bun as the only package manager and script runner
@@ -25,28 +33,39 @@ This is a Next.js App Router frontend using:
 
 ## Architecture
 
-Organize product behavior by feature:
+At the repository root, keep service code inside its owning service directory:
 
 ```text
-src/
-├── app/             # Routes, layouts, route handlers, app-level providers
-├── components/ui/   # shadcn/ui primitives
-├── features/        # Product feature modules
-│   └── <feature>/
-│       ├── api/     # Feature-owned HTTP operations
-│       ├── model/   # Types and domain rules
-│       ├── queries/ # TanStack Query definitions and hooks
-│       └── ui/      # Feature-owned UI
-├── hooks/           # Truly shared React hooks
-├── lib/             # Shared infrastructure and utilities
-└── stores/          # Shared Zustand stores
+fe/          # Next.js frontend
+be-nest/     # NestJS backend
+be/          # legacy .NET backend
+mobile/      # mobile client
+imageAPI/    # image service
+scripts/     # repository-level automation
+```
+
+Inside `fe/`, organize product behavior by feature:
+
+```text
+fe/src/
+|-- app/             # Routes, layouts, route handlers, app-level providers
+|-- components/ui/   # shadcn/ui primitives
+|-- features/        # Product feature modules
+|   `-- <feature>/
+|       |-- api/     # Feature-owned HTTP operations
+|       |-- model/   # Types and domain rules
+|       |-- queries/ # TanStack Query definitions and hooks
+|       `-- ui/      # Feature-owned UI
+|-- hooks/           # Truly shared React hooks
+|-- lib/             # Shared infrastructure and utilities
+`-- stores/          # Shared Zustand stores
 ```
 
 - Prefer deep modules: expose a small interface and keep implementation details local.
 - Do not add an abstraction, adapter, or seam unless behavior genuinely varies or multiple callers benefit from it.
 - Keep feature-specific code inside its feature. Move code to `lib`, `hooks`, or `stores` only when it is genuinely shared.
 - Import directly from the owning file. Do not introduce barrel files solely to shorten imports.
-- Respect the `@/*` alias for files under `src`.
+- Respect the `@/*` alias for files under `fe/src`.
 
 ## Data and state
 
@@ -54,7 +73,7 @@ src/
 - Treat cross-feature, client-only UI state as Zustand state.
 - Keep local interaction state in the closest React component when it does not need to be shared.
 - UI modules must not call Axios directly.
-- Put the shared Axios instance and transport concerns in `src/lib/http`.
+- Put the shared Axios instance and transport concerns in `fe/src/lib/http`.
 - Put each endpoint operation in its owning feature's `api` directory.
 - Put query keys and query/mutation definitions in the feature's `queries` directory.
 - Return typed response data from HTTP functions and preserve `unknown` at error boundaries until it is narrowed.
@@ -72,10 +91,10 @@ src/
 
 ## UI and styling
 
-- Reuse primitives from `src/components/ui` before creating new primitives.
+- Reuse primitives from `fe/src/components/ui` before creating new primitives.
 - **Do not hand-roll** a primitive that already exists on the shadcn registry. Add or refresh with `bunx --bun shadcn@latest add <component>`.
 - Agent-facing short form: `CLAUDE.md`.
-- Preserve Neutral admin tokens in `src/app/globals.css` (zinc/white canvas, bronze sole accent). Palette authority: `design.md`. Do not treat leftover `--navy`/`--beige` aliases as the live palette.
+- Preserve Neutral admin tokens in `fe/src/app/globals.css` (zinc/white canvas, bronze sole accent). Palette authority: `design.md`. Do not treat leftover `--navy`/`--beige` aliases as the live palette.
 - Style with semantic utilities such as `bg-background`, `text-foreground`, `bg-primary`, and `text-primary-foreground` instead of hard-coded colors.
 - Custom brand utilities such as `text-bronze` are allowed for explicitly branded surfaces.
 - Every visual change must work in both light and dark mode.
@@ -122,7 +141,7 @@ Use lowercase `kebab-case` for repository file and directory names unless a fram
 - Utilities: behavior-oriented names such as `get-error-message.ts` or `format-currency.ts`.
 - Tests: colocate as `<source-name>.test.ts` or `<source-name>.test.tsx`.
 - Stories, when present: `<source-name>.stories.tsx`.
-- Do not create vague files such as `helpers.ts`, `common.ts`, `misc.ts`, `types.ts`, or `utils.ts` inside feature modules. Name files after the behavior or concept they own. The existing shared `src/lib/utils.ts` is the shadcn compatibility exception.
+- Do not create vague files such as `helpers.ts`, `common.ts`, `misc.ts`, `types.ts`, or `utils.ts` inside feature modules. Name files after the behavior or concept they own. The existing shared `fe/src/lib/utils.ts` is the shadcn compatibility exception.
 
 ### Directories
 

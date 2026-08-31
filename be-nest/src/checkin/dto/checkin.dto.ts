@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsString, MinLength } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CheckInBachelorDto {
@@ -11,6 +11,11 @@ export class CheckInBachelorDto {
   @IsBoolean()
   @ApiProperty({ example: true })
   status!: boolean;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ example: 'TEST260001', required: false })
+  cancellationConfirmation?: string;
 }
 
 export class UpdateCheckInStatusDto {

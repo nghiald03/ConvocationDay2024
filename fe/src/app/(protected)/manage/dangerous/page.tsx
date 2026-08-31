@@ -14,6 +14,7 @@ export default function Page() {
   type Action = {
     description: string;
     action: string;
+    confirmationText?: string;
   };
   const dangerMutation = useMutation({
     mutationFn: (action: Action) => {
@@ -26,14 +27,32 @@ export default function Page() {
     },
   });
   const handleAction = (action: Action) => {
+    const confirmationInput = document.createElement('input');
+    confirmationInput.className = 'swal-content__input';
+    confirmationInput.autocomplete = 'off';
+    confirmationInput.placeholder = action.confirmationText ?? '';
+
     swal({
       title: action.description,
-      text: `Bạn có muốn ${action.description} không?`,
+      text: action.confirmationText
+        ? `Nhập chính xác "${action.confirmationText}" để tiếp tục.`
+        : `Bạn có muốn ${action.description} không?`,
       icon: 'warning',
+      content: action.confirmationText ? (confirmationInput as any) : undefined,
       buttons: ['Không', 'Thực hiện'],
       dangerMode: true,
     }).then((value) => {
       if (value) {
+        if (
+          action.confirmationText &&
+          confirmationInput.value.trim() !== action.confirmationText
+        ) {
+          toast.error('Xác nhận không khớp. Thao tác đã bị hủy.', {
+            duration: 4000,
+            position: 'top-right',
+          });
+          return;
+        }
         // checkinAction.mutate(data);
         toast.promise(
           dangerMutation.mutateAsync(action),
@@ -96,6 +115,7 @@ export default function Page() {
               handleAction({
                 description: 'Hủy toàn bộ dữ liệu checkin',
                 action: 'cancelAllCheckin',
+                confirmationText: 'HUY TOAN BO CHECKIN',
               });
             }}
           >

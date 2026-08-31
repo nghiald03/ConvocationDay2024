@@ -35,11 +35,34 @@ interface RegistryEntry {
 
 const registry = new Map<string, RegistryEntry>();
 
+export function resolveRealtimeTarget(endpoint: string): { url: string; path: string } {
+  const configuredOrigin = process.env.NEXT_PUBLIC_REALTIME_ORIGIN?.trim();
+  if (configuredOrigin) {
+    return {
+      url: `${configuredOrigin.replace(/\/$/, '')}${endpoint}`,
+      path: '/socket.io',
+    };
+  }
+
+  if (typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+    return {
+      url: `http://${window.location.hostname}:8081${endpoint}`,
+      path: '/socket.io',
+    };
+  }
+
+  return {
+    url: endpoint,
+    path: '/backend-events/socket.io',
+  };
+}
+
 function getEntry(key: string): RegistryEntry {
   const existing = registry.get(key);
   if (existing) return existing;
-  const socket = io('/events', {
-    path: '/backend-events/socket.io',
+  const target = resolveRealtimeTarget(key);
+  const socket = io(target.url, {
+    path: target.path,
     withCredentials: true,
     autoConnect: false,
     transports: ['websocket', 'polling'],
@@ -67,6 +90,7 @@ export function useRealtime<TBroadcast = unknown>({
 }: UseRealtimeOptions<TBroadcast> = {}) {
   const [connection, setConnection] = useState<RealtimeConnection | null>(null);
   const [connectionState, setConnectionState] = useState<RealtimeState>('Disconnected');
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const entryRef = useRef<RegistryEntry | null>(null);
   const stateCallbackRef = useRef(onConnectionStateChange);
   const broadcastCallbackRef = useRef(onTTSBroadcast);
@@ -85,6 +109,7 @@ export function useRealtime<TBroadcast = unknown>({
     setConnection(entry.connection);
     const socket = entry.connection.socket;
     if (socket.connected) {
+      setConnectionError(null);
       updateState('Connected');
       return true;
     }
@@ -92,8 +117,13 @@ export function useRealtime<TBroadcast = unknown>({
     socket.connect();
     return new Promise<boolean>((resolve) => {
       const timeout = window.setTimeout(() => { cleanup(); resolve(false); }, 10_000);
-      const connected = () => { cleanup(); updateState('Connected'); resolve(true); };
-      const failed = () => { cleanup(); updateState('Disconnected'); resolve(false); };
+      const connected = () => { cleanup(); setConnectionError(null); updateState('Connected'); resolve(true); };
+      const failed = (error: Error) => {
+        cleanup();
+        setConnectionError(error.message || 'Unable to connect realtime.');
+        updateState('Disconnected');
+        resolve(false);
+      };
       const cleanup = () => {
         window.clearTimeout(timeout);
         socket.off('connect', connected);
@@ -115,11 +145,19 @@ export function useRealtime<TBroadcast = unknown>({
       clearTimeout(entry.stopTimer);
       entry.stopTimer = null;
     }
-    const connected = () => updateState('Connected');
+    const connected = () => {
+      setConnectionError(null);
+      updateState('Connected');
+    };
     const reconnecting = () => updateState('Reconnecting');
     const disconnected = () => updateState(socket.active ? 'Reconnecting' : 'Disconnected');
+    const connectError = (error: Error) => {
+      setConnectionError(error.message || 'Unable to connect realtime.');
+      updateState(socket.active ? 'Reconnecting' : 'Disconnected');
+    };
     const broadcast = (data: TBroadcast) => broadcastCallbackRef.current?.(data);
     socket.on('connect', connected);
+    socket.on('connect_error', connectError);
     socket.io.on('reconnect_attempt', reconnecting);
     socket.on('disconnect', disconnected);
     socket.on('ReceiveTTSBroadcast', broadcast);
@@ -127,6 +165,7 @@ export function useRealtime<TBroadcast = unknown>({
 
     return () => {
       socket.off('connect', connected);
+      socket.off('connect_error', connectError);
       socket.io.off('reconnect_attempt', reconnecting);
       socket.off('disconnect', disconnected);
       socket.off('ReceiveTTSBroadcast', broadcast);
@@ -159,6 +198,7 @@ export function useRealtime<TBroadcast = unknown>({
   return {
     connection,
     connectionState,
+    connectionError,
     isConnected: connectionState === 'Connected',
     startConnection,
     stopConnection,

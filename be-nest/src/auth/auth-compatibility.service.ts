@@ -37,6 +37,7 @@ export class AuthCompatibilityService {
   async login(
     email: string,
     password: string,
+    rememberMe: boolean,
     headers: IncomingHttpHeaders,
   ): Promise<AuthResponse<ActorContext>> {
     const [user] = await this.database
@@ -52,7 +53,7 @@ export class AuthCompatibilityService {
 
     try {
       const result = await this.sessions.auth.api.signInEmail({
-        body: { email: user.email, password, rememberMe: false },
+        body: { email: user.email, password, rememberMe },
         headers: fromNodeHeaders(headers),
         returnHeaders: true,
       });

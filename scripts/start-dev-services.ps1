@@ -82,6 +82,7 @@ if (-not (Test-Path -LiteralPath $frontendEnvironmentFile)) {
         'API_URL=http://localhost:8081/api',
         'API_ORIGIN=http://localhost:8081',
         "NEXT_PUBLIC_APP_ORIGIN=$FrontendOrigin",
+        'NEXT_PUBLIC_REALTIME_ORIGIN=http://localhost:8081',
         'ELEVENLABS_API_KEY=',
         'ELEVENLABS_VOICE_ID='
     )
