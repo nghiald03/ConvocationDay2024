@@ -4,7 +4,7 @@ import {Badge} from '@/components/ui/badge';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import {Icon} from '@iconify/react';
 import {useEffect, useState} from 'react';
-import {useSignalR} from '@/lib/realtime/use-signal-r';
+import {useRealtime} from '@/lib/realtime/use-realtime';
 import SignalRProvider from './signal-r-context';
 import {toast} from 'sonner';
 import {useSession} from '@/features/auth/queries/session-provider';
@@ -16,7 +16,7 @@ export default function NotificationDisplayLayout({
 }) {
     const [userRole, setUserRole] = useState<string>('');
     const [sessionReady, setSessionReady] = useState(false);
-    const [hubUrl, setHubUrl] = useState<string>('/backend-hub');
+    const [hubUrl, setHubUrl] = useState<string>('/events');
     const [isFullscreen, setIsFullscreen] = useState(false);
     const session = useSession();
 
@@ -48,7 +48,7 @@ export default function NotificationDisplayLayout({
             }
 
             // Set default hub URL
-            setHubUrl('/backend-hub');
+            setHubUrl('/events');
         }
     }, [session]);
 
@@ -60,8 +60,8 @@ export default function NotificationDisplayLayout({
         connectionState,
         isConnected,
         startConnection,
-    } = useSignalR({
-        hubUrl: shouldInit ? hubUrl : '',
+    } = useRealtime({
+        endpoint: shouldInit ? hubUrl : '',
         autoConnect: !!shouldInit,
         onConnectionStateChange: (state) => {
             console.log('[SignalR State Change]', state);

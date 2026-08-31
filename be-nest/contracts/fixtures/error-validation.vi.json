@@ -1,0 +1,5 @@
+{
+  "code": "request/validation-failed",
+  "message": "Dữ liệu gửi lên không hợp lệ.",
+  "details": ["Trường email phải là địa chỉ email hợp lệ."]
+}

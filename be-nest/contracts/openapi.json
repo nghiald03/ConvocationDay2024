@@ -1,0 +1,1494 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/Database/reset-database": {
+      "post": {
+        "operationId": "DatabaseController_reset",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Database"
+        ]
+      }
+    },
+    "/api/auth/csrf": {
+      "get": {
+        "operationId": "AuthController_csrf",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/password": {
+      "post": {
+        "operationId": "AuthController_changePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/password/reset/request": {
+      "post": {
+        "operationId": "AuthController_requestReset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestPasswordResetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/password/reset/confirm": {
+      "post": {
+        "operationId": "AuthController_confirmReset",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmPasswordResetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/media/images": {
+      "post": {
+        "operationId": "MediaController_upload",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/api/media/images/bulk": {
+      "post": {
+        "operationId": "MediaController_uploadMany",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/api/media/{id}": {
+      "get": {
+        "operationId": "MediaController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media"
+        ]
+      },
+      "patch": {
+        "operationId": "MediaController_rename",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameMediaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media"
+        ]
+      },
+      "delete": {
+        "operationId": "MediaController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/api/media": {
+      "get": {
+        "operationId": "MediaController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media"
+        ]
+      },
+      "delete": {
+        "operationId": "MediaController_deleteMany",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteMediaDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/api/media/{id}/download": {
+      "get": {
+        "operationId": "MediaController_download",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/api/media/{id}/content": {
+      "get": {
+        "operationId": "MediaController_content",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/api/Hall/CreateHall": {
+      "post": {
+        "operationId": "HallController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateHallDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "hall"
+        ]
+      }
+    },
+    "/api/Hall/GetAll": {
+      "get": {
+        "operationId": "HallController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "hall"
+        ]
+      }
+    },
+    "/api/Hall/UpdateHall/{hallId}": {
+      "put": {
+        "operationId": "HallController_update",
+        "parameters": [
+          {
+            "name": "hallId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "hall"
+        ]
+      }
+    },
+    "/api/Hall/DeleteHall/{hallId}": {
+      "delete": {
+        "operationId": "HallController_delete",
+        "parameters": [
+          {
+            "name": "hallId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "hall"
+        ]
+      }
+    },
+    "/api/Session/CreateSession": {
+      "post": {
+        "operationId": "SessionController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/api/Session/GetAll": {
+      "get": {
+        "operationId": "SessionController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/api/Session/UpdateStatusSession/{sessionId}": {
+      "put": {
+        "operationId": "SessionController_update",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/api/Session/DeleteSession/{sessionId}": {
+      "delete": {
+        "operationId": "SessionController_delete",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/api/Session/AutoFillSessionInDay": {
+      "post": {
+        "operationId": "SessionController_autoFill",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoFillSessionInDayDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "session"
+        ]
+      }
+    },
+    "/api/Statistics/active-halls-summary": {
+      "get": {
+        "operationId": "StatisticsController_activeHallSummary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "statistics"
+        ]
+      }
+    },
+    "/api/Statistics/hall-overview": {
+      "get": {
+        "operationId": "StatisticsController_hallOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "statistics"
+        ]
+      }
+    },
+    "/api/Bachelor/search": {
+      "get": {
+        "operationId": "BachelorController_search",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/GetAll": {
+      "get": {
+        "operationId": "BachelorController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/Add": {
+      "post": {
+        "operationId": "BachelorController_add",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/Update": {
+      "put": {
+        "operationId": "BachelorController_update",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BachelorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/UpdateListBachelor/{hallId}/{sessionId}": {
+      "put": {
+        "operationId": "BachelorController_updateMany",
+        "parameters": [
+          {
+            "name": "hallId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/Delete/{studentCode}": {
+      "delete": {
+        "operationId": "BachelorController_delete",
+        "parameters": [
+          {
+            "name": "studentCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/DeleteAll": {
+      "delete": {
+        "operationId": "BachelorController_deleteAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/ResetStatus": {
+      "put": {
+        "operationId": "BachelorController_resetStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/GetByHallSession/{hallId}/{sessionId}": {
+      "get": {
+        "operationId": "BachelorController_byHallSession",
+        "parameters": [
+          {
+            "name": "hallId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/UpdateBachelorToTempSession/{studentCode}": {
+      "put": {
+        "operationId": "BachelorController_moveToTemporary",
+        "parameters": [
+          {
+            "name": "studentCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveToTemporarySessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Bachelor/TransferLateStudent": {
+      "put": {
+        "operationId": "BachelorController_transferLateStudent",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferLateStudentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "bachelor"
+        ]
+      }
+    },
+    "/api/Checkin/UpdateCheckin": {
+      "put": {
+        "operationId": "CheckInController_checkIn",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInBachelorDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/UpdateCheckinStudentCode": {
+      "put": {
+        "operationId": "CheckInController_checkInByStudentCode",
+        "parameters": [
+          {
+            "name": "studentCode",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/GetAll": {
+      "get": {
+        "operationId": "CheckInController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/UncheckAll": {
+      "put": {
+        "operationId": "CheckInController_uncheckAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/GetAllStatusCheckin": {
+      "get": {
+        "operationId": "CheckInController_statuses",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/UpdateStatusCheckin": {
+      "put": {
+        "operationId": "CheckInController_updateStatus",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCheckInStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/GetCountCheckin": {
+      "get": {
+        "operationId": "CheckInController_counts",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/CreateCheckin": {
+      "post": {
+        "operationId": "CheckInController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckInDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/GetListBachelorNotCheckin": {
+      "get": {
+        "operationId": "CheckInController_notCheckedIn",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/GetListBachelorNotCheckinV2": {
+      "get": {
+        "operationId": "CheckInController_notCheckedInPaginated",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/GetCheckinStatusFalse": {
+      "get": {
+        "operationId": "CheckInController_closedStatuses",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/GetStudentsNotCheckedInOpenSessions": {
+      "get": {
+        "operationId": "CheckInController_notCheckedInOpen",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/by-hall/{hallId}": {
+      "get": {
+        "operationId": "CheckInController_byHall",
+        "parameters": [
+          {
+            "name": "hallId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Checkin/by-hall-name": {
+      "get": {
+        "operationId": "CheckInController_byHallName",
+        "parameters": [
+          {
+            "name": "hallName",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "check-in"
+        ]
+      }
+    },
+    "/api/Notification": {
+      "get": {
+        "operationId": "NotificationController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      },
+      "post": {
+        "operationId": "NotificationController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/api/Notification/pending": {
+      "get": {
+        "operationId": "NotificationController_pending",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/api/Notification/{id}": {
+      "get": {
+        "operationId": "NotificationController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      },
+      "put": {
+        "operationId": "NotificationController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      },
+      "delete": {
+        "operationId": "NotificationController_delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/api/Notification/{id}/start-broadcast": {
+      "post": {
+        "operationId": "NotificationController_startBroadcast",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/api/Notification/{id}/complete": {
+      "post": {
+        "operationId": "NotificationController_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/api/Notification/{id}/cancel": {
+      "post": {
+        "operationId": "NotificationController_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/api/Notification/{id}/broadcast": {
+      "post": {
+        "operationId": "NotificationController_broadcast",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "notification"
+        ]
+      }
+    },
+    "/api/Mc/GetLocationBachelor": {
+      "get": {
+        "operationId": "LedController_location",
+        "parameters": [
+          {
+            "name": "studentCode",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "led"
+        ]
+      }
+    },
+    "/api/Mc/GetAllLocationBachelor": {
+      "get": {
+        "operationId": "LedController_allLocations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "led"
+        ]
+      }
+    },
+    "/api/Mc/GetBachelor1st": {
+      "get": {
+        "operationId": "LedController_first",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "led"
+        ]
+      }
+    },
+    "/api/Mc/GetBachelorNext": {
+      "get": {
+        "operationId": "LedController_next",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "led"
+        ]
+      }
+    },
+    "/api/Mc/GetBachelorBack": {
+      "get": {
+        "operationId": "LedController_previous",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "led"
+        ]
+      }
+    },
+    "/api/Mc/GetBachelorCurrent": {
+      "get": {
+        "operationId": "LedController_current",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "led"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Convocation Day API",
+    "description": "NestJS compatibility API for the Convocation Day frontend",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "better-auth.session_token"
+      }
+    },
+    "schemas": {
+      "LoginDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RequestPasswordResetDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ConfirmPasswordResetDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RenameMediaDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "DeleteMediaDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateHallDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateSessionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateSessionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "AutoFillSessionInDayDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "BachelorDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MoveToTemporarySessionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "TransferLateStudentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CheckInBachelorDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateCheckInStatusDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateCheckInDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "NotificationDto": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 // src/hooks/useRealtimeSession.ts
 
-import { useSignalR } from '@/lib/realtime/use-signal-r';
+import { useRealtime } from '@/lib/realtime/use-realtime';
 import { useEffect, useState } from 'react';
 
 /**
@@ -11,10 +11,9 @@ export function useRealtimeSession() {
   const [isSessionReady, setIsSessionReady] = useState(false);
 
   // Khởi tạo SignalR (chỉ cần kết nối 1 lần)
-  const { connection, startConnection } = useSignalR({
-    hubUrl: '/backend-hub',
+  const { connection, startConnection } = useRealtime({
+    endpoint: '/events',
     autoConnect: false,
-    forceWebsockets: true,
   });
 
   // Tự động kết nối

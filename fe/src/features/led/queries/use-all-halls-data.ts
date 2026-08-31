@@ -3,7 +3,7 @@
 import { getCurrentLedBachelors } from '@/features/led/api/get-led-bachelors';
 import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
 import { Bachelor } from '@/features/bachelor/model/bachelor';
-import { useSignalR } from '@/lib/realtime/use-signal-r';
+import { useRealtime } from '@/lib/realtime/use-realtime';
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useEffect } from 'react';
 
@@ -46,10 +46,9 @@ export function useAllHallsData(): UseAllHallsDataResult {
 
   const ALL_HALLS = useMemo(() => hallListRes || [], [hallListRes]); // --- SignalR Connection ---
 
-  const { connection, isConnected, startConnection } = useSignalR({
-    hubUrl: '/backend-hub',
+  const { connection, isConnected, startConnection } = useRealtime({
+    endpoint: '/events',
     autoConnect: false,
-    forceWebsockets: true,
   });
 
   useEffect(() => {

@@ -30,7 +30,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 import { useElevenLabsTTS } from '@/features/notification/ui/use-elevenlabs-tts';
-import { useSignalR } from '@/lib/realtime/use-signal-r';
+import { useRealtime } from '@/lib/realtime/use-realtime';
 import { createNotification } from '@/features/notification/api/create-notification';
 import type { CreateNotificationRequest } from '@/features/notification/model/notification';
 import toast from 'react-hot-toast';
@@ -181,10 +181,9 @@ export default function NotifyMockPage() {
   // ================== Access Token từ localStorage ==================
   // ================== SignalR (tự connect + tự join group trong hook) ==================
   const { connection, connectionState, isConnected } =
-    useSignalR<BackendNotification>({
-    hubUrl: '/backend-hub',
+    useRealtime<BackendNotification>({
+    endpoint: '/events',
     autoConnect: true,
-    forceWebsockets: true, // BE đã hỗ trợ WS → tránh negotiate
     stopDelayMs: 3000,
     onTTSBroadcast: (data) => {
       const msg = transformBackendNotification(data);

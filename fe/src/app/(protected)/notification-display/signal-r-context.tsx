@@ -1,12 +1,12 @@
 'use client';
 
 import { createContext, useContext, type ReactNode } from 'react';
-import { HubConnection } from '@microsoft/signalr';
+import type { RealtimeConnection } from '@/lib/realtime/use-realtime';
 
 interface SignalRContextType {
     isConnected: boolean;
     connectionState: string;
-    connection: HubConnection | null;
+    connection: RealtimeConnection | null;
     isFullscreen: boolean;
     toggleFullscreen: () => void;
 }
@@ -32,7 +32,7 @@ const SignalRProvider = ({
     children: ReactNode;
     isConnected: boolean;
     connectionState: string;
-    connection: HubConnection | null;
+    connection: RealtimeConnection | null;
     isFullscreen: boolean;
     toggleFullscreen: () => void;
 }) => {

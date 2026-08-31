@@ -30,7 +30,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 // === NEW: import hook
-import { useSignalR } from '@/lib/realtime/use-signal-r';
+import { useRealtime } from '@/lib/realtime/use-realtime';
 import SafeImage from '@/components/safe-image';
 
 export default function LedScreen() {
@@ -85,10 +85,9 @@ export default function LedScreen() {
 
   // ========= SignalR via hook (NO GROUP JOIN) =========
   const { connection, isConnected, connectionState, startConnection } =
-    useSignalR({
-      hubUrl: '/backend-hub',
+    useRealtime({
+      endpoint: '/events',
       autoConnect: false, // << quan trọng: không autoConnect để khỏi auto-join
-      forceWebsockets: true, // tuỳ server; để ổn định có thể bật WS
       onConnectionStateChange: (s) => {
         // optional: log state changes
         // console.log('[SignalR] state:', s);

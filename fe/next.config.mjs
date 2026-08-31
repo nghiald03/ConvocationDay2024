@@ -28,7 +28,7 @@ const nextConfig = {
   async rewrites() {
     return [
       { source: '/backend-api/:path*', destination: `${apiUrl}/:path*` },
-      { source: '/backend-hub/:path*', destination: `${apiOrigin}/chat-hub/:path*` },
+      { source: '/backend-events/:path*', destination: `${apiOrigin}/:path*` },
     ];
   },
   async headers() {

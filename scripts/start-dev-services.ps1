@@ -13,7 +13,7 @@ $composeFile = Join-Path $repositoryRoot 'docker-compose.yml'
 $frontendDirectory = Join-Path $repositoryRoot 'fe'
 $rootEnvironmentFile = Join-Path $repositoryRoot '.env'
 $frontendEnvironmentFile = Join-Path $frontendDirectory '.env.local'
-$services = @('database', 'minio', 'minio-init', 'be')
+$services = @('postgres', 'minio', 'minio-init', 'be-nest')
 
 function New-RandomBase64Secret {
     param([int]$ByteCount = 32)
@@ -57,11 +57,15 @@ if (-not (Test-Path -LiteralPath $rootEnvironmentFile)) {
     $databasePassword = 'Dev1!' + (New-RandomBase64Secret -ByteCount 24)
     $storageAccessKey = 'dev' + (New-RandomHexSecret -ByteCount 12)
     $storageSecretKey = New-RandomBase64Secret -ByteCount 32
+    $postgresPassword = 'Pg1!' + (New-RandomBase64Secret -ByteCount 24)
+    $betterAuthSecret = New-RandomBase64Secret -ByteCount 48
 
     Write-Utf8EnvironmentFile -Path $rootEnvironmentFile -Lines @(
         "DB_PASSWORD=$databasePassword",
         "S3_ACCESS_KEY=$storageAccessKey",
         "S3_SECRET_KEY=$storageSecretKey",
+        "POSTGRES_PASSWORD=$postgresPassword",
+        "BETTER_AUTH_SECRET=$betterAuthSecret",
         'S3_PUBLIC_ENDPOINT=http://localhost:9000',
         "APP_ORIGIN=$FrontendOrigin",
         'ELEVENLABS_API_KEY=',
@@ -75,8 +79,8 @@ else {
 
 if (-not (Test-Path -LiteralPath $frontendEnvironmentFile)) {
     Write-Utf8EnvironmentFile -Path $frontendEnvironmentFile -Lines @(
-        'API_URL=http://localhost:88/api',
-        'API_ORIGIN=http://localhost:88',
+        'API_URL=http://localhost:8081/api',
+        'API_ORIGIN=http://localhost:8081',
         "NEXT_PUBLIC_APP_ORIGIN=$FrontendOrigin",
         'ELEVENLABS_API_KEY=',
         'ELEVENLABS_VOICE_ID='
@@ -119,7 +123,7 @@ try {
         throw 'Docker development services failed to start.'
     }
 
-    $healthUrl = 'http://localhost:88/health'
+    $healthUrl = 'http://localhost:8081/api/health/ready'
     $deadline = (Get-Date).AddSeconds($WaitTimeoutSeconds)
     Write-Host "Waiting for backend health at $healthUrl..."
 
@@ -133,20 +137,20 @@ try {
         catch {
             if ((Get-Date) -ge $deadline) {
                 & docker compose --file $composeFile ps
-                & docker compose --file $composeFile logs --tail 100 be
+                & docker compose --file $composeFile logs --tail 100 be-nest
                 throw "Backend did not become healthy within $WaitTimeoutSeconds seconds."
             }
             Start-Sleep -Seconds 2
         }
     } while ((Get-Date) -lt $deadline)
 
-    & docker compose --file $composeFile ps database minio minio-init be
+    & docker compose --file $composeFile ps postgres minio minio-init be-nest
 
     Write-Host ''
     Write-Host 'Docker development services are ready.' -ForegroundColor Green
-    Write-Host 'SQL schema:   migrated automatically by the backend'
-    Write-Host 'Backend:      http://localhost:88'
-    Write-Host 'Backend API:  http://localhost:88/api'
+    Write-Host 'PostgreSQL schema: migrated by the separate be-nest-migrate job'
+    Write-Host 'Backend:      http://localhost:8081'
+    Write-Host 'Backend API:  http://localhost:8081/api'
     Write-Host 'MinIO API:    http://localhost:9000'
     Write-Host 'MinIO Console: http://localhost:9001'
     Write-Host "Frontend CORS origin: $FrontendOrigin"
@@ -156,12 +160,12 @@ try {
     Write-Host '  bun run dev'
     Write-Host ''
     Write-Host 'Stop Docker services later with:'
-    Write-Host "  docker compose --file '$composeFile' stop database minio be"
+    Write-Host "  docker compose --file '$composeFile' stop postgres minio be-nest"
 
     if ($FollowLogs) {
         Write-Host ''
         Write-Host 'Following backend logs. Press Ctrl+C to stop following logs; containers remain running.'
-        & docker compose --file $composeFile logs --follow be
+        & docker compose --file $composeFile logs --follow be-nest
     }
 }
 finally {

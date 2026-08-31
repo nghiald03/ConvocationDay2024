@@ -2,7 +2,7 @@
 
 import { getCurrentLedBachelors } from '@/features/led/api/get-led-bachelors';
 import { Bachelor } from '@/features/bachelor/model/bachelor';
-import { useSignalR } from '@/lib/realtime/use-signal-r';
+import { useRealtime } from '@/lib/realtime/use-realtime';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, useMemo } from 'react';
 
@@ -32,10 +32,9 @@ export function useBachelorData(
 
   // 1. SignalR setup
   const { connection, isConnected, connectionState, startConnection } =
-    useSignalR({
-      hubUrl: '/backend-hub',
+    useRealtime({
+      endpoint: '/events',
       autoConnect: false,
-      forceWebsockets: true,
       onConnectionStateChange: (s) => {
         // console.log('[SignalR] state:', s);
       },

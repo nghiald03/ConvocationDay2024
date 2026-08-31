@@ -75,16 +75,112 @@ jobs:
       - name: Test
         run: dotnet test FA23_Convocation2023_API.sln --configuration Release --no-build
 
+  backend-nest:
+    name: Backend NestJS (Bun)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: be-nest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.10
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Scan repository for secrets
+        run: bun run secrets:check
+      - name: Lint
+        run: bun run lint
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Unit tests
+        run: bun test
+      - name: Production build
+        run: bun run build
+      - name: Check Drizzle migration history
+        run: bun run drizzle:check
+
+  migration-rehearsal:
+    name: SQL Server to PostgreSQL rehearsal
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env:
+          POSTGRES_DB: convocation_rehearsal
+          POSTGRES_USER: convocation
+          POSTGRES_PASSWORD: PostgresFixture1!
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U convocation -d convocation_rehearsal"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: SqlFixture1!
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'SqlFixture1!' -Q 'SELECT 1' -C"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 30s
+    defaults:
+      run:
+        working-directory: be-nest
+    env:
+      DATABASE_URL: postgresql://convocation:PostgresFixture1!@localhost:5432/convocation_rehearsal
+      SQLSERVER_ADMIN_URL: sqlserver://sa:SqlFixture1!@localhost:1433/master?encrypt=true&trustServerCertificate=true
+      MIGRATION_SQLSERVER_URL: sqlserver://sa:SqlFixture1!@localhost:1433/ConvocationMigrationFixture?encrypt=true&trustServerCertificate=true
+      MIGRATION_TARGET_NAME: convocation_rehearsal
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.10
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Apply committed Drizzle migrations
+        run: bun run drizzle:migrate
+      - name: Create representative SQL Server fixture
+        run: bun run fixture:sqlserver
+      - name: Validate transformations without writes
+        run: bun run migration dry-run --report=migration-reports/dry-run.json
+      - name: Run full snapshot import
+        run: bun run migration full --target=convocation_rehearsal --report=migration-reports/full.json
+      - name: Verify imported snapshot independently
+        run: bun run migration verify --report=migration-reports/verify.json
+      - name: Upload reconciliation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-reports
+          path: be-nest/migration-reports/*.json
+
   containers:
     name: Container builds
     runs-on: ubuntu-latest
     needs:
       - frontend
       - backend
+      - backend-nest
+      - migration-rehearsal
     env:
       DB_PASSWORD: ci-only-password-not-used-at-runtime
       S3_ACCESS_KEY: ci-access-key
       S3_SECRET_KEY: ci-only-secret-not-used-at-runtime
+      POSTGRES_PASSWORD: ci-only-postgres-password
+      BETTER_AUTH_SECRET: ci-only-better-auth-secret-at-least-32-characters
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -93,4 +189,4 @@ jobs:
         run: docker compose config --quiet
 
       - name: Build application images
-        run: docker compose build be fe
+        run: docker compose build be be-nest fe

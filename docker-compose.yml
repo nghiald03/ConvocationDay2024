@@ -1,4 +1,21 @@
 services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: convocation_migration
+      POSTGRES_USER: convocation
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the deployment secret store}
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U convocation -d convocation_migration']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   database:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: sqlserverconvo
@@ -83,26 +100,71 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  be-nest:
+    build:
+      context: ./be-nest
+      dockerfile: Dockerfile
+    ports:
+      - '127.0.0.1:8081:8081'
+    environment:
+      NODE_ENV: production
+      PORT: '8081'
+      DATABASE_URL: postgresql://convocation:${POSTGRES_PASSWORD}@postgres:5432/convocation_migration
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in the deployment secret store}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:8081}
+      TRUSTED_ORIGINS: ${APP_ORIGIN:-http://localhost:3001}
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3_BUCKET: convocation
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@example.com}
+      ALLOW_DATABASE_RESET: 'false'
+    depends_on:
+      be-nest-migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  be-nest-migrate:
+    build:
+      context: ./be-nest
+      dockerfile: Dockerfile
+      target: migration
+    environment:
+      DATABASE_URL: postgresql://convocation:${POSTGRES_PASSWORD}@postgres:5432/convocation_migration
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
+
   fe:
     build:
       context: ./fe
       dockerfile: Dockerfile
       args:
-        API_URL: http://be:8080/api
-        API_ORIGIN: http://be:8080
+        API_URL: http://be-nest:8081/api
+        API_ORIGIN: http://be-nest:8081
     container_name: frontend
     ports:
       - '127.0.0.1:3001:3000'
     environment:
-      API_URL: http://be:8080/api
-      API_ORIGIN: http://be:8080
+      API_URL: http://be-nest:8081/api
+      API_ORIGIN: http://be-nest:8081
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
       ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
     depends_on:
-      - be
+      be-nest:
+        condition: service_started
     restart: unless-stopped
 
 volumes:
   sql_data:
+  postgres_data:
   minio_data:
   data_protection_keys:

@@ -1,0 +1,5 @@
+{
+  "user": { "id": "00000000-0000-4000-a000-000000000000", "email": "quantri@example.com", "name": "Quản trị viên" },
+  "roles": ["MN"],
+  "permissions": ["system.manage", "halls.manage", "sessions.manage", "bachelors.manage", "checkin.execute", "led.control", "notifications.manage", "notifications.broadcast", "media.manage"]
+}

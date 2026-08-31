@@ -45,6 +45,7 @@ During migration, preserve these externally visible contracts unless a versioned
   - `notifications.broadcast`
   - `media.manage`
 - Real-time event payloads used by the frontend, especially `SendMessage`-style events and `ReceiveTTSBroadcast`.
+- Every human-readable `message` returned to the frontend, including validation, authentication, authorization, domain, upload, and unexpected-error responses, must be entirely in Vietnamese. Stable machine-readable `code` values remain language-neutral and must not be translated.
 
 Create a machine-readable contract inventory before porting behavior. Record every controller route, request DTO, response sample, authorization requirement, side effect, emitted event, and known legacy quirk. Treat current behavior as the compatibility baseline even when endpoint naming is inconsistent.
 

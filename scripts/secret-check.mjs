@@ -4,12 +4,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const tracked = execFileSync('git', ['ls-files', '-z'], { cwd: repoRoot })
+const tracked = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { cwd: repoRoot })
   .toString('utf8')
   .split('\0')
   .filter(Boolean);
 const excluded = new Set(['scripts/secret-check.mjs', 'SECURITY_ROTATION.md']);
-const allowed = /replace-me|replace-with|your_|RESET_REQUIRED|\$\{|<[^>]+>/i;
+const allowed = /replace-me|replace-with|your_|RESET_REQUIRED|\$\{|\$[A-Za-z_]|<[^>]+>/i;
 const patterns = [
   /sk_[A-Za-z0-9]{24,}/g,
   /AKIA[0-9A-Z]{16}/g,
