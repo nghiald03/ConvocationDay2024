@@ -1,14 +1,14 @@
 import { httpClient } from '@/lib/http/client';
-import type { SessionUser } from '../model/session-user';
+import { normalizeSessionUser, type SessionUserPayload } from '../model/normalize-session-user';
 
 export async function getSession() {
-  const response = await httpClient.get<SessionUser>('/auth/me');
-  return response.data;
+  const response = await httpClient.get<SessionUserPayload>('/auth/me');
+  return normalizeSessionUser(response.data);
 }
 
 export async function login(credentials: { userName: string; password: string }) {
-  const response = await httpClient.post<SessionUser>('/auth/login', credentials);
-  return response.data;
+  const response = await httpClient.post<SessionUserPayload>('/auth/login', credentials);
+  return normalizeSessionUser(response.data);
 }
 
 export async function logout() {

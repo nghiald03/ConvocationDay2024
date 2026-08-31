@@ -58,6 +58,7 @@ function Write-TemporaryEnvironment {
     $storageAccessKey = 'dev' + (New-RandomHexSecret -ByteCount 12)
     $storageSecretKey = New-RandomBase64UrlSecret -ByteCount 32
     $databasePassword = 'Sql1!' + (New-RandomBase64UrlSecret -ByteCount 24)
+    $testAccountPassword = 'Test1!' + (New-RandomBase64UrlSecret -ByteCount 24)
     $lines = @(
         "POSTGRES_PASSWORD=$postgresPassword",
         "BETTER_AUTH_SECRET=$betterAuthSecret",
@@ -65,12 +66,14 @@ function Write-TemporaryEnvironment {
         "S3_SECRET_KEY=$storageSecretKey",
         'S3_PUBLIC_ENDPOINT=http://localhost:9000',
         "APP_ORIGIN=$FrontendOrigin",
+        'BE_NEST_NODE_ENV=development',
         'SMTP_HOST=',
         'SMTP_PORT=587',
         'SMTP_USER=',
         'SMTP_PASSWORD=',
         'SMTP_FROM=no-reply@example.com',
-        "DB_PASSWORD=$databasePassword"
+        "DB_PASSWORD=$databasePassword",
+        "TEST_ACCOUNT_PASSWORD=$testAccountPassword"
     )
     $content = ($lines -join [Environment]::NewLine) + [Environment]::NewLine
     [IO.File]::WriteAllText($Path, $content, [Text.UTF8Encoding]::new($false))
@@ -82,6 +85,25 @@ if (-not (Test-Path -LiteralPath $EnvironmentFile)) {
 }
 else {
     Write-Host "Using existing temporary Docker environment: $EnvironmentFile"
+}
+
+if (-not (Select-String -LiteralPath $EnvironmentFile -Pattern '^TEST_ACCOUNT_PASSWORD=' -Quiet)) {
+    $testAccountPassword = 'Test1!' + (New-RandomBase64UrlSecret -ByteCount 24)
+    [IO.File]::AppendAllText(
+        $EnvironmentFile,
+        "TEST_ACCOUNT_PASSWORD=$testAccountPassword$([Environment]::NewLine)",
+        [Text.UTF8Encoding]::new($false)
+    )
+    Write-Host 'Added a generated test-account password to the temporary Docker environment.' -ForegroundColor Green
+}
+
+if (-not (Select-String -LiteralPath $EnvironmentFile -Pattern '^BE_NEST_NODE_ENV=' -Quiet)) {
+    [IO.File]::AppendAllText(
+        $EnvironmentFile,
+        "BE_NEST_NODE_ENV=development$([Environment]::NewLine)",
+        [Text.UTF8Encoding]::new($false)
+    )
+    Write-Host 'Configured development cookies for the local NestJS container.' -ForegroundColor Green
 }
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {

@@ -17,7 +17,7 @@ import {
   UploadedFiles,
   UseInterceptors,
 } from '@nestjs/common';
-import { ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { Permission } from '../auth/permissions.js';
@@ -42,6 +42,17 @@ export class MediaController {
 
   @Post('images')
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['image'],
+      properties: {
+        image: { type: 'string', format: 'binary' },
+        ownerType: { type: 'string', enum: ['bachelor', 'notification', 'export', 'temp'], example: 'temp' },
+        ownerId: { type: 'string', example: 'TEST260001' },
+      },
+    },
+  })
   @UseInterceptors(FileInterceptor('image', { limits: multipartLimits }))
   async upload(
     @UploadedFile(new ParseFilePipe({ fileIsRequired: true })) file: Express.Multer.File,
@@ -60,6 +71,17 @@ export class MediaController {
 
   @Post('images/bulk')
   @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['images'],
+      properties: {
+        images: { type: 'array', maxItems: MAX_BULK_FILES, items: { type: 'string', format: 'binary' } },
+        ownerType: { type: 'string', enum: ['bachelor', 'notification', 'export', 'temp'], example: 'temp' },
+        ownerId: { type: 'string', example: 'TEST260001' },
+      },
+    },
+  })
   @UseInterceptors(FilesInterceptor('images', MAX_BULK_FILES, { limits: multipartLimits }))
   async uploadMany(
     @UploadedFiles() files: Express.Multer.File[],

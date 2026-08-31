@@ -2,6 +2,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { serverEnv } from '@/lib/env/server';
 import type { SessionUser } from '../model/session-user';
+import { normalizeSessionUser, type SessionUserPayload } from '../model/normalize-session-user';
 
 export async function getServerSession(): Promise<SessionUser | null> {
   const cookieHeader = cookies().getAll().map(({ name, value }) => `${name}=${value}`).join('; ');
@@ -11,5 +12,5 @@ export async function getServerSession(): Promise<SessionUser | null> {
   });
   if (response.status === 401 || response.status === 403) return null;
   if (!response.ok) throw new Error(`Session lookup failed with status ${response.status}`);
-  return response.json();
+  return normalizeSessionUser(await response.json() as SessionUserPayload);
 }

@@ -107,7 +107,7 @@ services:
     ports:
       - '127.0.0.1:8081:8081'
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${BE_NEST_NODE_ENV:-production}
       PORT: '8081'
       DATABASE_URL: postgresql://convocation:${POSTGRES_PASSWORD}@postgres:5432/convocation_migration
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in the deployment secret store}

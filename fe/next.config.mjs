@@ -6,8 +6,8 @@ const withNextra = nextra({
   theme: 'nextra-theme-docs',
   themeConfig: './theme.config.tsx',
 });
-const apiUrl = process.env.API_URL || 'http://localhost:88/api';
-const apiOrigin = process.env.API_ORIGIN || 'http://localhost:88';
+const apiUrl = process.env.API_URL || 'http://localhost:8081/api';
+const apiOrigin = process.env.API_ORIGIN || 'http://localhost:8081';
 const isDevelopment = process.env.NODE_ENV === 'development';
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -25,6 +25,10 @@ const contentSecurityPolicy = [
 ].filter(Boolean).join('; ');
 
 const nextConfig = {
+  // Keep the long-running dev compiler isolated from `next build`. Both
+  // processes otherwise mutate `.next`, which can leave webpack runtimes
+  // pointing at vendor chunks that the other process has replaced.
+  distDir: isDevelopment ? '.next-dev' : '.next',
   async rewrites() {
     return [
       { source: '/backend-api/:path*', destination: `${apiUrl}/:path*` },

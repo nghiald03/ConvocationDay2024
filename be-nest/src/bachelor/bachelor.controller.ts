@@ -12,7 +12,7 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Permission } from '../auth/permissions.js';
@@ -27,6 +27,7 @@ import {
 } from './dto/bachelor.dto.js';
 
 class BachelorListQuery {
+  @ApiPropertyOptional({ example: 1, default: 1, minimum: 1 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
@@ -35,20 +36,24 @@ class BachelorListQuery {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @ApiPropertyOptional({ example: 20, default: 10, minimum: 1 })
   pageSize = 10;
 
   @IsOptional()
   @IsString()
+  @ApiPropertyOptional({ example: 'TEST260001' })
   keySearch?: string;
 
   @Type(() => Number)
   @IsOptional()
   @IsInt()
+  @ApiPropertyOptional({ example: 1 })
   sessionId?: number;
 
   @Type(() => Number)
   @IsOptional()
   @IsInt()
+  @ApiPropertyOptional({ example: 1 })
   hallId?: number;
 }
 

@@ -2,8 +2,8 @@ import 'server-only';
 import { z } from 'zod';
 
 const schema = z.object({
-  API_URL: z.string().url().default('http://localhost:88/api'),
-  API_ORIGIN: z.string().url().default('http://localhost:88'),
+  API_URL: z.string().url().default('http://localhost:8081/api'),
+  API_ORIGIN: z.string().url().default('http://localhost:8081'),
   ELEVENLABS_API_KEY: z.string().min(1).optional(),
   ELEVENLABS_VOICE_ID: z.string().min(1).optional(),
 });

@@ -134,6 +134,11 @@ Lưu ý: sau các smoke test trên có thêm thay đổi cuối trong auth reset
 - Đã loại bỏ message tiếng Anh còn sót trong cập nhật danh sách tân cử nhân và không còn đưa nguyên văn lỗi PostgreSQL vào `details.errorMessages` của bulk import.
 - Bộ test backend sau các bổ sung đạt 14 pass, 1 Socket.IO integration skip khi không có URL.
 - Đã thêm `bun run key:generate` để sinh `BETTER_AUTH_SECRET` 48 byte bằng CSPRNG, xuất dạng base64url và không tự ghi file môi trường.
+- Đã thêm seed idempotent `bun run seed:test --confirm-test-data` cho 240 tân cử nhân thử nghiệm, 4 hội trường, 6 phiên, 6 ảnh có sẵn và 5 account đủ vai trò `MN`/`CK`/`MC`/`US`/`NO`; đã chạy thành công trên PostgreSQL Docker local (160 đã check-in, 80 chưa check-in) và xác minh login đủ 5 account.
+- Stack Docker local đặt `BE_NEST_NODE_ENV=development` để Better Auth phát cookie không có cờ `Secure` trên HTTP localhost; đã xác minh login qua frontend proxy và `/auth/me` giữ session thành công. Compose vẫn mặc định `production` khi biến này không được đặt.
+- Frontend connectivity check đã chuyển từ route legacy `/Test/Connect` sang public readiness `/health/ready`; có regression test và đã xác minh qua frontend proxy HTTP 200.
+- Swagger giờ hiển thị health live/ready, request examples cho toàn bộ DTO properties, multipart file schemas, success examples và error envelope chuẩn 400/401/403/500. OpenAPI audit đạt 0 schema property thiếu example và 0 response thiếu schema/example.
+- Frontend auth boundary đã chuẩn hóa response NestJS `userId`/`roles[]` sang model tương thích `id`/`role` đồng thời giữ `roles[]`/`permissions[]`; đã có regression test và xác minh end-to-end trang `/tutorial` nhận role `MN` cùng menu quản lý.
 - `drizzle:check` từng lỗi `uv_os_get_passwd returned ENOMEM` trong sandbox giới hạn, nhưng chạy lại ngoài sandbox đã pass (`Everything's fine`).
 
 ### Ưu tiên 1: xác minh lại code hiện tại

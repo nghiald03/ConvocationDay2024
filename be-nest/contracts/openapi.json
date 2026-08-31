@@ -7,7 +7,62 @@
         "parameters": [],
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -22,6 +77,53 @@
         "responses": {
           "204": {
             "description": ""
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -45,7 +147,62 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -60,6 +217,53 @@
         "responses": {
           "204": {
             "description": ""
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -73,7 +277,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -98,6 +357,53 @@
         "responses": {
           "204": {
             "description": ""
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -121,7 +427,62 @@
         },
         "responses": {
           "202": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 202,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -146,6 +507,53 @@
         "responses": {
           "204": {
             "description": ""
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -153,13 +561,258 @@
         ]
       }
     },
+    "/api/health/live": {
+      "get": {
+        "operationId": "HealthController_live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Tiến trình NestJS đang hoạt động.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "status": "ok"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/api/health/ready": {
+      "get": {
+        "operationId": "HealthController_ready",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "NestJS, PostgreSQL và MinIO đều sẵn sàng nhận request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "status": "ready",
+                    "dependencies": {
+                      "postgres": "ok",
+                      "minio": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Ít nhất một dependency chưa sẵn sàng.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "code": "health/not-ready",
+                    "message": "PostgreSQL hoặc MinIO chưa sẵn sàng."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
     "/api/media/images": {
       "post": {
         "operationId": "MediaController_upload",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "image"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "ownerType": {
+                    "type": "string",
+                    "enum": [
+                      "bachelor",
+                      "notification",
+                      "export",
+                      "temp"
+                    ],
+                    "example": "temp"
+                  },
+                  "ownerId": {
+                    "type": "string",
+                    "example": "TEST260001"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -171,9 +824,101 @@
       "post": {
         "operationId": "MediaController_uploadMany",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "images"
+                ],
+                "properties": {
+                  "images": {
+                    "type": "array",
+                    "maxItems": 20,
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "ownerType": {
+                    "type": "string",
+                    "enum": [
+                      "bachelor",
+                      "notification",
+                      "export",
+                      "temp"
+                    ],
+                    "example": "temp"
+                  },
+                  "ownerId": {
+                    "type": "string",
+                    "example": "TEST260001"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -196,7 +941,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -227,7 +1027,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -249,6 +1104,53 @@
         "responses": {
           "204": {
             "description": ""
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -262,7 +1164,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -284,7 +1241,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -307,7 +1319,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -330,7 +1397,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -354,7 +1476,62 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -368,7 +1545,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -401,7 +1633,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -424,7 +1711,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -448,7 +1790,62 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -462,7 +1859,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -495,7 +1947,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -518,7 +2025,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -542,7 +2104,62 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -556,7 +2173,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -570,7 +2242,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -581,10 +2308,123 @@
     "/api/Bachelor/search": {
       "get": {
         "operationId": "BachelorController_search",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "pageIndex",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 10,
+              "example": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "keySearch",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "TEST260001",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "hallId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -595,10 +2435,123 @@
     "/api/Bachelor/GetAll": {
       "get": {
         "operationId": "BachelorController_list",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "pageIndex",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "example": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 10,
+              "example": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "keySearch",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": "TEST260001",
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "hallId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "example": 1,
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -625,7 +2578,62 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -649,7 +2657,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -693,7 +2756,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -716,7 +2834,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -730,7 +2903,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -744,7 +2972,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -775,7 +3058,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -808,7 +3146,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -832,7 +3225,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -856,7 +3304,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -879,7 +3382,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -893,7 +3451,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -907,7 +3520,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -921,7 +3589,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -945,7 +3668,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -959,7 +3737,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -983,7 +3816,62 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -997,7 +3885,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1011,7 +3954,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1025,7 +4023,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1039,7 +4092,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1062,7 +4170,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1085,7 +4248,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1099,7 +4317,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1121,7 +4394,62 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1135,7 +4463,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1158,7 +4541,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1189,7 +4627,62 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1210,7 +4703,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1233,7 +4781,62 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1256,7 +4859,62 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1279,7 +4937,62 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1302,7 +5015,62 @@
         ],
         "responses": {
           "201": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 201,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1325,7 +5093,62 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1339,7 +5162,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1353,7 +5231,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1367,7 +5300,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1381,7 +5369,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1395,7 +5438,62 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": 200,
+                  "message": "Yêu cầu được xử lý thành công."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "request/validation-failed",
+                  "message": "Dữ liệu gửi lên không hợp lệ.",
+                  "details": [
+                    "Trường dữ liệu không hợp lệ."
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập hoặc session không hợp lệ.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/unauthorized",
+                  "message": "Bạn cần đăng nhập để tiếp tục."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Không có quyền thực hiện thao tác.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "auth/forbidden",
+                  "message": "Bạn không có quyền thực hiện thao tác này."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Lỗi hệ thống không mong muốn.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "code": "server/internal-error",
+                  "message": "Đã xảy ra lỗi không mong muốn."
+                }
+              }
+            }
           }
         },
         "tags": [
@@ -1423,71 +5521,382 @@
     "schemas": {
       "LoginDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "userName": {
+            "type": "string",
+            "example": "manager.test@convocation.local"
+          },
+          "password": {
+            "type": "string",
+            "example": "<mật khẩu từ TEST_ACCOUNT_PASSWORD>",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "userName",
+          "password"
+        ]
       },
       "ChangePasswordDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "example": "<mật khẩu hiện tại>"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "MatKhauMoi!2026",
+            "minLength": 12,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ]
       },
       "RequestPasswordResetDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "manager.test@convocation.local"
+          }
+        },
+        "required": [
+          "email"
+        ]
       },
       "ConfirmPasswordResetDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "manager.test@convocation.local"
+          },
+          "token": {
+            "type": "string",
+            "example": "reset-token-from-email"
+          },
+          "newPassword": {
+            "type": "string",
+            "example": "MatKhauMoi!2026",
+            "minLength": 12,
+            "maxLength": 128
+          }
+        },
+        "required": [
+          "email",
+          "token",
+          "newPassword"
+        ]
       },
       "RenameMediaDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "originalName": {
+            "type": "string",
+            "example": "TEST260001.webp",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "required": [
+          "originalName"
+        ]
       },
       "DeleteMediaDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "ids": {
+            "example": [
+              "550e8400-e29b-41d4-a716-446655440000"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ]
       },
       "CreateHallDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "hallName": {
+            "type": "string",
+            "example": "Hội trường A",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "hallName"
+        ]
       },
       "CreateSessionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionNum": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1
+          },
+          "sessionInDay": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1
+          },
+          "description": {
+            "type": "string",
+            "example": "Phiên buổi sáng",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "sessionNum"
+        ]
       },
       "UpdateSessionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "sessionNum": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1
+          },
+          "sessionInDay": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1
+          },
+          "description": {
+            "type": "string",
+            "example": "Phiên buổi sáng",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "sessionNum"
+        ]
       },
       "AutoFillSessionInDayDto": {
+        "type": "object",
+        "properties": {
+          "fromSession": {
+            "type": "number",
+            "example": 1
+          },
+          "toSession": {
+            "type": "number",
+            "example": 6
+          }
+        },
+        "required": [
+          "fromSession",
+          "toSession"
+        ]
+      },
+      "Object": {
         "type": "object",
         "properties": {}
       },
       "BachelorDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "image": {
+            "type": "string",
+            "example": "/images/users/user-1.jpg"
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Nguyễn Văn An"
+          },
+          "major": {
+            "type": "string",
+            "example": "Công nghệ thông tin"
+          },
+          "studentCode": {
+            "type": "string",
+            "example": "TEST260001"
+          },
+          "mail": {
+            "type": "string",
+            "example": "test260001@example.edu.vn"
+          },
+          "faculty": {
+            "type": "object",
+            "example": "Khoa Công nghệ thông tin",
+            "nullable": true
+          },
+          "hallName": {
+            "type": "string",
+            "example": "Hội trường A"
+          },
+          "sessionNum": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1
+          },
+          "sessionInDay": {
+            "type": "object",
+            "example": 1,
+            "nullable": true
+          },
+          "chair": {
+            "type": "string",
+            "example": "A1-1"
+          },
+          "chairParent": {
+            "type": "string",
+            "example": "A1-P1"
+          }
+        },
+        "required": [
+          "image",
+          "fullName",
+          "major",
+          "studentCode",
+          "mail",
+          "hallName",
+          "sessionNum",
+          "chair",
+          "chairParent"
+        ]
       },
       "MoveToTemporarySessionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "isMorning": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "isMorning"
+        ]
       },
       "TransferLateStudentDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "studentCode": {
+            "type": "string",
+            "example": "TEST260001"
+          },
+          "newSessionId": {
+            "type": "number",
+            "example": 2
+          }
+        },
+        "required": [
+          "studentCode",
+          "newSessionId"
+        ]
       },
       "CheckInBachelorDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "studentCode": {
+            "type": "string",
+            "example": "TEST260001"
+          },
+          "status": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "studentCode",
+          "status"
+        ]
       },
       "UpdateCheckInStatusDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "checkinId": {
+            "type": "number",
+            "example": 1
+          },
+          "status": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "checkinId",
+          "status"
+        ]
       },
       "CreateCheckInDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "hallId": {
+            "type": "number",
+            "example": 1
+          },
+          "sessionId": {
+            "type": "number",
+            "example": 1
+          }
+        },
+        "required": [
+          "hallId",
+          "sessionId"
+        ]
       },
       "NotificationDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Mời tân cử nhân chuẩn bị"
+          },
+          "content": {
+            "type": "string",
+            "example": "Các tân cử nhân phiên 1 vui lòng di chuyển vào hội trường."
+          },
+          "priority": {
+            "type": "object",
+            "example": 2,
+            "minimum": 1,
+            "maximum": 3,
+            "default": 2
+          },
+          "hallId": {
+            "type": "number",
+            "example": 1
+          },
+          "sessionId": {
+            "type": "number",
+            "example": 1
+          },
+          "scheduledAt": {
+            "type": "string",
+            "example": "2026-08-31T08:00:00.000Z",
+            "format": "date-time"
+          },
+          "isAutomatic": {
+            "type": "object",
+            "example": false,
+            "default": false
+          },
+          "repeatCount": {
+            "type": "object",
+            "example": 1,
+            "minimum": 1,
+            "maximum": 10,
+            "default": 1
+          }
+        },
+        "required": [
+          "title",
+          "content",
+          "priority"
+        ]
       }
     }
   }

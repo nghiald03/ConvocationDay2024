@@ -19,6 +19,27 @@ bun run key:generate
 
 Lệnh chỉ in một dòng `BETTER_AUTH_SECRET=...`; lệnh không tự tạo hoặc ghi đè file môi trường.
 
+## Dữ liệu thử nghiệm
+
+Seed 240 tân cử nhân vào database local/rehearsal đã migrate:
+
+```bash
+bun run seed:test --dry-run
+bun run seed:test --confirm-test-data
+```
+
+Lệnh dùng `DATABASE_URL`, chỉ chấp nhận tên database chứa `dev`, `test`, `local`, `demo` hoặc `migration`. Seed có thể chạy lại: nó chỉ thay nhóm mã `TEST26%`, tạo 4 hội trường, 6 phiên và dùng luân phiên 6 ảnh có sẵn `/images/users/user-1.jpg` đến `/images/users/user-6.jpg`.
+
+Seed cũng tạo account cho đủ vai trò:
+
+- `manager.test@convocation.local` (`MN`)
+- `checkin.test@convocation.local` (`CK`)
+- `mc.test@convocation.local` (`MC`)
+- `user.test@convocation.local` (`US`)
+- `notify.test@convocation.local` (`NO`)
+
+Mật khẩu chung lấy từ `TEST_ACCOUNT_PASSWORD`; script Docker local tự sinh biến này trong env tạm ngoài repository. Không hard-code hoặc commit mật khẩu test.
+
 API dùng prefix `/api`, Swagger ở `/api/docs`, liveness ở `/api/health/live`, readiness PostgreSQL + MinIO ở `/api/health/ready`, Socket.IO namespace `/events` với path `/socket.io`.
 
 ## Data migration

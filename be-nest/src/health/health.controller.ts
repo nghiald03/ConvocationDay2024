@@ -1,12 +1,12 @@
 import { Controller, Get, Inject, ServiceUnavailableException } from '@nestjs/common';
-import { ApiExcludeController } from '@nestjs/swagger';
+import { ApiOkResponse, ApiServiceUnavailableResponse, ApiTags } from '@nestjs/swagger';
 import { sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { Public } from '../common/guards/public.decorator.js';
 import { ObjectStorageService } from '../media/object-storage.service.js';
 
-@ApiExcludeController()
+@ApiTags('health')
 @Controller('health')
 export class HealthController {
   constructor(
@@ -16,12 +16,31 @@ export class HealthController {
 
   @Get('live')
   @Public()
+  @ApiOkResponse({
+    description: 'Tiến trình NestJS đang hoạt động.',
+    schema: { example: { status: 'ok' } },
+  })
   live(): { status: 'ok' } {
     return { status: 'ok' };
   }
 
   @Get('ready')
   @Public()
+  @ApiOkResponse({
+    description: 'NestJS, PostgreSQL và MinIO đều sẵn sàng nhận request.',
+    schema: {
+      example: { status: 'ready', dependencies: { postgres: 'ok', minio: 'ok' } },
+    },
+  })
+  @ApiServiceUnavailableResponse({
+    description: 'Ít nhất một dependency chưa sẵn sàng.',
+    schema: {
+      example: {
+        code: 'health/not-ready',
+        message: 'PostgreSQL hoặc MinIO chưa sẵn sàng.',
+      },
+    },
+  })
   async ready(): Promise<{ status: 'ready'; dependencies: { postgres: 'ok'; minio: 'ok' } }> {
     try {
       await Promise.all([this.database.execute(sql`select 1`), this.storage.ready()]);
