@@ -22,6 +22,8 @@
     "fixture:sqlserver": "tsx scripts/create-sqlserver-fixture.ts",
     "key:generate": "tsx scripts/generate-auth-secret.ts",
     "seed:test": "tsx scripts/seed-test-data.ts",
+    "seed:photo-queue:test": "node scripts/seed-photo-queue-test-data.mjs",
+    "patch:photo-queue-retouch": "node scripts/patch-photo-queue-retouch-columns.mjs",
     "secrets:check": "bun ../scripts/secret-check.mjs",
     "verify": "bun run secrets:check && bun run lint && bun run typecheck && bun run test && bun run build && bun run drizzle:check"
   },

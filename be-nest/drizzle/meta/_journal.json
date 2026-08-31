@@ -15,6 +15,13 @@
       "when": 1788118323201,
       "tag": "0001_new_starjammers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788167333966,
+      "tag": "0002_photo_queue",
+      "breakpoints": true
     }
   ]
 }

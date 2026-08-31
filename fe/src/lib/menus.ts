@@ -34,7 +34,7 @@ export function getMenuList(pathname: string): Group[] {
     {
       groupLabel: '',
       id: 'dashboard',
-      roleAccess: ['MN', 'CK', 'MC', 'US', 'NO'],
+      roleAccess: ['MN', 'CK', 'MC', 'US', 'NO', 'PQ', 'PC'],
       menus: [
         {
           id: 'dashboard',
@@ -135,6 +135,29 @@ export function getMenuList(pathname: string): Group[] {
     //   ],
     // },
 
+    {
+      groupLabel: 'Chụp ảnh',
+      id: 'photoQueue',
+      roleAccess: ['MN', 'PQ', 'PC'],
+      menus: [
+        {
+          id: 'photoQueueKiosk',
+          href: '/photo-queue/kiosk',
+          label: 'Bấm số chụp ảnh',
+          active: pathname.includes('/photo-queue/kiosk'),
+          icon: 'lucide:ticket-plus',
+          submenus: [],
+        },
+        {
+          id: 'photoQueueCoordinator',
+          href: '/photo-queue/coordinator',
+          label: 'Điều phối chụp ảnh',
+          active: pathname.includes('/photo-queue/coordinator'),
+          icon: 'lucide:panel-top',
+          submenus: [],
+        },
+      ],
+    },
     {
       groupLabel: 'Check in',
       id: 'checkin',

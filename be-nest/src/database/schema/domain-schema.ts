@@ -116,3 +116,117 @@ export const notifications = pgTable(
     ),
   ],
 );
+
+export const photoQueueSessions = pgTable(
+  'photo_queue_session',
+  {
+    id: integer('photo_queue_session_id').primaryKey().generatedByDefaultAsIdentity(),
+    name: varchar('name', { length: 120 }).notNull(),
+    description: text('description'),
+    isActive: boolean('is_active').notNull().default(true),
+    isKioskActive: boolean('is_kiosk_active').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('photo_queue_session_name_uidx').on(sql`lower(${table.name})`)],
+);
+
+export const photoQueueStates = pgTable(
+  'photo_queue_state',
+  {
+    id: integer('photo_queue_state_id').primaryKey().generatedByDefaultAsIdentity(),
+    photoSessionId: integer('photo_session_id')
+      .notNull()
+      .references(() => photoQueueSessions.id, { onDelete: 'cascade' }),
+    currentNumber: integer('current_number').notNull().default(0),
+    currentPhotoConfirmed: boolean('current_photo_confirmed').notNull().default(true),
+    currentPhotoTaken: boolean('current_photo_taken'),
+    manualReturnNumber: integer('manual_return_number'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedBy: text('updated_by').references(() => authUser.id, { onDelete: 'set null' }),
+  },
+  (table) => [
+    uniqueIndex('photo_queue_state_photo_session_uidx').on(table.photoSessionId),
+    check('photo_queue_state_current_number_check', sql`${table.currentNumber} >= 0`),
+    check(
+      'photo_queue_state_manual_return_number_check',
+      sql`${table.manualReturnNumber} is null or ${table.manualReturnNumber} >= 0`,
+    ),
+  ],
+);
+
+export const photoQueueEntries = pgTable(
+  'photo_queue_entry',
+  {
+    id: integer('photo_queue_entry_id').primaryKey().generatedByDefaultAsIdentity(),
+    bachelorId: integer('bachelor_id')
+      .notNull()
+      .references(() => bachelors.id, { onDelete: 'cascade' }),
+    photoSessionId: integer('photo_session_id')
+      .notNull()
+      .references(() => photoQueueSessions.id, { onDelete: 'cascade' }),
+    queueNumber: integer('queue_number').notNull(),
+    photoStatus: varchar('photo_status', { length: 20 }).notNull().default('WAITING'),
+    source: varchar('source', { length: 20 }).notNull().default('KIOSK'),
+    coordinatorReason: text('coordinator_reason'),
+    retouchNoteImage1: text('retouch_note_image_1'),
+    retouchNoteImage2: text('retouch_note_image_2'),
+    requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
+    photographedAt: timestamp('photographed_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('photo_queue_entry_bachelor_photo_session_uidx').on(
+      table.bachelorId,
+      table.photoSessionId,
+    ),
+    uniqueIndex('photo_queue_entry_photo_session_number_uidx').on(
+      table.photoSessionId,
+      table.queueNumber,
+    ),
+    index('photo_queue_entry_photo_session_idx').on(table.photoSessionId),
+    check('photo_queue_entry_number_check', sql`${table.queueNumber} > 0`),
+    check(
+      'photo_queue_entry_status_check',
+      sql`${table.photoStatus} in ('WAITING', 'PHOTOGRAPHED')`,
+    ),
+  ],
+);
+
+export const photoQueueAssignments = pgTable(
+  'photo_queue_assignment',
+  {
+    id: integer('photo_queue_assignment_id').primaryKey().generatedByDefaultAsIdentity(),
+    bachelorId: integer('bachelor_id')
+      .notNull()
+      .references(() => bachelors.id, { onDelete: 'cascade' }),
+    photoSessionId: integer('photo_session_id')
+      .notNull()
+      .references(() => photoQueueSessions.id, { onDelete: 'cascade' }),
+    requiresCoordinator: boolean('requires_coordinator').notNull().default(false),
+    note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('photo_queue_assignment_bachelor_uidx').on(table.bachelorId),
+    index('photo_queue_assignment_photo_session_idx').on(table.photoSessionId),
+  ],
+);
+
+export const photoQueueAuditLogs = pgTable(
+  'photo_queue_audit_log',
+  {
+    id: integer('photo_queue_audit_log_id').primaryKey().generatedByDefaultAsIdentity(),
+    photoSessionId: integer('photo_session_id')
+      .notNull()
+      .references(() => photoQueueSessions.id, { onDelete: 'cascade' }),
+    action: varchar('action', { length: 40 }).notNull(),
+    previousNumber: integer('previous_number'),
+    nextNumber: integer('next_number'),
+    actorId: text('actor_id').references(() => authUser.id, { onDelete: 'set null' }),
+    actorName: text('actor_name'),
+    details: text('details'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('photo_queue_audit_photo_session_created_idx').on(table.photoSessionId, table.createdAt),
+  ],
+);

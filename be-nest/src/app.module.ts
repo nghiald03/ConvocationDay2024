@@ -19,6 +19,7 @@ import { NotificationModule } from './notification/notification.module.js';
 import { RealtimeModule } from './realtime/realtime.module.js';
 import { LedModule } from './led/led.module.js';
 import { MediaModule } from './media/media.module.js';
+import { PhotoQueueModule } from './photo-queue/photo-queue.module.js';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { MediaModule } from './media/media.module.js';
     NotificationModule,
     LedModule,
     MediaModule,
+    PhotoQueueModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: SessionGuard },

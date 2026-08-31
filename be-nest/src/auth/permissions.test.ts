@@ -8,6 +8,8 @@ describe('ma trận phân quyền', () => {
 
   test('vai trò nghiệp vụ chỉ nhận đúng quyền và không bị trùng', () => {
     expect(expandPermissions(['ck', 'CK'])).toEqual([Permission.CheckIn]);
+    expect(expandPermissions(['PQ'])).toEqual([Permission.RequestPhotoQueue]);
+    expect(expandPermissions(['PC'])).toEqual([Permission.ControlPhotoQueue]);
     expect(permissionsByRole.NO).toEqual([
       Permission.ManageNotifications,
       Permission.BroadcastNotifications,
