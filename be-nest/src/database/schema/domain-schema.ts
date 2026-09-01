@@ -177,7 +177,7 @@ export const photoQueueEntries = pgTable(
     uniqueIndex('photo_queue_entry_bachelor_photo_session_uidx').on(
       table.bachelorId,
       table.photoSessionId,
-    ),
+    ).where(sql`${table.photoStatus} <> 'CANCELLED'`),
     uniqueIndex('photo_queue_entry_photo_session_number_uidx').on(
       table.photoSessionId,
       table.queueNumber,
@@ -186,7 +186,7 @@ export const photoQueueEntries = pgTable(
     check('photo_queue_entry_number_check', sql`${table.queueNumber} > 0`),
     check(
       'photo_queue_entry_status_check',
-      sql`${table.photoStatus} in ('WAITING', 'PHOTOGRAPHED')`,
+      sql`${table.photoStatus} in ('WAITING', 'PHOTOGRAPHED', 'CANCELLED')`,
     ),
   ],
 );

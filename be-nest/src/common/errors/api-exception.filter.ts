@@ -47,8 +47,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
       if (typeof body === 'object' && body !== null) {
         const value = body as Record<string, unknown>;
         const rawMessage = value.message;
-        const hasApplicationMessage = typeof value.code === 'string' && typeof rawMessage === 'string';
-        const message = hasApplicationMessage ? rawMessage : this.defaultMessage(status);
+        const message = typeof rawMessage === 'string' ? rawMessage : this.defaultMessage(status);
         return {
           status,
           envelope: {
@@ -58,7 +57,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
           },
         };
       }
-      return { status, envelope: { code: this.defaultCode(status), message: this.defaultMessage(status) } };
+      return {
+        status,
+        envelope: {
+          code: this.defaultCode(status),
+          message: typeof body === 'string' ? body : this.defaultMessage(status),
+        },
+      };
     }
 
     return {

@@ -153,6 +153,7 @@ export function PhotoQueueCoordinatorPage() {
   }
 
   const retouchNotesReady = Boolean(retouchNoteImage1.trim() && retouchNoteImage2.trim());
+  const hasCurrentNumber = Boolean(state.data?.currentNumber && state.data.currentNumber > 0);
 
   return (
     <main className='space-y-6'>
@@ -209,11 +210,14 @@ export function PhotoQueueCoordinatorPage() {
             </Button>
             <Button
               disabled={!enabled || next.isPending}
-              onClick={() => setConfirmOpen(true)}
+              onClick={() => {
+                if (hasCurrentNumber) setConfirmOpen(true);
+                else next.mutate();
+              }}
               size='lg'
               variant='outline'
             >
-              Next
+              {hasCurrentNumber ? 'Next' : 'Bắt đầu'}
               <ChevronRight className='ml-2 h-5 w-5' />
             </Button>
           </div>
@@ -240,10 +244,11 @@ export function PhotoQueueCoordinatorPage() {
             <ListChecks className='h-5 w-5 text-foreground' />
             Thống kê
           </div>
-          <div className='mt-5 grid gap-3 md:grid-cols-3'>
+          <div className='mt-5 grid gap-3 md:grid-cols-4'>
             <Metric label='Tổng đã bấm' value={stats.data?.summary.total ?? 0} />
             <Metric label='Đã chụp' value={stats.data?.summary.photographed ?? 0} />
             <Metric label='Chưa chụp' value={stats.data?.summary.waiting ?? 0} />
+            <Metric label='Đã hủy' value={stats.data?.summary.canceled ?? 0} />
           </div>
           <div className='mt-6 max-h-[360px] overflow-auto rounded-lg border'>
             <table className='w-full text-left text-sm'>
@@ -262,7 +267,7 @@ export function PhotoQueueCoordinatorPage() {
                     <td className='p-3'>{entry.studentCode}</td>
                     <td className='p-3'>{entry.fullName}</td>
                     <td className='p-3'>
-                      {entry.photoStatus === 'PHOTOGRAPHED' ? 'Đã chụp' : 'Chưa chụp'}
+                      {getPhotoStatusLabel(entry.photoStatus)}
                     </td>
                   </tr>
                 ))}
@@ -342,23 +347,30 @@ export function PhotoQueueCoordinatorPage() {
               aria-label='Ghi chú ảnh 2 cho design retouch'
             />
           </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => confirmCurrent.mutate(false)}>
+          <DialogFooter className='grid grid-cols-1 gap-2 sm:grid-cols-2 sm:justify-stretch'>
+            <Button
+              variant='outline'
+              className='w-full min-w-0 px-3'
+              onClick={() => confirmCurrent.mutate(false)}
+              disabled={confirmCurrent.isPending || !hasCurrentNumber}
+            >
               Chưa chụp
             </Button>
             <Button
               variant='outline'
+              className='w-full min-w-0 px-3'
               onClick={() => confirmCurrent.mutate(true)}
-              disabled={confirmCurrent.isPending || !retouchNotesReady}
+              disabled={confirmCurrent.isPending || !hasCurrentNumber || !retouchNotesReady}
             >
               Đã chụp
             </Button>
             <Button
               variant='outline'
+              className='w-full min-w-0 px-3 sm:col-span-2'
               onClick={() => {
                 confirmCurrent.mutate(true, { onSuccess: () => next.mutate() });
               }}
-              disabled={confirmCurrent.isPending || next.isPending || !retouchNotesReady}
+              disabled={confirmCurrent.isPending || next.isPending || !hasCurrentNumber || !retouchNotesReady}
             >
               Xác nhận và Next
             </Button>
@@ -395,4 +407,10 @@ function Metric({ label, value }: { label: string; value: number }) {
       <p className='mt-2 text-3xl font-black text-foreground'>{value}</p>
     </div>
   );
+}
+
+function getPhotoStatusLabel(status: 'WAITING' | 'PHOTOGRAPHED' | 'CANCELLED') {
+  if (status === 'PHOTOGRAPHED') return 'Đã chụp';
+  if (status === 'CANCELLED') return 'Đã hủy';
+  return 'Chưa chụp';
 }

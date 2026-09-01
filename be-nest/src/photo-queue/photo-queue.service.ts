@@ -16,6 +16,7 @@ import {
 
 const PHOTOGRAPHED = 'PHOTOGRAPHED';
 const WAITING = 'WAITING';
+const CANCELLED = 'CANCELLED';
 
 type Transaction = Parameters<Parameters<AppDatabase['transaction']>[0]>[0];
 
@@ -127,6 +128,7 @@ export class PhotoQueueService {
         and(
           eq(photoQueueEntries.bachelorId, bachelors.id),
           eq(photoQueueEntries.photoSessionId, activePhotoSessionId),
+          sql`${photoQueueEntries.photoStatus} <> ${CANCELLED}`,
         ),
       )
       .where(sql`lower(${bachelors.studentCode}) = ${normalizedStudentCode}`)
@@ -189,6 +191,36 @@ export class PhotoQueueService {
         .for('update');
       if (!bachelor) throw new BadRequestException('Không tìm thấy tân cử nhân trong hệ thống.');
 
+      const [existing] = await transaction
+        .select({
+          id: photoQueueEntries.id,
+          queueNumber: photoQueueEntries.queueNumber,
+        })
+        .from(photoQueueEntries)
+        .where(
+          and(
+            eq(photoQueueEntries.bachelorId, bachelor.id),
+            eq(photoQueueEntries.photoSessionId, photoSessionId),
+            sql`${photoQueueEntries.photoStatus} <> ${CANCELLED}`,
+          ),
+        )
+        .limit(1)
+        .for('update');
+      if (existing) {
+        await transaction
+          .update(photoQueueEntries)
+          .set({ photoStatus: CANCELLED })
+          .where(eq(photoQueueEntries.id, existing.id));
+        await transaction.insert(photoQueueAuditLogs).values({
+          photoSessionId,
+          action: 'coordinator-cancel-reissue',
+          previousNumber: existing.queueNumber,
+          actorId: actor.userId,
+          actorName: actor.fullName || actor.email,
+          details: `${bachelor.studentCode}: ${reason.trim()}`,
+        });
+      }
+
       const entry = await this.issueNumber(
         transaction,
         bachelor,
@@ -199,6 +231,7 @@ export class PhotoQueueService {
       await transaction.insert(photoQueueAuditLogs).values({
         photoSessionId,
         action: 'coordinator-issue',
+        previousNumber: existing?.queueNumber,
         nextNumber: entry.queueNumber,
         actorId: actor.userId,
         actorName: actor.fullName || actor.email,
@@ -255,10 +288,18 @@ export class PhotoQueueService {
           and(
             eq(photoQueueEntries.bachelorId, bachelor.id),
             eq(photoQueueEntries.photoSessionId, photoSessionId),
+            sql`${photoQueueEntries.photoStatus} <> ${CANCELLED}`,
           ),
         )
         .limit(1);
-    if (existing) return this.entryResponse(existing, bachelor);
+    if (existing) {
+      if (source === 'KIOSK') {
+        throw new BadRequestException(
+          `Bạn đã bốc số ${existing.queueNumber}. Vui lòng liên hệ bàn điều phối nếu cần bốc lại hoặc chuyển phiên.`,
+        );
+      }
+      return this.entryResponse(existing, bachelor);
+    }
 
     const [nextNumberRow] = await transaction
         .select({
@@ -309,6 +350,7 @@ export class PhotoQueueService {
       .select({
         waiting: sql<number>`count(*) filter (where ${photoQueueEntries.photoStatus} = ${WAITING})::int`,
         photographed: sql<number>`count(*) filter (where ${photoQueueEntries.photoStatus} = ${PHOTOGRAPHED})::int`,
+        canceled: sql<number>`count(*) filter (where ${photoQueueEntries.photoStatus} = ${CANCELLED})::int`,
         total: count(photoQueueEntries.id),
       })
       .from(photoQueueEntries)
@@ -327,7 +369,7 @@ export class PhotoQueueService {
       .where(eq(photoQueueEntries.photoSessionId, photoSessionId))
       .orderBy(asc(photoQueueEntries.queueNumber));
 
-    return { summary: summary ?? { waiting: 0, photographed: 0, total: 0 }, entries };
+    return { summary: summary ?? { waiting: 0, photographed: 0, canceled: 0, total: 0 }, entries };
   }
 
   async auditLogs(photoSessionId: number, limit: number) {
