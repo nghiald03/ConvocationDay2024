@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { Server } from 'socket.io';
 import type {
   ClientToServerEvents,
+  PhotoQueueChanged,
   ServerToClientEvents,
   TtsBroadcast,
 } from './realtime-events.js';
@@ -28,6 +29,14 @@ export class RealtimeService {
       eventId: randomUUID(),
       serverTimestamp: new Date().toISOString(),
       data: { notificationId, status },
+    });
+  }
+
+  photoQueueChanged(data: PhotoQueueChanged): void {
+    this.server?.emit('photo-queue:changed', {
+      eventId: randomUUID(),
+      serverTimestamp: new Date().toISOString(),
+      data,
     });
   }
 }

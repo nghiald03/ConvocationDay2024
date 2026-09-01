@@ -71,6 +71,7 @@ export async function confirmPhotoQueueCurrent(input: {
   photographed: boolean;
   retouchNoteImage1?: string;
   retouchNoteImage2?: string;
+  notPhotographedReason?: string;
 }) {
   const response = await httpClient.put(
     '/PhotoQueue/ConfirmCurrent',
@@ -78,6 +79,7 @@ export async function confirmPhotoQueueCurrent(input: {
       photographed: input.photographed,
       retouchNoteImage1: input.retouchNoteImage1,
       retouchNoteImage2: input.retouchNoteImage2,
+      notPhotographedReason: input.notPhotographedReason,
     },
     { params: { photoSessionId: input.photoSessionId } }
   );

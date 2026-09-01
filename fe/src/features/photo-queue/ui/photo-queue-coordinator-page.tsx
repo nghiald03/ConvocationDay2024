@@ -1,8 +1,8 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, ListChecks, RotateCcw, Search } from 'lucide-react';
+import { ArrowUpDown, ChevronLeft, ChevronRight, ListChecks, RotateCcw, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +13,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
 import {
   activatePhotoQueueKioskSession,
@@ -25,10 +32,17 @@ import {
   setPhotoQueueNumber,
 } from '../api/photo-queue-api';
 import {
+  getPhotoQueueStatsPage,
+  getPreviousWaitingPhotoQueueNumber,
+  type PhotoQueueStatsSortField,
+} from '../model/photo-queue-stats-view';
+import type { PhotoQueueAuditLog } from '../model/photo-queue';
+import {
   photoQueueAuditLogsQueryOptions,
   photoQueuePublicStateQueryOptions,
   photoQueueStatsQueryOptions,
 } from '../queries/photo-queue-query-options';
+import { usePhotoQueueRealtime } from '../queries/use-photo-queue-realtime';
 import { PhotoQueueAssignmentUpload } from './photo-queue-assignment-upload';
 import { PhotoQueueSessionOnlySelector } from './photo-queue-session-only-selector';
 
@@ -41,12 +55,34 @@ export function PhotoQueueCoordinatorPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [retouchNoteImage1, setRetouchNoteImage1] = useState('');
   const [retouchNoteImage2, setRetouchNoteImage2] = useState('');
+  const [notPhotographedReason, setNotPhotographedReason] = useState('Vắng');
+  const [confirmSelection, setConfirmSelection] = useState<
+    'photographed' | 'not-photographed' | null
+  >(null);
+  const [statsSearch, setStatsSearch] = useState('');
+  const [statsSort, setStatsSort] = useState<{
+    field: PhotoQueueStatsSortField;
+    direction: 'asc' | 'desc';
+  }>({ field: 'queueNumber', direction: 'asc' });
+  const [statsPage, setStatsPage] = useState(1);
+  const [statsPageSize, setStatsPageSize] = useState(10);
   const queryClient = useQueryClient();
   const enabled = Boolean(selection.photoSessionId);
 
-  const state = useQuery(photoQueuePublicStateQueryOptions(selection.photoSessionId));
-  const stats = useQuery(photoQueueStatsQueryOptions(selection.photoSessionId));
-  const logs = useQuery(photoQueueAuditLogsQueryOptions(selection.photoSessionId));
+  const realtime = usePhotoQueueRealtime(selection.photoSessionId);
+  const fallbackRefetchInterval = realtime.isConnected ? false : 3000;
+  const state = useQuery({
+    ...photoQueuePublicStateQueryOptions(selection.photoSessionId),
+    refetchInterval: fallbackRefetchInterval,
+  });
+  const stats = useQuery({
+    ...photoQueueStatsQueryOptions(selection.photoSessionId),
+    refetchInterval: fallbackRefetchInterval,
+  });
+  const logs = useQuery({
+    ...photoQueueAuditLogsQueryOptions(selection.photoSessionId),
+    refetchInterval: fallbackRefetchInterval,
+  });
 
   function invalidate() {
     void queryClient.invalidateQueries({ queryKey: ['photo-queue'] });
@@ -68,11 +104,14 @@ export function PhotoQueueCoordinatorPage() {
         photographed,
         retouchNoteImage1,
         retouchNoteImage2,
+        notPhotographedReason,
       }),
     onSuccess: () => {
       setConfirmOpen(false);
       setRetouchNoteImage1('');
       setRetouchNoteImage2('');
+      setNotPhotographedReason('Vắng');
+      setConfirmSelection(null);
       toast.success('Đã ghi nhận xác nhận chụp ảnh.');
       invalidate();
     },
@@ -153,7 +192,37 @@ export function PhotoQueueCoordinatorPage() {
   }
 
   const retouchNotesReady = Boolean(retouchNoteImage1.trim() && retouchNoteImage2.trim());
+  const notPhotographedReasonReady = Boolean(notPhotographedReason.trim());
   const hasCurrentNumber = Boolean(state.data?.currentNumber && state.data.currentNumber > 0);
+  const statsEntries = useMemo(() => stats.data?.entries ?? [], [stats.data?.entries]);
+  const previousWaitingNumber = useMemo(
+    () =>
+      getPreviousWaitingPhotoQueueNumber(
+        statsEntries,
+        state.data?.currentNumber ?? 0,
+      ),
+    [state.data?.currentNumber, statsEntries],
+  );
+  const statsView = useMemo(
+    () =>
+      getPhotoQueueStatsPage(statsEntries, {
+        search: statsSearch,
+        sortField: statsSort.field,
+        sortDirection: statsSort.direction,
+        page: statsPage,
+        pageSize: statsPageSize,
+      }),
+    [statsEntries, statsPage, statsPageSize, statsSearch, statsSort],
+  );
+
+  function changeStatsSort(field: PhotoQueueStatsSortField) {
+    setStatsSort((current) => ({
+      field,
+      direction:
+        current.field === field && current.direction === 'asc' ? 'desc' : 'asc',
+    }));
+    setStatsPage(1);
+  }
 
   return (
     <main className='space-y-6'>
@@ -198,9 +267,9 @@ export function PhotoQueueCoordinatorPage() {
           <p className='mt-4 text-2xl font-bold'>
             {state.data?.current?.fullName ?? 'Chưa có người đang chụp'}
           </p>
-          <div className='mt-6 grid grid-cols-2 gap-3'>
+          <div className='mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3'>
             <Button
-              disabled={!enabled || previous.isPending}
+              disabled={!enabled || previous.isPending || previousWaitingNumber === null}
               onClick={() => previous.mutate()}
               size='lg'
               variant='outline'
@@ -209,11 +278,20 @@ export function PhotoQueueCoordinatorPage() {
               Quay lại
             </Button>
             <Button
-              disabled={!enabled || next.isPending}
-              onClick={() => {
-                if (hasCurrentNumber) setConfirmOpen(true);
-                else next.mutate();
-              }}
+              disabled={!enabled || !hasCurrentNumber || confirmCurrent.isPending}
+              onClick={() => setConfirmOpen(true)}
+              size='lg'
+              variant='outline'
+            >
+              Xác nhận
+            </Button>
+            <Button
+              disabled={
+                !enabled ||
+                next.isPending ||
+                (hasCurrentNumber && !state.data?.currentPhotoConfirmed)
+              }
+              onClick={() => next.mutate()}
               size='lg'
               variant='outline'
             >
@@ -244,24 +322,56 @@ export function PhotoQueueCoordinatorPage() {
             <ListChecks className='h-5 w-5 text-foreground' />
             Thống kê
           </div>
-          <div className='mt-5 grid gap-3 md:grid-cols-4'>
+          <div className='mt-5 grid gap-3 md:grid-cols-5'>
             <Metric label='Tổng đã bấm' value={stats.data?.summary.total ?? 0} />
             <Metric label='Đã chụp' value={stats.data?.summary.photographed ?? 0} />
             <Metric label='Chưa chụp' value={stats.data?.summary.waiting ?? 0} />
+            <Metric label='Vắng' value={stats.data?.summary.absent ?? 0} />
             <Metric label='Đã hủy' value={stats.data?.summary.canceled ?? 0} />
+          </div>
+          <div className='mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='relative flex-1'>
+              <Search className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+              <Input
+                value={statsSearch}
+                onChange={(event) => {
+                  setStatsSearch(event.target.value);
+                  setStatsPage(1);
+                }}
+                className='pl-9'
+                placeholder='Tìm theo số, MSSV, họ tên, trạng thái'
+                aria-label='Tìm kiếm bảng thống kê'
+              />
+            </div>
+            <Select
+              value={String(statsPageSize)}
+              onValueChange={(value) => {
+                setStatsPageSize(Number(value));
+                setStatsPage(1);
+              }}
+            >
+              <SelectTrigger className='w-full sm:w-[130px]' aria-label='Số dòng mỗi trang'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='10'>10 dòng</SelectItem>
+                <SelectItem value='20'>20 dòng</SelectItem>
+                <SelectItem value='50'>50 dòng</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className='mt-6 max-h-[360px] overflow-auto rounded-lg border'>
             <table className='w-full text-left text-sm'>
               <thead className='bg-muted text-muted-foreground'>
                 <tr>
-                  <th className='p-3'>Số</th>
-                  <th className='p-3'>MSSV</th>
-                  <th className='p-3'>Họ tên</th>
-                  <th className='p-3'>Tình trạng</th>
+                  <StatsSortHeader label='Số' field='queueNumber' onSort={changeStatsSort} />
+                  <StatsSortHeader label='MSSV' field='studentCode' onSort={changeStatsSort} />
+                  <StatsSortHeader label='Họ tên' field='fullName' onSort={changeStatsSort} />
+                  <StatsSortHeader label='Tình trạng' field='photoStatus' onSort={changeStatsSort} />
                 </tr>
               </thead>
               <tbody>
-                {(stats.data?.entries ?? []).map((entry) => (
+                {statsView.entries.map((entry) => (
                   <tr key={entry.queueNumber} className='border-t'>
                     <td className='p-3 font-bold'>{entry.queueNumber}</td>
                     <td className='p-3'>{entry.studentCode}</td>
@@ -271,8 +381,42 @@ export function PhotoQueueCoordinatorPage() {
                     </td>
                   </tr>
                 ))}
+                {statsView.entries.length === 0 && (
+                  <tr className='border-t'>
+                    <td colSpan={4} className='p-6 text-center text-muted-foreground'>
+                      Không tìm thấy dữ liệu phù hợp.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
+          </div>
+          <div className='mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between'>
+            <p className='text-muted-foreground'>
+              {statsView.totalEntries} kết quả · Trang {statsView.page}/{statsView.totalPages}
+            </p>
+            <div className='flex gap-2'>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                disabled={statsView.page <= 1}
+                onClick={() => setStatsPage(statsView.page - 1)}
+              >
+                <ChevronLeft className='mr-1 h-4 w-4' />
+                Trước
+              </Button>
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                disabled={statsView.page >= statsView.totalPages}
+                onClick={() => setStatsPage(statsView.page + 1)}
+              >
+                Sau
+                <ChevronRight className='ml-1 h-4 w-4' />
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -324,57 +468,98 @@ export function PhotoQueueCoordinatorPage() {
         )}
       </section>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open);
+          if (!open) setConfirmSelection(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Xác nhận tình trạng chụp ảnh</DialogTitle>
           </DialogHeader>
-          <p className='text-sm text-muted-foreground'>
-            Xác nhận số {state.data?.currentNumber ?? 0} đã chụp hay chưa trước khi chuyển sang
-            số tiếp theo. Nếu đã chụp, nhập ghi chú ảnh 1 và ảnh 2 cho design retouch.
-          </p>
-          <div className='space-y-3'>
-            <Input
-              value={retouchNoteImage1}
-              onChange={(event) => setRetouchNoteImage1(event.target.value)}
-              placeholder='Ghi chú ảnh 1 cho design retouch'
-              aria-label='Ghi chú ảnh 1 cho design retouch'
-            />
-            <Input
-              value={retouchNoteImage2}
-              onChange={(event) => setRetouchNoteImage2(event.target.value)}
-              placeholder='Ghi chú ảnh 2 cho design retouch'
-              aria-label='Ghi chú ảnh 2 cho design retouch'
-            />
-          </div>
-          <DialogFooter className='grid grid-cols-1 gap-2 sm:grid-cols-2 sm:justify-stretch'>
-            <Button
-              variant='outline'
-              className='w-full min-w-0 px-3'
-              onClick={() => confirmCurrent.mutate(false)}
-              disabled={confirmCurrent.isPending || !hasCurrentNumber}
-            >
-              Chưa chụp
-            </Button>
-            <Button
-              variant='outline'
-              className='w-full min-w-0 px-3'
-              onClick={() => confirmCurrent.mutate(true)}
-              disabled={confirmCurrent.isPending || !hasCurrentNumber || !retouchNotesReady}
-            >
-              Đã chụp
-            </Button>
-            <Button
-              variant='outline'
-              className='w-full min-w-0 px-3 sm:col-span-2'
-              onClick={() => {
-                confirmCurrent.mutate(true, { onSuccess: () => next.mutate() });
-              }}
-              disabled={confirmCurrent.isPending || next.isPending || !hasCurrentNumber || !retouchNotesReady}
-            >
-              Xác nhận và Next
-            </Button>
-          </DialogFooter>
+          {!confirmSelection ? (
+            <div className='grid gap-3 sm:grid-cols-2'>
+              <Button
+                type='button'
+                variant='outline'
+                className='h-20 text-base'
+                onClick={() => setConfirmSelection('not-photographed')}
+              >
+                Chưa chụp
+              </Button>
+              <Button
+                type='button'
+                variant='outline'
+                className='h-20 text-base'
+                onClick={() => setConfirmSelection('photographed')}
+              >
+                Đã chụp
+              </Button>
+            </div>
+          ) : (
+            <>
+              <p className='text-sm text-muted-foreground'>
+                {confirmSelection === 'photographed'
+                  ? `Nhập đầy đủ ghi chú ảnh cho số ${state.data?.currentNumber ?? 0}.`
+                  : `Nhập lý do số ${state.data?.currentNumber ?? 0} chưa chụp.`}
+              </p>
+              <div className='space-y-3'>
+                {confirmSelection === 'photographed' ? (
+                  <>
+                    <Input
+                      required
+                      value={retouchNoteImage1}
+                      onChange={(event) => setRetouchNoteImage1(event.target.value)}
+                      placeholder='Ghi chú ảnh 1 cho design retouch'
+                      aria-label='Ghi chú ảnh 1 cho design retouch'
+                    />
+                    <Input
+                      required
+                      value={retouchNoteImage2}
+                      onChange={(event) => setRetouchNoteImage2(event.target.value)}
+                      placeholder='Ghi chú ảnh 2 cho design retouch'
+                      aria-label='Ghi chú ảnh 2 cho design retouch'
+                    />
+                  </>
+                ) : (
+                  <Input
+                    required
+                    value={notPhotographedReason}
+                    onChange={(event) => setNotPhotographedReason(event.target.value)}
+                    placeholder='Lý do chưa chụp'
+                    aria-label='Lý do chưa chụp'
+                  />
+                )}
+              </div>
+              <DialogFooter className='grid grid-cols-1 gap-2 sm:grid-cols-2 sm:justify-stretch'>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => setConfirmSelection(null)}
+                  disabled={confirmCurrent.isPending}
+                >
+                  Chọn lại
+                </Button>
+                <Button
+                  type='button'
+                  onClick={() =>
+                    confirmCurrent.mutate(confirmSelection === 'photographed')
+                  }
+                  disabled={
+                    confirmCurrent.isPending ||
+                    !hasCurrentNumber ||
+                    (confirmSelection === 'photographed'
+                      ? !retouchNotesReady
+                      : !notPhotographedReasonReady)
+                  }
+                >
+                  Lưu xác nhận
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -386,11 +571,10 @@ export function PhotoQueueCoordinatorPage() {
               key={log.id}
               className='flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3'
             >
-              <span className='font-semibold'>
-                {log.action}: {log.previousNumber ?? '-'} → {log.nextNumber ?? '-'}
-              </span>
+              <span className='font-semibold'>{getAuditLogMessage(log)}</span>
               <span className='text-sm text-muted-foreground'>
-                {log.actorName ?? 'Kiosk'} - {new Date(log.createdAt).toLocaleString('vi-VN')}
+                Thực hiện bởi {log.actorName ?? 'Hệ thống'} -{' '}
+                {new Date(log.createdAt).toLocaleString('vi-VN')}
               </span>
             </div>
           ))}
@@ -409,8 +593,53 @@ function Metric({ label, value }: { label: string; value: number }) {
   );
 }
 
-function getPhotoStatusLabel(status: 'WAITING' | 'PHOTOGRAPHED' | 'CANCELLED') {
+function StatsSortHeader({
+  label,
+  field,
+  onSort,
+}: {
+  label: string;
+  field: PhotoQueueStatsSortField;
+  onSort: (field: PhotoQueueStatsSortField) => void;
+}) {
+  return (
+    <th className='p-1'>
+      <Button
+        type='button'
+        variant='ghost'
+        size='sm'
+        className='w-full justify-start px-2'
+        onClick={() => onSort(field)}
+      >
+        {label}
+        <ArrowUpDown className='ml-2 h-4 w-4' />
+      </Button>
+    </th>
+  );
+}
+
+function getPhotoStatusLabel(status: 'WAITING' | 'PHOTOGRAPHED' | 'ABSENT' | 'CANCELLED') {
   if (status === 'PHOTOGRAPHED') return 'Đã chụp';
+  if (status === 'ABSENT') return 'Vắng';
   if (status === 'CANCELLED') return 'Đã hủy';
   return 'Chưa chụp';
+}
+
+function getAuditLogFallback(log: PhotoQueueAuditLog) {
+  if (log.action === 'next') return `Đã chuyển sang số ${log.nextNumber ?? '-'}.`;
+  if (log.action === 'previous') return `Đã quay lại số ${log.nextNumber ?? '-'}.`;
+  if (log.action === 'set') return `Đã chuyển thủ công sang số ${log.nextNumber ?? '-'}.`;
+  if (log.action === 'confirm-photographed') return `Đã xác nhận số ${log.nextNumber ?? '-'} đã chụp.`;
+  if (log.action === 'confirm-not-photographed') return `Đã xác nhận số ${log.nextNumber ?? '-'} chưa chụp.`;
+  return `${log.action}: ${log.previousNumber ?? '-'} → ${log.nextNumber ?? '-'}`;
+}
+
+function getAuditLogMessage(log: PhotoQueueAuditLog) {
+  if (log.details && log.details !== 'manual-jump') {
+    if (log.action === 'student-request' && !log.details.includes('đã lấy số')) {
+      return `${log.details} đã lấy số ${log.nextNumber ?? '-'} tại kiosk.`;
+    }
+    return log.details;
+  }
+  return getAuditLogFallback(log);
 }

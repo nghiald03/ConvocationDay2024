@@ -24,11 +24,14 @@ export class PhotoQueueController {
 
   @Post('RequestNumber')
   @RequirePermissions(Permission.RequestPhotoQueue)
-  async requestNumber(@Body() input: RequestPhotoQueueNumberDto) {
+  async requestNumber(
+    @Body() input: RequestPhotoQueueNumberDto,
+    @CurrentActor() actor: ActorContext,
+  ) {
     return {
       status: 200,
       message: 'Lấy số thứ tự chụp ảnh thành công.',
-      data: await this.photoQueue.requestNumber(input.studentCode),
+      data: await this.photoQueue.requestNumber(input.studentCode, actor),
     };
   }
 

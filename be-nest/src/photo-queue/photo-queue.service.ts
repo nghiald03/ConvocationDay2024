@@ -2,7 +2,9 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { and, asc, count, desc, eq, sql } from 'drizzle-orm';
 import { Permission } from '../auth/permissions.js';
 import type { ActorContext } from '../common/guards/actor-context.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import type { ConfirmPhotoQueueCurrentDto } from './dto/photo-queue.dto.js';
+import { getPhotoQueueAuditDetails } from './photo-queue-audit-details.js';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import {
@@ -16,13 +18,17 @@ import {
 
 const PHOTOGRAPHED = 'PHOTOGRAPHED';
 const WAITING = 'WAITING';
+const ABSENT = 'ABSENT';
 const CANCELLED = 'CANCELLED';
 
 type Transaction = Parameters<Parameters<AppDatabase['transaction']>[0]>[0];
 
 @Injectable()
 export class PhotoQueueService {
-  constructor(@Inject(DATABASE) private readonly database: AppDatabase) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: AppDatabase,
+    private readonly realtime: RealtimeService,
+  ) {}
 
   async sessions() {
     return this.database
@@ -38,6 +44,10 @@ export class PhotoQueueService {
       .insert(photoQueueSessions)
       .values({ name: normalizedName, description: description?.trim() || null })
       .returning();
+    this.realtime.photoQueueChanged({
+      photoSessionIds: [created!.id],
+      sessionsChanged: true,
+    });
     return created!;
   }
 
@@ -51,7 +61,7 @@ export class PhotoQueueService {
   }
 
   async activateKioskSession(photoSessionId: number) {
-    return this.database.transaction(async (transaction) => {
+    const result = await this.database.transaction(async (transaction) => {
       await this.ensurePhotoSession(transaction, photoSessionId);
       await transaction.update(photoQueueSessions).set({ isKioskActive: false });
       const [updated] = await transaction
@@ -61,13 +71,19 @@ export class PhotoQueueService {
         .returning();
       return updated!;
     });
+    this.realtime.photoQueueChanged({
+      photoSessionIds: [photoSessionId],
+      sessionsChanged: true,
+      activeSessionChanged: true,
+    });
+    return result;
   }
 
-  async requestNumber(studentCode: string) {
+  async requestNumber(studentCode: string, actor: ActorContext) {
     const normalizedStudentCode = studentCode.trim().toLowerCase();
     if (!normalizedStudentCode) throw new BadRequestException('Vui lòng nhập MSSV.');
 
-    return this.database.transaction(async (transaction) => {
+    const result = await this.database.transaction(async (transaction) => {
       const [activePhotoSession] = await transaction
         .select({ id: photoQueueSessions.id })
         .from(photoQueueSessions)
@@ -102,8 +118,10 @@ export class PhotoQueueService {
         );
       }
 
-      return this.issueNumber(transaction, bachelor, photoSessionId, 'KIOSK');
+      return this.issueNumber(transaction, bachelor, photoSessionId, 'KIOSK', actor);
     });
+    this.realtime.photoQueueChanged({ photoSessionIds: [result.photoSessionId] });
+    return result;
   }
 
   async kioskLookup(studentCode: string) {
@@ -181,7 +199,7 @@ export class PhotoQueueService {
   ) {
     if (!reason.trim()) throw new BadRequestException('Vui lòng nhập lý do chuyển phiên.');
 
-    return this.database.transaction(async (transaction) => {
+    const result = await this.database.transaction(async (transaction) => {
       await this.ensurePhotoSession(transaction, photoSessionId);
       const [bachelor] = await transaction
         .select()
@@ -217,7 +235,7 @@ export class PhotoQueueService {
           previousNumber: existing.queueNumber,
           actorId: actor.userId,
           actorName: actor.fullName || actor.email,
-          details: `${bachelor.studentCode}: ${reason.trim()}`,
+          details: `${actor.fullName || actor.email} đã hủy số ${existing.queueNumber} của ${bachelor.studentCode} ${bachelor.fullName} để cấp lại. Lý do: ${reason.trim()}.`,
         });
       }
 
@@ -226,6 +244,7 @@ export class PhotoQueueService {
         bachelor,
         photoSessionId,
         'COORDINATOR',
+        actor,
         reason.trim(),
       );
       await transaction.insert(photoQueueAuditLogs).values({
@@ -235,14 +254,24 @@ export class PhotoQueueService {
         nextNumber: entry.queueNumber,
         actorId: actor.userId,
         actorName: actor.fullName || actor.email,
-        details: `${bachelor.studentCode}: ${reason.trim()}`,
+        details: getPhotoQueueAuditDetails({
+          type: 'number-issued',
+          source: 'COORDINATOR',
+          actorName: actor.fullName || actor.email,
+          studentCode: bachelor.studentCode,
+          fullName: bachelor.fullName,
+          queueNumber: entry.queueNumber,
+          reason: reason.trim(),
+        }),
       });
       return entry;
     });
+    this.realtime.photoQueueChanged({ photoSessionIds: [photoSessionId] });
+    return result;
   }
 
   async uploadAssignments(rows: { photoSessionId: number; studentCode: string; requiresCoordinator?: boolean; note?: string }[]) {
-    return this.database.transaction(async (transaction) => {
+    const result = await this.database.transaction(async (transaction) => {
       let imported = 0;
       for (const row of rows) {
         await this.ensurePhotoSession(transaction, row.photoSessionId);
@@ -272,6 +301,10 @@ export class PhotoQueueService {
       }
       return { imported };
     });
+    this.realtime.photoQueueChanged({
+      photoSessionIds: [...new Set(rows.map((row) => row.photoSessionId))],
+    });
+    return result;
   }
 
   private async issueNumber(
@@ -279,6 +312,7 @@ export class PhotoQueueService {
     bachelor: typeof bachelors.$inferSelect,
     photoSessionId: number,
     source: 'KIOSK' | 'COORDINATOR',
+    actor: ActorContext,
     coordinatorReason?: string,
   ) {
     const [existing] = await transaction
@@ -321,12 +355,22 @@ export class PhotoQueueService {
         })
         .returning();
 
-    await transaction.insert(photoQueueAuditLogs).values({
+    if (source === 'KIOSK') {
+      await transaction.insert(photoQueueAuditLogs).values({
         photoSessionId,
-        action: source === 'KIOSK' ? 'student-request' : 'coordinator-request',
+        action: 'student-request',
         nextNumber,
-        details: bachelor.studentCode,
+        actorId: actor.userId,
+        actorName: actor.fullName || actor.email,
+        details: getPhotoQueueAuditDetails({
+          type: 'number-issued',
+          source,
+          studentCode: bachelor.studentCode,
+          fullName: bachelor.fullName,
+          queueNumber: nextNumber,
+        }),
       });
+    }
 
     return this.entryResponse(entry!, bachelor);
   }
@@ -336,10 +380,15 @@ export class PhotoQueueService {
     const state = await this.ensureState(effectivePhotoSessionId);
     const displayNumber = state.currentNumber > 0 ? state.currentNumber : 1;
     const [current] = await this.entryWithBachelor(effectivePhotoSessionId, displayNumber);
-    const [next] = await this.entryWithBachelor(effectivePhotoSessionId, displayNumber + 1);
+    const [next] = await this.nextWaitingEntryWithBachelor(
+      effectivePhotoSessionId,
+      displayNumber,
+    );
     return {
       photoSessionId: effectivePhotoSessionId,
       currentNumber: current ? displayNumber : 0,
+      currentPhotoConfirmed: state.currentPhotoConfirmed,
+      currentPhotoTaken: state.currentPhotoTaken,
       current,
       next,
     };
@@ -350,6 +399,7 @@ export class PhotoQueueService {
       .select({
         waiting: sql<number>`count(*) filter (where ${photoQueueEntries.photoStatus} = ${WAITING})::int`,
         photographed: sql<number>`count(*) filter (where ${photoQueueEntries.photoStatus} = ${PHOTOGRAPHED})::int`,
+        absent: sql<number>`count(*) filter (where ${photoQueueEntries.photoStatus} = ${ABSENT})::int`,
         canceled: sql<number>`count(*) filter (where ${photoQueueEntries.photoStatus} = ${CANCELLED})::int`,
         total: count(photoQueueEntries.id),
       })
@@ -369,7 +419,10 @@ export class PhotoQueueService {
       .where(eq(photoQueueEntries.photoSessionId, photoSessionId))
       .orderBy(asc(photoQueueEntries.queueNumber));
 
-    return { summary: summary ?? { waiting: 0, photographed: 0, canceled: 0, total: 0 }, entries };
+    return {
+      summary: summary ?? { waiting: 0, photographed: 0, absent: 0, canceled: 0, total: 0 },
+      entries,
+    };
   }
 
   async auditLogs(photoSessionId: number, limit: number) {
@@ -390,12 +443,17 @@ export class PhotoQueueService {
     input: ConfirmPhotoQueueCurrentDto,
     actor: ActorContext,
   ) {
-    return this.database.transaction(async (transaction) => {
-      const retouchNoteImage1 = input.retouchNoteImage1?.trim() ?? '';
-      const retouchNoteImage2 = input.retouchNoteImage2?.trim() ?? '';
-      if (input.photographed && (!retouchNoteImage1 || !retouchNoteImage2)) {
-        throw new BadRequestException('Vui lòng nhập ghi chú ảnh 1 và ảnh 2 cho design retouch.');
-      }
+    const retouchNoteImage1 = input.retouchNoteImage1?.trim() ?? '';
+    const retouchNoteImage2 = input.retouchNoteImage2?.trim() ?? '';
+    const notPhotographedReason = input.notPhotographedReason?.trim() ?? '';
+    if (input.photographed && (!retouchNoteImage1 || !retouchNoteImage2)) {
+      throw new BadRequestException('Vui lòng nhập ghi chú ảnh 1 và ảnh 2 cho design retouch.');
+    }
+    if (!input.photographed && !notPhotographedReason) {
+      throw new BadRequestException('Vui lòng nhập lý do chưa chụp.');
+    }
+
+    const result = await this.database.transaction(async (transaction) => {
       const [state] = await transaction
         .select()
         .from(photoQueueStates)
@@ -403,6 +461,23 @@ export class PhotoQueueService {
         .limit(1)
         .for('update');
       if (!state || state.currentNumber <= 0) throw new BadRequestException('Chưa có số hiện tại để xác nhận.');
+      const [currentBachelor] = await transaction
+        .select({
+          studentCode: bachelors.studentCode,
+          fullName: bachelors.fullName,
+        })
+        .from(photoQueueEntries)
+        .innerJoin(bachelors, eq(bachelors.id, photoQueueEntries.bachelorId))
+        .where(
+          and(
+            eq(photoQueueEntries.photoSessionId, photoSessionId),
+            eq(photoQueueEntries.queueNumber, state.currentNumber),
+          ),
+        )
+        .limit(1);
+      if (!currentBachelor) {
+        throw new BadRequestException('Không tìm thấy tân cử nhân của số hiện tại.');
+      }
       await transaction
         .update(photoQueueStates)
         .set({ currentPhotoConfirmed: true, currentPhotoTaken: input.photographed, updatedAt: sql`now()`, updatedBy: actor.userId })
@@ -410,7 +485,7 @@ export class PhotoQueueService {
       await transaction
         .update(photoQueueEntries)
         .set({
-          photoStatus: input.photographed ? PHOTOGRAPHED : WAITING,
+          photoStatus: input.photographed ? PHOTOGRAPHED : ABSENT,
           photographedAt: input.photographed ? sql`now()` : null,
           retouchNoteImage1: input.photographed ? retouchNoteImage1 : null,
           retouchNoteImage2: input.photographed ? retouchNoteImage2 : null,
@@ -422,12 +497,21 @@ export class PhotoQueueService {
         nextNumber: state.currentNumber,
         actorId: actor.userId,
         actorName: actor.fullName || actor.email,
-        details: input.photographed
-          ? `Ảnh 1: ${retouchNoteImage1}; Ảnh 2: ${retouchNoteImage2}`
-          : null,
+        details: getPhotoQueueAuditDetails({
+          type: 'photo-confirmed',
+          actorName: actor.fullName || actor.email,
+          studentCode: currentBachelor.studentCode,
+          fullName: currentBachelor.fullName,
+          photographed: input.photographed,
+          retouchNoteImage1,
+          retouchNoteImage2,
+          notPhotographedReason,
+        }),
       });
       return { photoSessionId, currentNumber: state.currentNumber, photographed: input.photographed };
     });
+    this.realtime.photoQueueChanged({ photoSessionIds: [photoSessionId] });
+    return result;
   }
 
   previous(photoSessionId: number, actor: ActorContext) {
@@ -444,7 +528,7 @@ export class PhotoQueueService {
     action: 'next' | 'previous' | 'set',
     manualNumber?: number,
   ) {
-    return this.database.transaction(async (transaction) => {
+    const result = await this.database.transaction(async (transaction) => {
       await this.ensurePhotoSession(transaction, photoSessionId);
       const [state] = await transaction
         .insert(photoQueueStates)
@@ -463,17 +547,26 @@ export class PhotoQueueService {
         action === 'previous'
           ? await this.findPreviousWaitingNumber(transaction, photoSessionId, previousNumber)
           : null;
+      const nextWaitingNumber =
+        action === 'next'
+          ? await this.findNextWaitingNumber(
+              transaction,
+              photoSessionId,
+              state!.manualReturnNumber ?? previousNumber,
+            )
+          : null;
       if (action === 'previous' && previousWaitingNumber === null) {
-        throw new BadRequestException('KhÃ´ng cÃ³ sá»‘ phÃ­a trÆ°á»›c chÆ°a chá»¥p Ä‘á»ƒ quay láº¡i.');
+        throw new BadRequestException('Không có số phía trước chưa chụp để quay lại.');
+      }
+      if (action === 'next' && nextWaitingNumber === null) {
+        throw new BadRequestException('Không có số tiếp theo chưa chụp để chuyển tới.');
       }
       const nextNumber =
         action === 'set'
           ? manualNumber!
           : action === 'previous'
             ? previousWaitingNumber!
-            : state!.manualReturnNumber !== null
-              ? state!.manualReturnNumber + 1
-              : previousNumber + 1;
+            : nextWaitingNumber!;
 
       const [updated] = await transaction
         .update(photoQueueStates)
@@ -495,7 +588,12 @@ export class PhotoQueueService {
         nextNumber,
         actorId: actor.userId,
         actorName: actor.fullName || actor.email,
-        details: action === 'set' ? 'manual-jump' : null,
+        details:
+          action === 'set'
+            ? `${actor.fullName || actor.email} đã chuyển thủ công từ số ${previousNumber} sang số ${nextNumber}.`
+            : action === 'previous'
+              ? `${actor.fullName || actor.email} đã quay lại từ số ${previousNumber} về số ${nextNumber}.`
+              : `${actor.fullName || actor.email} đã chuyển từ số ${previousNumber} sang số ${nextNumber}.`,
       });
 
       return {
@@ -505,6 +603,8 @@ export class PhotoQueueService {
         canControl: actor.permissions.includes(Permission.ControlPhotoQueue),
       };
     });
+    this.realtime.photoQueueChanged({ photoSessionIds: [photoSessionId] });
+    return result;
   }
 
   private ensureState(photoSessionId: number) {
@@ -540,6 +640,50 @@ export class PhotoQueueService {
         ),
       )
       .limit(1);
+  }
+
+  private nextWaitingEntryWithBachelor(photoSessionId: number, currentNumber: number) {
+    return this.database
+      .select({
+        queueNumber: photoQueueEntries.queueNumber,
+        photoStatus: photoQueueEntries.photoStatus,
+        studentCode: bachelors.studentCode,
+        fullName: bachelors.fullName,
+        major: bachelors.major,
+        image: bachelors.image,
+      })
+      .from(photoQueueEntries)
+      .innerJoin(bachelors, eq(bachelors.id, photoQueueEntries.bachelorId))
+      .where(
+        and(
+          eq(photoQueueEntries.photoSessionId, photoSessionId),
+          eq(photoQueueEntries.photoStatus, WAITING),
+          sql`${photoQueueEntries.queueNumber} > ${currentNumber}`,
+        ),
+      )
+      .orderBy(asc(photoQueueEntries.queueNumber))
+      .limit(1);
+  }
+
+  private async findNextWaitingNumber(
+    transaction: Transaction,
+    photoSessionId: number,
+    currentNumber: number,
+  ) {
+    const [entry] = await transaction
+      .select({ queueNumber: photoQueueEntries.queueNumber })
+      .from(photoQueueEntries)
+      .where(
+        and(
+          eq(photoQueueEntries.photoSessionId, photoSessionId),
+          eq(photoQueueEntries.photoStatus, WAITING),
+          sql`${photoQueueEntries.queueNumber} > ${currentNumber}`,
+        ),
+      )
+      .orderBy(asc(photoQueueEntries.queueNumber))
+      .limit(1)
+      .for('update');
+    return entry?.queueNumber ?? null;
   }
 
   private async findPreviousWaitingNumber(

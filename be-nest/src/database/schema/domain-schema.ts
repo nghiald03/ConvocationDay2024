@@ -186,7 +186,7 @@ export const photoQueueEntries = pgTable(
     check('photo_queue_entry_number_check', sql`${table.queueNumber} > 0`),
     check(
       'photo_queue_entry_status_check',
-      sql`${table.photoStatus} in ('WAITING', 'PHOTOGRAPHED', 'CANCELLED')`,
+      sql`${table.photoStatus} in ('WAITING', 'PHOTOGRAPHED', 'ABSENT', 'CANCELLED')`,
     ),
   ],
 );

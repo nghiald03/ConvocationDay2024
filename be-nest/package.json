@@ -24,8 +24,9 @@
     "seed:test": "tsx scripts/seed-test-data.ts",
     "seed:photo-queue:test": "node scripts/seed-photo-queue-test-data.mjs",
     "patch:photo-queue-retouch": "node scripts/patch-photo-queue-retouch-columns.mjs",
+    "encoding:check": "bun test ../scripts/encoding-check.test.mjs && bun ../scripts/encoding-check.mjs",
     "secrets:check": "bun ../scripts/secret-check.mjs",
-    "verify": "bun run secrets:check && bun run lint && bun run typecheck && bun run test && bun run build && bun run drizzle:check"
+    "verify": "bun run encoding:check && bun run secrets:check && bun run lint && bun run typecheck && bun run test && bun run build && bun run drizzle:check"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1121.0",

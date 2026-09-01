@@ -32,6 +32,10 @@ export class ConfirmPhotoQueueCurrentDto {
   @IsOptional()
   @IsString()
   retouchNoteImage2?: string;
+
+  @IsOptional()
+  @IsString()
+  notPhotographedReason?: string;
 }
 
 export class CoordinatorIssueNumberDto {

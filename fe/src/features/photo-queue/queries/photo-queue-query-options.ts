@@ -7,40 +7,47 @@ import {
   getPhotoQueueStats,
 } from '../api/photo-queue-api';
 
+export const photoQueueKeys = {
+  root: ['photo-queue'] as const,
+  sessions: ['photo-queue', 'sessions'] as const,
+  activeSession: ['photo-queue', 'active-session'] as const,
+  publicState: (photoSessionId?: string) =>
+    ['photo-queue', 'public-state', photoSessionId ?? 'active'] as const,
+  stats: (photoSessionId: string) => ['photo-queue', 'stats', photoSessionId] as const,
+  auditLogs: (photoSessionId: string) =>
+    ['photo-queue', 'audit-logs', photoSessionId] as const,
+};
+
 export const photoQueueSessionsQueryOptions = queryOptions({
-  queryKey: ['photo-queue', 'sessions'],
+  queryKey: photoQueueKeys.sessions,
   queryFn: getPhotoQueueSessions,
   staleTime: 60_000,
 });
 
 export const activePhotoQueueSessionQueryOptions = queryOptions({
-  queryKey: ['photo-queue', 'active-session'],
+  queryKey: photoQueueKeys.activeSession,
   queryFn: getActivePhotoQueueSession,
-  refetchInterval: 3000,
 });
 
 export function photoQueuePublicStateQueryOptions(photoSessionId?: string) {
   return queryOptions({
-    queryKey: ['photo-queue', 'public-state', photoSessionId ?? 'active'],
+    queryKey: photoQueueKeys.publicState(photoSessionId),
     queryFn: () => getPhotoQueuePublicState(photoSessionId),
-    refetchInterval: 2000,
   });
 }
 
 export function photoQueueStatsQueryOptions(photoSessionId: string) {
   return queryOptions({
-    queryKey: ['photo-queue', 'stats', photoSessionId],
+    queryKey: photoQueueKeys.stats(photoSessionId),
     queryFn: () => getPhotoQueueStats(photoSessionId),
     enabled: Boolean(photoSessionId),
-    refetchInterval: 3000,
   });
 }
 
 export function photoQueueAuditLogsQueryOptions(photoSessionId: string) {
   return queryOptions({
-    queryKey: ['photo-queue', 'audit-logs', photoSessionId],
+    queryKey: photoQueueKeys.auditLogs(photoSessionId),
     queryFn: () => getPhotoQueueAuditLogs(photoSessionId),
     enabled: Boolean(photoSessionId),
-    refetchInterval: 3000,
   });
 }

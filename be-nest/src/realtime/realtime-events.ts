@@ -18,6 +18,12 @@ export interface TtsBroadcast {
   isNewNotification?: boolean;
 }
 
+export interface PhotoQueueChanged {
+  photoSessionIds: number[];
+  sessionsChanged?: boolean;
+  activeSessionChanged?: boolean;
+}
+
 export interface ServerToClientEvents {
   SendMessage: (data: unknown) => void;
   ReceiveNotify: (data: unknown) => void;
@@ -25,6 +31,7 @@ export interface ServerToClientEvents {
   'bachelor:changed': (event: RealtimeEnvelope<unknown>) => void;
   'hall-session:refresh': (event: RealtimeEnvelope<{ hallId?: number; sessionId?: number }>) => void;
   'notification:changed': (event: RealtimeEnvelope<{ notificationId: number; status: string }>) => void;
+  'photo-queue:changed': (event: RealtimeEnvelope<PhotoQueueChanged>) => void;
   'authorization:error': (error: { code: string; message: string }) => void;
 }
 

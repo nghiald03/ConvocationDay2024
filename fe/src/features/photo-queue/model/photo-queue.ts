@@ -1,6 +1,6 @@
 export type PhotoQueueEntry = {
   queueNumber: number;
-  photoStatus: 'WAITING' | 'PHOTOGRAPHED' | 'CANCELLED';
+  photoStatus: 'WAITING' | 'PHOTOGRAPHED' | 'ABSENT' | 'CANCELLED';
   studentCode: string;
   fullName: string;
   major: string | null;
@@ -15,6 +15,8 @@ export type PhotoQueueRequestResult = PhotoQueueEntry & {
 export type PhotoQueuePublicState = {
   photoSessionId: number;
   currentNumber: number;
+  currentPhotoConfirmed: boolean;
+  currentPhotoTaken: boolean | null;
   current: PhotoQueueEntry | null;
   next: PhotoQueueEntry | null;
 };
@@ -56,6 +58,7 @@ export type PhotoQueueStats = {
   summary: {
     waiting: number;
     photographed: number;
+    absent: number;
     canceled: number;
     total: number;
   };

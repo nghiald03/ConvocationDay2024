@@ -31,6 +31,7 @@ import type {
   PhotoQueueRequestResult,
 } from '../model/photo-queue';
 import { activePhotoQueueSessionQueryOptions } from '../queries/photo-queue-query-options';
+import { usePhotoQueueRealtime } from '../queries/use-photo-queue-realtime';
 
 const clockFormatter = new Intl.DateTimeFormat('vi-VN', {
   hour: '2-digit',
@@ -94,7 +95,11 @@ export function PhotoQueueKioskPage() {
     useState<PhotoQueueKioskLookup | null>(null);
   const [result, setResult] = useState<PhotoQueueRequestResult | null>(null);
   const kioskRef = useRef<HTMLElement>(null);
-  const activeSession = useQuery(activePhotoQueueSessionQueryOptions);
+  const realtime = usePhotoQueueRealtime();
+  const activeSession = useQuery({
+    ...activePhotoQueueSessionQueryOptions,
+    refetchInterval: realtime.isConnected ? false : 3000,
+  });
   const currentTime = useCurrentTime();
   const fullscreen = useFullscreen(kioskRef);
 

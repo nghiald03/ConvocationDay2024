@@ -9,7 +9,10 @@ import { photoQueuePublicStateQueryOptions } from '../queries/photo-queue-query-
 export function PhotoQueueDisplayPage() {
   const searchParams = useSearchParams();
   const photoSessionId = searchParams?.get('photoSessionId') ?? '';
-  const { data } = useQuery(photoQueuePublicStateQueryOptions(photoSessionId || undefined));
+  const { data } = useQuery({
+    ...photoQueuePublicStateQueryOptions(photoSessionId || undefined),
+    refetchInterval: 2000,
+  });
 
   const currentName = useMemo(() => data?.current?.fullName ?? 'Đang chờ điều phối', [data]);
 
