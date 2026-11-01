@@ -32,6 +32,7 @@ export class BachelorService {
     sessionId?: number;
     openCheckInOnly?: boolean;
     closedCheckInOnly?: boolean;
+    checkedIn?: boolean;
   }) {
     const filters: SQL[] = [];
     if (options.keySearch) {
@@ -40,6 +41,8 @@ export class BachelorService {
     }
     if (options.hallId !== undefined) filters.push(eq(bachelors.hallId, options.hallId));
     if (options.sessionId !== undefined) filters.push(eq(bachelors.sessionId, options.sessionId));
+    if (options.checkedIn === true) filters.push(eq(bachelors.checkIn, true));
+    if (options.checkedIn === false) filters.push(sql`${bachelors.checkIn} is not true`);
     if (options.openCheckInOnly || options.closedCheckInOnly) {
       filters.push(eq(checkIns.status, options.openCheckInOnly === true));
       filters.push(sql`${bachelors.checkIn} is not true`);

@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Permission } from '../auth/permissions.js';
 import { RequirePermissions } from '../common/guards/require-permissions.decorator.js';
 import { RequireRoles } from '../common/guards/require-roles.decorator.js';
@@ -55,6 +55,11 @@ class BachelorListQuery {
   @IsInt()
   @ApiPropertyOptional({ example: 1 })
   hallId?: number;
+
+  @IsOptional()
+  @IsIn(['checked', 'unchecked'])
+  @ApiPropertyOptional({ enum: ['checked', 'unchecked'] })
+  checkInStatus?: 'checked' | 'unchecked';
 }
 
 @ApiTags('bachelor')
@@ -75,7 +80,10 @@ export class BachelorController {
   @Get('GetAll')
   @RequireRoles('MN', 'CK', 'US', 'MC')
   async list(@Query() query: BachelorListQuery) {
-    const data = await this.bachelors.list(query);
+    const { checkInStatus, ...filters } = query;
+    const data = await this.bachelors.list(
+      checkInStatus ? { ...filters, checkedIn: checkInStatus === 'checked' } : filters,
+    );
     return data.totalItems
       ? { status: 200, message: 'Lấy danh sách tân cử nhân thành công!', data }
       : { status: 204, message: 'Không có tân cử nhân nào!' };

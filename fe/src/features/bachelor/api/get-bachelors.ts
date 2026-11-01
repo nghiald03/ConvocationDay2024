@@ -12,6 +12,7 @@ export async function getBachelors(params: BachelorListParams) {
         keySearch: params.search || undefined,
         hallId: params.hall || undefined,
         sessionId: params.session || undefined,
+        checkInStatus: params.checkInStatus,
       },
     }
   );

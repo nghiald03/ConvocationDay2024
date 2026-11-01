@@ -6,6 +6,7 @@ export type BachelorListParams = {
   search?: string;
   hall?: string;
   session?: string;
+  checkInStatus?: 'checked' | 'unchecked';
 };
 
 export type BachelorPage = {

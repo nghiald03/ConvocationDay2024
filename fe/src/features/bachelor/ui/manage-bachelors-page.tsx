@@ -46,6 +46,7 @@ import AddOrUpdateBachelor from '@/features/bachelor/ui/bachelor-form';
 import swal from 'sweetalert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BachelorListNotCheckin from '@/features/bachelor/ui/bachelor-list-not-check-in';
+import CheckinStatistics from '@/features/statistics/ui/checkin-statistics';
 import {
   Tooltip,
   TooltipContent,
@@ -243,7 +244,7 @@ export default function ManageBachelorsPage() {
       ),
     },
   ];
-  const [tabsSelect, setTabsSelect] = useState('home');
+  const [tabsSelect, setTabsSelect] = useState('bachelorList');
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
@@ -440,15 +441,8 @@ export default function ManageBachelorsPage() {
             <TabsContent value='bachelorListNotCheckin'>
               <BachelorListNotCheckin />
             </TabsContent>
-            <TabsContent value='messages'>
-              Aliqua id fugiat nostrud irure ex duis ea quis id quis ad et. Sunt
-              qui
-            </TabsContent>
-            <TabsContent value='settings'>
-              Aliqua id fugiat nostrud irure ex duis ea quis id quis ad et. Sunt
-              qui esse pariatur duis deserunt mollit dolore cillum minim tempor
-              enim. Elit aute irure tempor cupidatat incididunt sint deserunt ut
-              voluptate aute id deserunt nisi.
+            <TabsContent value='checkinList'>
+              <CheckinStatistics />
             </TabsContent>
           </Tabs>
         </CardContent>
