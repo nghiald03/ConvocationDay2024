@@ -52,6 +52,7 @@ export class AuditController {
       filters.push(
         or(
           ilike(auditEvents.action, pattern),
+          ilike(auditEvents.targetId, pattern),
           ilike(authUser.name, pattern),
           ilike(authUser.email, pattern),
         )!,

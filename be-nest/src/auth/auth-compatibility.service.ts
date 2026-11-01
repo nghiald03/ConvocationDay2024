@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { APIError, isAPIError } from 'better-auth/api';
 import { hashPassword } from 'better-auth/crypto';
@@ -8,6 +8,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import {
+  auditEvents,
   authAccount,
   authSession,
   authUser,
@@ -21,6 +22,35 @@ import { AuthSessionService } from './auth-session.service.js';
 import { isAspNetIdentityV3Hash } from './legacy-password.js';
 import { expandPermissions } from './permissions.js';
 
+type LoginFailureReason =
+  | 'unknown_user'
+  | 'disabled'
+  | 'locked'
+  | 'invalid_password'
+  | 'password_reset_required'
+  | 'error';
+
+export interface LoginClient {
+  ip?: string | undefined;
+  userAgent?: string | undefined;
+}
+
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+/** Client IP behind cloudflared / reverse proxies, falling back to the socket address. */
+export function loginClientFromRequest(
+  headers: IncomingHttpHeaders,
+  socketIp: string | undefined,
+): LoginClient {
+  const forwarded = headerValue(headers['x-forwarded-for'])?.split(',')[0]?.trim();
+  return {
+    ip: headerValue(headers['cf-connecting-ip']) ?? forwarded ?? headerValue(headers['x-real-ip']) ?? socketIp,
+    userAgent: headerValue(headers['user-agent'])?.slice(0, 500),
+  };
+}
+
 export interface AuthResponse<T> {
   data: T;
   headers?: Headers;
@@ -28,6 +58,8 @@ export interface AuthResponse<T> {
 
 @Injectable()
 export class AuthCompatibilityService {
+  private readonly logger = new Logger(AuthCompatibilityService.name);
+
   constructor(
     private readonly sessions: AuthSessionService,
     private readonly config: ConfigService,
@@ -39,6 +71,7 @@ export class AuthCompatibilityService {
     password: string,
     rememberMe: boolean,
     headers: IncomingHttpHeaders,
+    client: LoginClient = {},
   ): Promise<AuthResponse<ActorContext>> {
     const [user] = await this.database
       .select()
@@ -46,8 +79,20 @@ export class AuthCompatibilityService {
       .where(sql`lower(${authUser.email}) = ${email.toLowerCase()}`)
       .limit(1);
 
-    if (!user || user.disabled) throw this.invalidCredentials();
+    const fail = async (reason: LoginFailureReason) => {
+      await this.recordLoginAudit('LOGIN_FAILED', user?.id ?? 'anonymous', email, client, reason);
+    };
+
+    if (!user) {
+      await fail('unknown_user');
+      throw this.invalidCredentials();
+    }
+    if (user.disabled) {
+      await fail('disabled');
+      throw this.invalidCredentials();
+    }
     if (user.lockoutEnd && user.lockoutEnd > new Date()) {
+      await fail('locked');
       throw this.invalidCredentials();
     }
 
@@ -64,15 +109,46 @@ export class AuthCompatibilityService {
       await this.rehashLegacyCredential(user.id, password);
       if (user.passwordResetRequired) {
         await this.sessions.revokeAllSessions(user.id);
+        await fail('password_reset_required');
         throw new ApiError(403, 'auth/password-reset-required', 'Bạn cần đặt lại mật khẩu trước khi tiếp tục.');
       }
       const actor = await this.actorForUser(user.id);
+      await this.recordLoginAudit('LOGIN', user.id, user.email, client);
       return { data: actor, headers: result.headers };
     } catch (error) {
       if (error instanceof ApiError) throw error;
       await this.recordFailedLogin(user.id, user.failedLoginAttempts);
-      if (isAPIError(error) || error instanceof APIError) throw this.invalidCredentials();
+      if (isAPIError(error) || error instanceof APIError) {
+        await fail('invalid_password');
+        throw this.invalidCredentials();
+      }
+      await fail('error');
       throw error;
+    }
+  }
+
+  /** Login audit never blocks or fails the login itself. */
+  private async recordLoginAudit(
+    action: 'LOGIN' | 'LOGIN_FAILED',
+    actorId: string,
+    email: string,
+    client: LoginClient,
+    reason?: LoginFailureReason,
+  ): Promise<void> {
+    try {
+      await this.database.insert(auditEvents).values({
+        action,
+        actorId,
+        targetType: 'auth',
+        targetId: email.slice(0, 320),
+        details: {
+          ip: client.ip ?? null,
+          userAgent: client.userAgent ?? null,
+          ...(reason ? { reason } : {}),
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Không ghi được audit ${action} cho ${email}`, error);
     }
   }
 

@@ -13,7 +13,7 @@ import type { Request, Response } from 'express';
 import { CurrentActor } from '../common/guards/current-actor.decorator.js';
 import type { ActorContext } from '../common/guards/actor-context.js';
 import { Public } from '../common/guards/public.decorator.js';
-import { AuthCompatibilityService } from './auth-compatibility.service.js';
+import { AuthCompatibilityService, loginClientFromRequest } from './auth-compatibility.service.js';
 import {
   ChangePasswordDto,
   ConfirmPasswordResetDto,
@@ -49,6 +49,7 @@ export class AuthController {
       input.password,
       input.rememberMe === true,
       request.headers,
+      loginClientFromRequest(request.headers, request.ip),
     );
     forwardSetCookies(result.headers, response);
     return result.data;

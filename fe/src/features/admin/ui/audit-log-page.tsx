@@ -44,7 +44,43 @@ const actionLabels: [RegExp, string][] = [
   [/^POST \/api\/Notification\/\d+\/cancel$/, 'Hủy thông báo'],
   [/^POST \/api\/Notification$/, 'Tạo thông báo'],
   [/^DELETE \/api\/Notification\/\d+$/, 'Xóa thông báo'],
+  [/^POST \/api\/auth\/logout$/, 'Đăng xuất'],
 ];
+
+const loginFailureReasons: Record<string, string> = {
+  unknown_user: 'Tài khoản không tồn tại',
+  disabled: 'Tài khoản đã bị khóa',
+  locked: 'Đang bị tạm khóa do nhập sai nhiều lần',
+  invalid_password: 'Sai mật khẩu',
+  password_reset_required: 'Cần đặt lại mật khẩu',
+  error: 'Lỗi hệ thống',
+};
+
+function detail(event: AuditEvent, key: string) {
+  const value = event.details?.[key];
+  return typeof value === 'string' && value ? value : null;
+}
+
+function LoginAction({ event }: { event: AuditEvent }) {
+  const success = event.action === 'LOGIN';
+  const reason = detail(event, 'reason');
+  const ip = detail(event, 'ip');
+  const userAgent = detail(event, 'userAgent');
+  return (
+    <>
+      <div className={success ? 'font-medium text-success' : 'font-medium text-destructive'}>
+        {success ? 'Đăng nhập thành công' : 'Đăng nhập thất bại'}
+        {!success && reason && (
+          <span className='font-normal'> · {loginFailureReasons[reason] ?? reason}</span>
+        )}
+      </div>
+      <div className='break-all text-xs text-muted-foreground'>
+        IP: {ip ?? 'không rõ'}
+        {userAgent && <span title={userAgent}> · {userAgent.slice(0, 80)}</span>}
+      </div>
+    </>
+  );
+}
 
 function describe(event: AuditEvent) {
   return actionLabels.find(([pattern]) => pattern.test(event.action))?.[1] ?? null;
@@ -80,7 +116,7 @@ export default function AuditLogPage() {
         <div className='flex flex-wrap gap-2'>
           <Input
             className='w-72'
-            placeholder='Tìm theo người thao tác hoặc đường dẫn…'
+            placeholder='Tìm theo người thao tác, đường dẫn hoặc LOGIN…'
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
           />
@@ -91,7 +127,7 @@ export default function AuditLogPage() {
       </CardHeader>
       <CardContent className='space-y-3'>
         <p className='text-sm text-muted-foreground'>
-          Ghi lại mọi thao tác thêm/sửa/xóa thành công của người dùng đã đăng nhập. Tổng cộng {data?.total ?? 0} bản ghi.
+          Ghi lại mọi thao tác thêm/sửa/xóa thành công và mọi lần đăng nhập (kể cả thất bại). Tổng cộng {data?.total ?? 0} bản ghi.
         </p>
         <Table>
           <TableHeader>
@@ -105,19 +141,30 @@ export default function AuditLogPage() {
           <TableBody>
             {items.map((event) => {
               const label = describe(event);
+              const isLogin = event.action === 'LOGIN' || event.action === 'LOGIN_FAILED';
               const path = typeof event.details?.path === 'string' ? event.details.path : event.action;
               return (
                 <TableRow key={event.id}>
                   <TableCell className='whitespace-nowrap'>{new Date(event.createdAt).toLocaleString()}</TableCell>
                   <TableCell>
-                    <div className='font-medium'>{event.actorName ?? 'Tài khoản đã xóa'}</div>
-                    <div className='text-xs text-muted-foreground'>{event.actorEmail ?? event.actorId}</div>
+                    <div className='font-medium'>
+                      {event.actorName ?? (event.actorId === 'anonymous' ? 'Không xác định' : 'Tài khoản đã xóa')}
+                    </div>
+                    <div className='text-xs text-muted-foreground'>
+                      {event.actorEmail ?? (event.actorId === 'anonymous' ? event.targetId : event.actorId)}
+                    </div>
                   </TableCell>
                   <TableCell>
-                    {label && <div className='font-medium'>{label}</div>}
-                    <code className='break-all text-xs text-muted-foreground'>
-                      {event.action.split(' ')[0]} {path}
-                    </code>
+                    {isLogin ? (
+                      <LoginAction event={event} />
+                    ) : (
+                      <>
+                        {label && <div className='font-medium'>{label}</div>}
+                        <code className='break-all text-xs text-muted-foreground'>
+                          {event.action.split(' ')[0]} {path}
+                        </code>
+                      </>
+                    )}
                   </TableCell>
                   <TableCell className='break-all text-xs'>{event.targetId || '—'}</TableCell>
                 </TableRow>
