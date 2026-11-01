@@ -18,7 +18,7 @@ if ([string]::IsNullOrWhiteSpace($EnvironmentFile)) {
     $EnvironmentFile = Join-Path $repositoryRoot '.env.development.local'
 }
 $EnvironmentFile = [IO.Path]::GetFullPath($EnvironmentFile)
-$services = @('postgres', 'minio', 'minio-init', 'be-nest-migrate', 'be-nest')
+$services = @('postgres', 'minio-init', 'be-nest-migrate', 'be-nest')
 
 function New-RandomBase64UrlSecret {
     param([int]$ByteCount)
@@ -60,14 +60,13 @@ function Write-DevelopmentEnvironment {
     $betterAuthSecret = New-RandomBase64UrlSecret -ByteCount 48
     $storageAccessKey = 'dev' + (New-RandomHexSecret -ByteCount 12)
     $storageSecretKey = New-RandomBase64UrlSecret -ByteCount 32
-    $databasePassword = 'Sql1!' + (New-RandomBase64UrlSecret -ByteCount 24)
     $testAccountPassword = 'Test1!' + (New-RandomBase64UrlSecret -ByteCount 24)
     $lines = @(
         "POSTGRES_PASSWORD=$postgresPassword",
         "BETTER_AUTH_SECRET=$betterAuthSecret",
         "S3_ACCESS_KEY=$storageAccessKey",
         "S3_SECRET_KEY=$storageSecretKey",
-        'S3_PUBLIC_ENDPOINT=http://localhost:9000',
+        'S3_PUBLIC_ENDPOINT=http://localhost:19000',
         "APP_ORIGIN=$FrontendOrigin",
         'BE_NEST_NODE_ENV=development',
         'SMTP_HOST=',
@@ -75,7 +74,6 @@ function Write-DevelopmentEnvironment {
         'SMTP_USER=',
         'SMTP_PASSWORD=',
         'SMTP_FROM=no-reply@example.com',
-        "DB_PASSWORD=$databasePassword",
         "TEST_ACCOUNT_PASSWORD=$testAccountPassword"
     )
     $content = ($lines -join [Environment]::NewLine) + [Environment]::NewLine
@@ -138,8 +136,8 @@ try {
         throw 'Docker Compose configuration is invalid.'
     }
 
-    # Keep the frontend, legacy ASP.NET backend, and SQL Server outside this temporary project.
-    & docker @composeArguments stop fe be database
+    # Keep the frontend outside this backend-only project.
+    & docker @composeArguments stop fe
     if ($LASTEXITCODE -ne 0) {
         throw 'Unable to stop services outside the requested scope.'
     }
@@ -177,7 +175,7 @@ try {
     & docker @composeArguments ps @services
     Write-Host 'NestJS containers are ready; the frontend was not started.' -ForegroundColor Green
     Write-Host 'Backend: http://localhost:8081/api'
-    Write-Host 'MinIO:   http://localhost:9000 (console: http://localhost:9001)'
+    Write-Host 'MinIO:   shared cloud stack (http://localhost:19000, console: http://localhost:19001)'
     Write-Host "Development env: $EnvironmentFile"
     Write-Host 'Stop the stack with:'
     Write-Host "docker compose --project-name $ProjectName --env-file `"$EnvironmentFile`" --file `"$composeFile`" down"

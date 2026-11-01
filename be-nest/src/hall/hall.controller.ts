@@ -32,8 +32,8 @@ export class HallController {
 
   @Put('UpdateHall/:hallId')
   @RequirePermissions(Permission.ManageHalls)
-  async update(@Param('hallId', ParseIntPipe) id: number, @Body() name: string) {
-    const success = await this.halls.update(id, name.trim());
+  async update(@Param('hallId', ParseIntPipe) id: number, @Body() input: CreateHallDto) {
+    const success = await this.halls.update(id, input.hallName);
     if (!success) return { status: 400, message: 'Cập nhật hội trường thất bại!' };
     return { status: 200, message: 'Cập nhật hội trường thành công!', data: true };
   }

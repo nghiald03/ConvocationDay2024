@@ -21,16 +21,21 @@ const contentSecurityPolicy = [
   "font-src 'self' data:",
   "media-src 'self' blob: https: http:",
   "connect-src 'self' https: http: ws: wss:",
-  isDevelopment ? null : 'upgrade-insecure-requests',
-].filter(Boolean).join('; ');
+  // No upgrade-insecure-requests: the app is also served over plain HTTP (Tailscale IP),
+  // where upgrading same-origin assets to https breaks every stylesheet and script.
+].join('; ');
 
 const nextConfig = {
   // Keep the long-running dev compiler isolated from `next build`. Both
   // processes otherwise mutate `.next`, which can leave webpack runtimes
   // pointing at vendor chunks that the other process has replaced.
   distDir: isDevelopment ? '.next-dev' : '.next',
+  // Socket.IO requires the trailing slash on /socket.io/; the default redirect strips it
+  // and the proxied handshake then 404s on be-nest.
+  skipTrailingSlashRedirect: true,
   async rewrites() {
     return [
+      { source: '/backend-events/socket.io/', destination: `${apiOrigin}/socket.io/` },
       { source: '/backend-api/:path*', destination: `${apiUrl}/:path*` },
       { source: '/backend-events/:path*', destination: `${apiOrigin}/:path*` },
     ];

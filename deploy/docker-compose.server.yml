@@ -1,0 +1,159 @@
+# Server stack: runs prebuilt images from Docker Hub and keeps them up to date.
+# Usage (inside this folder, with a filled-in .env next to it):
+#   docker compose -f docker-compose.server.yml up -d
+name: convocation-be
+
+x-postgres-url: &postgres-url postgresql://convocation:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/.env}@be-nest-postgres:5432/convocation_migration
+
+x-images:
+  be-nest: &be-nest-image ${DOCKERHUB_USER:-chalsfptu}/convocation-be-nest:${IMAGE_TAG:-latest}
+  be-nest-migrate: &be-nest-migrate-image ${DOCKERHUB_USER:-chalsfptu}/convocation-be-nest-migrate:${IMAGE_TAG:-latest}
+  fe: &fe-image ${DOCKERHUB_USER:-chalsfptu}/convocation-fe:${IMAGE_TAG:-latest}
+
+# MinIO is owned by the existing cloud "convocation" stack; reuse its root credentials.
+x-minio-credentials: &minio-credentials
+  MINIO_ROOT_USER: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY to the shared MINIO_ROOT_USER}
+  MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?Set S3_SECRET_KEY to the shared MINIO_ROOT_PASSWORD}
+  S3_BUCKET: ${S3_BUCKET:-convocation}
+
+services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: convocation_migration
+      POSTGRES_USER: convocation
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U convocation -d convocation_migration"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      default:
+        # The shared network already has a "postgres" host; use an unambiguous name.
+        aliases:
+          - be-nest-postgres
+
+  minio-init:
+    image: cgr.dev/chainguard/minio-client:latest-dev
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        i=0
+        until mc alias set shared http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do
+          i=$$((i + 1))
+          if [ "$$i" -ge 30 ]; then
+            echo "Could not reach the shared MinIO" >&2
+            exit 1
+          fi
+          sleep 2
+        done
+        mc mb --ignore-existing "shared/$${S3_BUCKET}"
+        mc anonymous set none "shared/$${S3_BUCKET}"
+    environment: *minio-credentials
+    restart: "no"
+    networks:
+      - shared
+
+  be-nest-migrate:
+    image: *be-nest-migrate-image
+    environment:
+      DATABASE_URL: *postgres-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  be-nest:
+    image: *be-nest-image
+    environment:
+      NODE_ENV: production
+      PORT: "8081"
+      DATABASE_URL: *postgres-url
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in deploy/.env}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?Set BETTER_AUTH_URL to the public site origin}
+      TRUSTED_ORIGINS: ${APP_ORIGIN:?Set APP_ORIGIN to the public site origin(s)}
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:?Set S3_PUBLIC_ENDPOINT to the public MinIO URL}
+      S3_BUCKET: ${S3_BUCKET:-convocation}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@example.com}
+      ALLOW_DATABASE_RESET: "false"
+    ports:
+      - "127.0.0.1:${BE_NEST_PORT:-8081}:8081"
+    depends_on:
+      be-nest-migrate:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8081/api/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - default
+      - shared
+
+  fe:
+    image: *fe-image
+    environment:
+      API_URL: http://be-nest:8081/api
+      API_ORIGIN: http://be-nest:8081
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
+    ports:
+      - "${FE_BIND_ADDRESS:-127.0.0.1}:${FE_PORT:-3001}:3000"
+    depends_on:
+      be-nest:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      default:
+      shared:
+        # Reachable by the shared stack's cloudflared tunnel as http://convocation-fe:3000.
+        aliases:
+          - convocation-fe
+
+  # Polls Docker Hub and redeploys when a new image is pushed under IMAGE_TAG.
+  auto-update:
+    image: docker:27-cli
+    entrypoint: ["/bin/sh", "/stack/auto-update.sh"]
+    environment:
+      COMPOSE_PROJECT_NAME: convocation-be
+      UPDATE_INTERVAL_SECONDS: ${UPDATE_INTERVAL_SECONDS:-120}
+      WATCHED_IMAGES: >-
+        ${DOCKERHUB_USER:-chalsfptu}/convocation-be-nest-migrate:${IMAGE_TAG:-latest}
+        ${DOCKERHUB_USER:-chalsfptu}/convocation-be-nest:${IMAGE_TAG:-latest}
+        ${DOCKERHUB_USER:-chalsfptu}/convocation-fe:${IMAGE_TAG:-latest}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/stack:ro
+      # Private Docker Hub repositories: run `docker login` on the server, then uncomment.
+      # - ${HOME}/.docker/config.json:/root/.docker/config.json:ro
+    restart: unless-stopped
+
+networks:
+  # Network created by the cloud "convocation" stack (project name + "_convocation").
+  shared:
+    external: true
+    name: ${SHARED_NETWORK:-convocation_convocation}
+
+volumes:
+  postgres_data:

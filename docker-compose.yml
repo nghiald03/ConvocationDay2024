@@ -1,10 +1,18 @@
+x-postgres-url: &postgres-url postgresql://convocation:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the deployment secret store}@be-nest-postgres:5432/convocation_migration
+
+# MinIO is owned by the existing cloud "convocation" stack; reuse its root credentials.
+x-minio-credentials: &minio-credentials
+  MINIO_ROOT_USER: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY to the shared MINIO_ROOT_USER}
+  MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?Set S3_SECRET_KEY to the shared MINIO_ROOT_PASSWORD}
+  S3_BUCKET: ${S3_BUCKET:-convocation}
+
 services:
   postgres:
     image: postgres:17-bookworm
     environment:
       POSTGRES_DB: convocation_migration
       POSTGRES_USER: convocation
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the deployment secret store}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - '127.0.0.1:5432:5432'
     volumes:
@@ -15,107 +23,62 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-
-  database:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: sqlserverconvo
-    hostname: database
-    environment:
-      ACCEPT_EULA: Y
-      MSSQL_SA_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the deployment secret store}
-    ports:
-      - '127.0.0.1:1431:1433'
-    volumes:
-      - sql_data:/var/opt/mssql
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD-SHELL', '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C']
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-
-  minio:
-    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
-    command: server /data --console-address ':9001'
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY in the deployment secret store}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?Set S3_SECRET_KEY in the deployment secret store}
-    volumes:
-      - minio_data:/data
-    ports:
-      - '127.0.0.1:9000:9000'
-      - '127.0.0.1:9001:9001'
-    restart: unless-stopped
-    healthcheck:
-      test: ['CMD', 'mc', 'ready', 'local']
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    networks:
+      default:
+        # The shared network already has a "postgres" host; use an unambiguous name.
+        aliases:
+          - be-nest-postgres
 
   minio-init:
     image: minio/mc:RELEASE.2025-07-21T05-28-08Z
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: ['/bin/sh', '-c']
+    entrypoint: ['/bin/sh', '-ec']
     command:
-      - >-
-        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}" &&
-        mc mb --ignore-existing local/convocation &&
-        mc anonymous set none local/convocation
-    environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?Set S3_ACCESS_KEY in the deployment secret store}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?Set S3_SECRET_KEY in the deployment secret store}
+      - |
+        i=0
+        until mc alias set shared http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do
+          i=$$((i + 1))
+          if [ "$$i" -ge 30 ]; then
+            echo "Could not reach the shared MinIO" >&2
+            exit 1
+          fi
+          sleep 2
+        done
+        mc mb --ignore-existing "shared/$${S3_BUCKET}"
+        mc anonymous set none "shared/$${S3_BUCKET}"
+    environment: *minio-credentials
     restart: 'no'
+    networks:
+      - shared
 
-  be:
+  be-nest-migrate:
     build:
-      context: ./be
+      context: ./be-nest
       dockerfile: Dockerfile
-    container_name: backend
-    ports:
-      - '127.0.0.1:88:8080'
+      target: migration
     environment:
-      ASPNETCORE_HTTP_PORTS: '8080'
-      ConnectionStrings__DefaultConnection: Server=database,1433;Database=ConvocationDB;User Id=sa;Password=${DB_PASSWORD};Encrypt=True;TrustServerCertificate=True;
-      ASPNETCORE_ENVIRONMENT: Development
-      ASPNETCORE_FORWARDEDHEADERS_ENABLED: 'true'
-      Cors__AllowedOrigins__0: ${APP_ORIGIN:-http://localhost:3001}
-      S3__Endpoint: http://minio:9000
-      S3__PublicEndpoint: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
-      S3__Bucket: convocation
-      S3__AccessKey: ${S3_ACCESS_KEY}
-      S3__SecretKey: ${S3_SECRET_KEY}
-      LegacyMedia__Roots__0: /legacy/image-api
-      LegacyMedia__Roots__1: /legacy/frontend
-    volumes:
-      - ./imageAPI/uploads:/legacy/image-api:ro
-      - ./fe/uploads:/legacy/frontend:ro
-      - data_protection_keys:/root/.aspnet/DataProtection-Keys
+      DATABASE_URL: *postgres-url
     depends_on:
-      database:
+      postgres:
         condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
-    restart: unless-stopped
+    restart: 'no'
 
   be-nest:
     build:
       context: ./be-nest
       dockerfile: Dockerfile
+      target: runtime
     ports:
       - '127.0.0.1:8081:8081'
     environment:
       NODE_ENV: ${BE_NEST_NODE_ENV:-production}
       PORT: '8081'
-      DATABASE_URL: postgresql://convocation:${POSTGRES_PASSWORD}@postgres:5432/convocation_migration
+      DATABASE_URL: *postgres-url
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in the deployment secret store}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:8081}
       TRUSTED_ORIGINS: ${APP_ORIGIN:-http://localhost:3000,http://localhost:3001,http://127.0.0.1:3000,http://127.0.0.1:3001}
       S3_ENDPOINT: http://minio:9000
-      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
-      S3_BUCKET: convocation
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:19000}
+      S3_BUCKET: ${S3_BUCKET:-convocation}
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       SMTP_HOST: ${SMTP_HOST:-}
@@ -130,18 +93,15 @@ services:
       minio-init:
         condition: service_completed_successfully
     restart: unless-stopped
-
-  be-nest-migrate:
-    build:
-      context: ./be-nest
-      dockerfile: Dockerfile
-      target: migration
-    environment:
-      DATABASE_URL: postgresql://convocation:${POSTGRES_PASSWORD}@postgres:5432/convocation_migration
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: 'no'
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:8081/api/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - default
+      - shared
 
   fe:
     build:
@@ -150,7 +110,6 @@ services:
       args:
         API_URL: http://be-nest:8081/api
         API_ORIGIN: http://be-nest:8081
-    container_name: frontend
     ports:
       - '127.0.0.1:3001:3000'
     environment:
@@ -160,11 +119,14 @@ services:
       ELEVENLABS_VOICE_ID: ${ELEVENLABS_VOICE_ID:-}
     depends_on:
       be-nest:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
+networks:
+  # Network created by the cloud "convocation" stack (project name + "_convocation").
+  shared:
+    external: true
+    name: ${SHARED_NETWORK:-convocation_convocation}
+
 volumes:
-  sql_data:
   postgres_data:
-  minio_data:
-  data_protection_keys:

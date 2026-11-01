@@ -20,6 +20,8 @@ import { RealtimeModule } from './realtime/realtime.module.js';
 import { LedModule } from './led/led.module.js';
 import { MediaModule } from './media/media.module.js';
 import { PhotoQueueModule } from './photo-queue/photo-queue.module.js';
+import { UsersModule } from './users/users.module.js';
+import { AuditModule } from './audit/audit.module.js';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { PhotoQueueModule } from './photo-queue/photo-queue.module.js';
     LedModule,
     MediaModule,
     PhotoQueueModule,
+    UsersModule,
+    AuditModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: SessionGuard },

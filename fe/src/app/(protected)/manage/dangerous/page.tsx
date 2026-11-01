@@ -1,7 +1,7 @@
 'use client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { resetDatabase } from '@/features/admin/api/reset-database';
+import ClearBusinessDataCard from '@/features/admin/ui/clear-business-data-card';
 import { deleteAllBachelors } from '@/features/bachelor/api/delete-all-bachelors';
 import { uncheckAll } from '@/features/check-in/api/uncheck-all';
 import { getBachelors } from '@/features/bachelor/api/get-bachelors';
@@ -18,9 +18,7 @@ export default function Page() {
   };
   const dangerMutation = useMutation({
     mutationFn: (action: Action) => {
-      if (action.action === 'resetAllData') {
-        return resetDatabase();
-      } else if (action.action === 'deleteAllData') {
+      if (action.action === 'deleteAllData') {
         return deleteAllBachelors();
       }
       return uncheckAll();
@@ -91,17 +89,6 @@ export default function Page() {
             color='destructive'
             onClick={() => {
               handleAction({
-                description: 'Reset toàn bộ dữ liệu',
-                action: 'resetAllData',
-              });
-            }}
-          >
-            Reset toàn bộ dữ liệu
-          </Button>
-          <Button
-            color='destructive'
-            onClick={() => {
-              handleAction({
                 description: 'Xóa toàn bộ dữ liệu tân cử nhân',
                 action: 'deleteAllData',
               });
@@ -133,6 +120,9 @@ export default function Page() {
           </Button>
         </CardContent>
       </Card>
+      <div className='mt-3'>
+        <ClearBusinessDataCard />
+      </div>
     </>
   );
 }

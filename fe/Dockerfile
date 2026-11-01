@@ -3,7 +3,7 @@ FROM oven/bun:1.2.10-alpine AS dependencies
 
 
 WORKDIR /app
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
 # Build Image
@@ -13,8 +13,8 @@ FROM oven/bun:1.2.10-alpine AS build
 WORKDIR /app
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
-ARG API_URL=http://be:8080/api
-ARG API_ORIGIN=http://be:8080
+ARG API_URL=http://be-nest:8081/api
+ARG API_ORIGIN=http://be-nest:8081
 ENV API_URL=$API_URL
 ENV API_ORIGIN=$API_ORIGIN
 RUN bun run build
@@ -35,6 +35,10 @@ COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/.next/server ./.next/server
 
 EXPOSE 3000
+# Docker sets HOSTNAME to the container id, which makes Next.js listen on only one
+# network when the container is attached to several; listen on all interfaces.
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
 USER node
 
 CMD ["node", "server.js"]

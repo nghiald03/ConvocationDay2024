@@ -21,6 +21,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import HallSessionPicker from '@/features/session/ui/hall-session-picker';
 import { getCurrentLedBachelors } from '@/features/led/api/get-led-bachelors';
 import {
@@ -35,7 +37,7 @@ import { toast } from 'sonner';
 
 // === NEW: import hook
 import { useRealtime } from '@/lib/realtime/use-realtime';
-import SafeImage from '@/components/safe-image';
+import LedCrossfadeImage from '@/features/led/ui/led-crossfade-image';
 
 function BachelorIdentityOverlay({ bachelor }: { bachelor: Bachelor }) {
   return (
@@ -71,6 +73,12 @@ export default function LedScreen() {
   const [sessionLabel, setSessionLabel] = useState<string>('Chưa chọn');
   const [bachelorCurrent, setBachelorCurrent] = useState<Bachelor | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Identity box (name / MSSV / seat) is a testing aid; hidden on the LED unless enabled.
+  const [showIdentity, setShowIdentity] = useState<boolean>(() =>
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem('ledShowIdentity') === 'true'
+      : false
+  );
 
   // ref tới container ảnh (dùng Fullscreen API)
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -92,6 +100,9 @@ export default function LedScreen() {
   useEffect(() => {
     if (session) window.localStorage.setItem('session', session);
   }, [session]);
+  useEffect(() => {
+    window.localStorage.setItem('ledShowIdentity', String(showIdentity));
+  }, [showIdentity]);
 
   // ========= Fetch CURRENT once (initial & when hall/session changes) =========
   const queryKey = useMemo(() => ['bachelorCurrent', hall, session], [hall, session]);
@@ -247,6 +258,17 @@ export default function LedScreen() {
             </AlertDescription>
           </Alert>
 
+          <div className='flex items-center gap-3'>
+            <Switch
+              id='led-show-identity'
+              checked={showIdentity}
+              onCheckedChange={setShowIdentity}
+            />
+            <Label htmlFor='led-show-identity' className='cursor-pointer'>
+              Hiển thị bảng thông tin (tên, MSSV, ghế) ở góc ảnh
+            </Label>
+          </div>
+
           <div className='text-sm text-muted-foreground'>
             Realtime: {isConnected ? 'connected' : connectionState}
             {connectionError ? ` (${connectionError})` : null}
@@ -262,16 +284,15 @@ export default function LedScreen() {
             <Card className='w-[100vw] h-[100vh]'>
               <CardContent className='relative p-0 w-[100vw] h-[100vh]'>
                 {bachelorCurrent?.image && (
-                  <>
-                    <BachelorIdentityOverlay bachelor={bachelorCurrent} />
-                    <SafeImage
-                      src={bachelorCurrent.image}
-                      alt='Mô tả hình ảnh'
-                      className='w-full h-full object-cover animate-fade-in animate-duration-1000'
-                      width={1920}
-                      height={1080}
-                    />
-                  </>
+                  <LedCrossfadeImage
+                    item={bachelorCurrent}
+                    src={bachelorCurrent.image}
+                    alt='Mô tả hình ảnh'
+                    className='w-full h-full'
+                    renderOverlay={(bachelor) =>
+                      showIdentity ? <BachelorIdentityOverlay bachelor={bachelor} /> : null
+                    }
+                  />
                 )}
               </CardContent>
             </Card>
@@ -283,13 +304,14 @@ export default function LedScreen() {
             onDoubleClick={handleDoubleClick}
           >
             <CardContent className='relative p-3'>
-              <BachelorIdentityOverlay bachelor={bachelorCurrent} />
-              <SafeImage
+              <LedCrossfadeImage
+                item={bachelorCurrent}
                 src={bachelorCurrent.image}
                 alt='Mô tả hình ảnh'
-                className='w-full h-full object-cover'
-                width={1920}
-                height={1080}
+                className='w-full aspect-video'
+                renderOverlay={(bachelor) =>
+                  showIdentity ? <BachelorIdentityOverlay bachelor={bachelor} /> : null
+                }
               />
             </CardContent>
           </Card>

@@ -9,13 +9,16 @@ import { betterAuthSchema } from '../database/schema/auth-schema.js';
 import { isAspNetIdentityV3Hash, verifyAspNetIdentityV3Password } from './legacy-password.js';
 
 export function createAuth(database: AppDatabase, config: ConfigService) {
-  const production = config.getOrThrow<string>('NODE_ENV') === 'production';
+  const baseURL = config.getOrThrow<string>('BETTER_AUTH_URL');
+  // Secure cookies are dropped by browsers on plain HTTP (e.g. a Tailscale IP),
+  // so follow the public URL scheme rather than NODE_ENV.
+  const secureCookies = new URL(baseURL).protocol === 'https:';
   const smtpHost = config.get<string>('SMTP_HOST');
 
   return betterAuth({
     appName: 'Convocation Day',
     secret: config.getOrThrow<string>('BETTER_AUTH_SECRET'),
-    baseURL: config.getOrThrow<string>('BETTER_AUTH_URL'),
+    baseURL,
     basePath: '/api/internal-auth',
     trustedOrigins: parseTrustedOrigins(config.getOrThrow<string>('TRUSTED_ORIGINS')),
     database: drizzleAdapter(database, {
@@ -87,10 +90,10 @@ export function createAuth(database: AppDatabase, config: ConfigService) {
       },
     },
     advanced: {
-      useSecureCookies: production,
+      useSecureCookies: secureCookies,
       defaultCookieAttributes: {
         httpOnly: true,
-        secure: production,
+        secure: secureCookies,
         sameSite: 'lax',
         path: '/',
       },

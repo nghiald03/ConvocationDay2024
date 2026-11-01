@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { asc, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, ne, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { halls } from '../database/schema/domain-schema.js';
@@ -29,6 +29,14 @@ export class HallService {
   }
 
   async update(id: number, name: string): Promise<boolean> {
+    const [duplicate] = await this.database
+      .select({ id: halls.id })
+      .from(halls)
+      .where(and(sql`lower(${halls.name}) = ${name.toLowerCase()}`, ne(halls.id, id)))
+      .limit(1);
+    if (duplicate) {
+      throw new BadRequestException({ code: 'hall/already-exists', message: 'Hội trường đã tồn tại!' });
+    }
     const rows = await this.database.update(halls).set({ name }).where(eq(halls.id, id)).returning();
     return rows.length > 0;
   }

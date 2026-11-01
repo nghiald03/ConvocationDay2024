@@ -1,9 +1,25 @@
-import { BadRequestException, Controller, Headers, Inject, NotFoundException, Post } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Headers, Inject, NotFoundException, Post } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Pool } from 'pg';
 import { Permission } from '../auth/permissions.js';
 import { RequirePermissions } from '../common/guards/require-permissions.decorator.js';
 import { DATABASE_POOL } from './database.constants.js';
+
+// Everything except accounts, roles/permissions, migration bookkeeping and the audit trail.
+const businessTables = [
+  'photo_queue_audit_log',
+  'photo_queue_assignment',
+  'photo_queue_entry',
+  'photo_queue_state',
+  'photo_queue_session',
+  'legacy_media_mapping',
+  'media_asset',
+  'notification',
+  'check_in',
+  'bachelor',
+  'session',
+  'hall',
+] as const;
 
 @Controller('Database')
 export class DatabaseController {
@@ -11,6 +27,46 @@ export class DatabaseController {
     @Inject(DATABASE_POOL) private readonly pool: Pool,
     private readonly config: ConfigService,
   ) {}
+
+  @Get('business-data')
+  @RequirePermissions(Permission.ManageSystem)
+  async businessData() {
+    const counts = await this.pool.query<{ name: string; rows: string }>(
+      businessTables.map((table) => `select '${table}' as name, count(*)::text as rows from ${table}`).join(' union all '),
+    );
+    return {
+      database: await this.databaseName(),
+      tables: counts.rows.map((row) => ({ name: row.name, rows: Number(row.rows) })),
+    };
+  }
+
+  @Post('clear-business-data')
+  @RequirePermissions(Permission.ManageSystem)
+  async clearBusinessData(@Headers('x-confirm-destructive') confirmation: string | undefined) {
+    const name = await this.databaseName();
+    const expected = `CLEAR ${name}`;
+    if (confirmation !== expected) {
+      throw new BadRequestException({
+        code: 'operation/confirmation-required',
+        message: 'Thiếu xác nhận cho thao tác xóa dữ liệu.',
+        details: { expected },
+      });
+    }
+    await this.pool.query(`truncate table ${businessTables.join(', ')} restart identity`);
+    return { message: 'Đã xóa toàn bộ dữ liệu nghiệp vụ. Tài khoản người dùng được giữ nguyên.' };
+  }
+
+  private async databaseName(): Promise<string> {
+    const result = await this.pool.query<{ name: string }>('select current_database() as name');
+    const name = result.rows[0]?.name;
+    if (!name || !/^[A-Za-z0-9_]+$/.test(name)) {
+      throw new BadRequestException({
+        code: 'database/invalid-name',
+        message: 'Tên cơ sở dữ liệu không hợp lệ.',
+      });
+    }
+    return name;
+  }
 
   @Post('reset-database')
   @RequirePermissions(Permission.ManageSystem)

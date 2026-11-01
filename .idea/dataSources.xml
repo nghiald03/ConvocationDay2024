@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="@143.198.84.82" uuid="c69694cd-2057-47aa-9743-db709e723d10">
+    <data-source source="LOCAL" name="@100.68.254.82" uuid="c69694cd-2057-47aa-9743-db709e723d10">
       <driver-ref>sqlserver.ms</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</jdbc-driver>
-      <jdbc-url>jdbc:sqlserver://143.198.84.82:1431</jdbc-url>
+      <jdbc-url>jdbc:sqlserver://100.68.254.82:5432</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
     <data-source source="LOCAL" name="CONVO 2" uuid="2fca02d9-8b3b-45ac-9878-224f1d59b968">
@@ -13,6 +13,13 @@
       <synchronize>true</synchronize>
       <jdbc-driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</jdbc-driver>
       <jdbc-url>jdbc:sqlserver://210.245.25.74:1431</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
+    <data-source source="LOCAL" name="postgres@100.68.254.82" uuid="7635114e-1b6a-4935-9268-7ff2cff833f0">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://100.68.254.82:5432/postgres</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>
