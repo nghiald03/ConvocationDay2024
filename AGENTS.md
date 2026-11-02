@@ -7,8 +7,7 @@ This file defines the repository-wide rules for AI coding agents. It applies to 
 This repository is a multi-service graduation ceremony check-in system. The active services are:
 
 - `fe/`: Next.js App Router frontend
-- `be-nest/`: NestJS backend migration target
-- `be/`: legacy .NET backend
+- `be-nest/`: NestJS backend
 - `mobile/`: mobile client
 - `imageAPI/`: image service
 
@@ -38,7 +37,6 @@ At the repository root, keep service code inside its owning service directory:
 ```text
 fe/          # Next.js frontend
 be-nest/     # NestJS backend
-be/          # legacy .NET backend
 mobile/      # mobile client
 imageAPI/    # image service
 scripts/     # repository-level automation

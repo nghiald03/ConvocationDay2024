@@ -1,5 +1,7 @@
 # Runbook diễn tập, cutover và rollback
 
+> **Lưu ý:** mã nguồn ASP.NET (`be/`) đã được gỡ khỏi repository. Muốn rollback về ASP.NET/SQL Server hoặc chạy công cụ `--migrate-media`, cần dùng image đã build trước đó hoặc khôi phục mã nguồn bằng `git checkout 7c768d2 -- be`.
+
 ## Điều kiện trước diễn tập
 
 - SQL Server backup đã restore và tài khoản migration chỉ có quyền đọc.

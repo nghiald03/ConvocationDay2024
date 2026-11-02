@@ -7,9 +7,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is a graduation ceremony check-in system with a multi-service architecture consisting of:
 
 - **Frontend (fe/)**: Next.js with TypeScript for user interfaces
-- **Backend (be/)**: ASP.NET Core Web API with C#
+- **Backend (be-nest/)**: NestJS with TypeScript, Drizzle ORM, Better Auth and Socket.IO
 - **Image API (imageAPI/)**: Node.js Express service for image uploads
-- **Database**: Microsoft SQL Server
+- **Object storage**: MinIO
+- **Database**: PostgreSQL
 
 ## Development Commands
 
@@ -23,13 +24,16 @@ bun run start        # Start production server
 bun run lint         # Run ESLint
 ```
 
-### Backend (be/)
+### Backend (be-nest/)
 
 ```bash
-cd be
-dotnet run           # Start development server (port 80/443)
-dotnet build         # Build the project
-dotnet ef database update  # Apply migrations
+cd be-nest
+bun run dev              # Start development server (port 8081)
+bun run build            # Build the project
+bun run test             # Run tests
+bun run lint             # Run ESLint
+bun run typecheck        # Run the TypeScript compiler
+bun run drizzle:migrate  # Apply migrations
 ```
 
 ### Docker Development
@@ -40,9 +44,8 @@ docker-compose up -d
 
 # Services will be available at:
 # - Frontend: http://localhost:3001
-# - Backend: http://localhost:85
-# - Database: localhost:1431
-# - Image API: http://localhost:3214
+# - Backend: http://localhost:8081
+# - Database: localhost:5432
 ```
 
 ## System Architecture
@@ -78,9 +81,8 @@ Key entities:
 
 ### Real-time Communication
 
-- Uses SignalR (`MessageHub`) for real-time updates across all user interfaces
-- Check-in events broadcast immediately to MC interfaces
-- Connection endpoint: `/chat-hub`
+- Uses Socket.IO (`be-nest/src/realtime/events.gateway.ts`) for real-time updates
+- Namespace: `/events`; the frontend reaches it through the `/backend-events` proxy
 
 ## Frontend Structure
 
@@ -101,36 +103,18 @@ app/[locale]/(protected)/
 - **API Integration**: Axios with React Query for data fetching
 - **Internationalization**: next-intl
 - **QR Code Scanning**: @yudiel/react-qr-scanner
-- **Real-time**: @microsoft/signalr
+- **Real-time**: socket.io-client
 
 ## Backend Structure
 
-### Controllers
+### Modules
 
-- `AuthController`: JWT authentication
-- `BachelorController`: Graduate CRUD operations
-- `CheckinController`: Check-in process management
-- `HallController`: Hall management
-- `SessionController`: Session management
-- `McController`: MC interface data
-- `NotificationController`: Notification CRUD and broadcast management
-- `StatisticsController`: Reporting and analytics
-
-### Services
-
-Registered services in DI container:
-
-- `BachelorService`
-- `CheckInService`
-- `HallService`
-- `SessionService`
-- `StatisticsService`
-- `NotificationService`
+Each domain lives in `be-nest/src/<module>/`: `audit`, `auth`, `bachelor`, `checkin`, `database`, `hall`, `health`, `led` (MC routes under `/api/Mc`), `media`, `migration`, `notification`, `photo-queue`, `realtime`, `session`, `statistics`, `users`.
 
 ### Authentication
 
-- JWT Bearer token authentication
-- Role-based authorization with 4 roles: MN, CK, US, NO
+- Better Auth session authentication
+- Authorization through `@RequireRoles` and `@RequirePermissions` (see `be-nest/src/auth/permissions.ts`)
 - CORS enabled for frontend integration
 
 ## Environment Configuration
@@ -142,15 +126,15 @@ Registered services in DI container:
 
 ### Backend Configuration
 
-- `ConnectionStrings:DefaultConnection`: SQL Server connection for production
-- `ConnectionStrings:DbConnection`: SQL Server connection for development
-- `JWT:Key`: JWT signing key
+- `DATABASE_URL`: PostgreSQL connection
+- `BETTER_AUTH_SECRET`: Better Auth signing secret
+- `MIGRATION_SQLSERVER_URL`: read-only SQL Server source for the data migration CLI
 
 ## Development Notes
 
 ### Database Migrations
 
-The system auto-creates database and applies migrations in production mode. For development, use Entity Framework commands.
+Schema changes use Drizzle (`bun run drizzle:generate`, `bun run drizzle:migrate`). In Docker, the `be-nest-migrate` job applies migrations before `be-nest` starts. The legacy .NET backend was removed; restore it from git with `git checkout 7c768d2 -- be` if it is ever needed.
 
 ### Image Handling
 
@@ -158,7 +142,7 @@ Student photos are managed by the separate imageAPI service (Node.js) and should
 
 ### Testing Users
 
-Legacy accounts are migrated to ASP.NET Core Identity with password reset required.
+Legacy ASP.NET Identity passwords are verified once and rehashed into Better Auth on first successful login.
 No default password is stored in the repository.
 
 ## Notification System

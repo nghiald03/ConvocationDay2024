@@ -1,5 +1,7 @@
 # Deployment and cutover runbook
 
+> **Historical:** the legacy .NET backend (`be/`) has been removed from the working tree, so the `dotnet` commands below, including `--migrate-media`, no longer run from this checkout. Restore it when needed with `git checkout 7c768d2 -- be`. The current backend runbook is `be-nest/docs/cutover-runbook.md`.
+
 This runbook covers the Identity, secure-session, and MinIO media cutover. Run it first against a staging copy of production. Record the operator, UTC timestamp, command output, row counts, checksums, and approval for every checkpoint.
 
 ## 1. Preconditions and ownership

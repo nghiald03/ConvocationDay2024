@@ -54,30 +54,6 @@ jobs:
       - name: Production build
         run: bun run build
 
-  backend:
-    name: Backend (.NET 8)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: be
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Restore dependencies
-        run: dotnet restore FA23_Convocation2023_API.sln
-
-      - name: Build
-        run: dotnet build FA23_Convocation2023_API.sln --configuration Release --no-restore
-
-      - name: Test
-        run: dotnet test FA23_Convocation2023_API.sln --configuration Release --no-build
-
   backend-nest:
     name: Backend NestJS (Bun)
     runs-on: ubuntu-latest
@@ -177,7 +153,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - frontend
-      - backend
       - backend-nest
       - migration-rehearsal
     env:
@@ -194,4 +169,4 @@ jobs:
         run: docker compose config --quiet
 
       - name: Build application images
-        run: docker compose build be be-nest fe
+        run: docker compose build be-nest fe
