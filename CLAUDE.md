@@ -102,7 +102,6 @@ app/[locale]/(protected)/
 - **State Management**: Jotai for global state
 - **API Integration**: Axios with React Query for data fetching
 - **Internationalization**: next-intl
-- **QR Code Scanning**: @yudiel/react-qr-scanner
 - **Real-time**: socket.io-client
 
 ## Backend Structure
