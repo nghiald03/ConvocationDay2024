@@ -1,9 +1,17 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, ilike, sql } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, ne, sql } from 'drizzle-orm';
 import { BachelorService } from '../bachelor/bachelor.service.js';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { bachelors, checkIns, halls, sessions } from '../database/schema/domain-schema.js';
+
+/** Thứ tự gọi trên LED đi theo số ghế, nên ghế lớn nhất + 1 là vị trí cuối phiên. */
+export function nextChairAtEnd(chairs: (string | null)[]): string {
+  const numbers = chairs
+    .filter((chair): chair is string => chair !== null && /^[0-9]+$/.test(chair))
+    .map(Number);
+  return String(Math.max(0, ...numbers) + 1);
+}
 
 @Injectable()
 export class CheckInService {
@@ -16,7 +24,7 @@ export class CheckInService {
     studentCode: string,
     status: boolean,
     cancellationConfirmation?: string,
-  ): Promise<string> {
+  ) {
     return this.database.transaction(async (transaction) => {
       const [bachelor] = await transaction
         .select()
@@ -56,9 +64,40 @@ export class CheckInService {
         throw new BadRequestException('Phiên này chưa được mở, vui lòng đến đúng phiên của bạn.');
       }
       if (!checkIn.status) {
-        throw new BadRequestException('Phiên check-in đã đóng, tân cử nhân đã bỏ lỡ phiên này.');
+        if (!status) {
+          throw new BadRequestException(
+            'Phiên đã khóa nên không thể hủy check-in. Vui lòng mở lại phiên trước.',
+          );
+        }
+        // Quét lại người đã check-in không được đẩy ghế của họ xuống thêm lần nữa.
+        if (bachelor.checkIn) return { bachelor, late: false };
+        // Dòng check-in đang bị khóa FOR UPDATE nên các lượt đến muộn cùng phiên không nhận trùng ghế.
+        const others = await transaction
+          .select({ chair: bachelors.chair })
+          .from(bachelors)
+          .where(
+            and(
+              eq(bachelors.hallId, hallId),
+              eq(bachelors.sessionId, sessionId),
+              ne(bachelors.id, bachelor.id),
+            ),
+          );
+        const chair = nextChairAtEnd(others.map((other) => other.chair));
+        const [updated] = await transaction
+          .update(bachelors)
+          .set({
+            chair,
+            chairParent: `PH${chair}`,
+            timeCheckIn: new Date(),
+            checkIn: true,
+            status: true,
+            attendanceStatus: 2,
+          })
+          .where(eq(bachelors.id, bachelor.id))
+          .returning();
+        return { bachelor: updated!, late: true };
       }
-      await transaction
+      const [updated] = await transaction
         .update(bachelors)
         .set({
           timeCheckIn: new Date(),
@@ -66,8 +105,9 @@ export class CheckInService {
           status,
           ...(status ? { attendanceStatus: 1 } : {}),
         })
-        .where(eq(bachelors.id, bachelor.id));
-      return 'Check-in thành công!';
+        .where(eq(bachelors.id, bachelor.id))
+        .returning();
+      return { bachelor: updated!, late: false };
     });
   }
 

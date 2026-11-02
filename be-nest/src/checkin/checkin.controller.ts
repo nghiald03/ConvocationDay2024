@@ -50,6 +50,20 @@ class CheckInListQuery {
   keySearch?: string;
 }
 
+function checkInResponse({ bachelor, late }: Awaited<ReturnType<CheckInService['checkInBachelor']>>) {
+  return {
+    status: 200,
+    message: late ? 'Phiên đã khóa: đã check-in và xếp xuống cuối phiên.' : 'Check-in thành công!',
+    data: {
+      studentCode: bachelor.studentCode,
+      fullName: bachelor.fullName,
+      chair: bachelor.chair,
+      chairParent: bachelor.chairParent,
+      late,
+    },
+  };
+}
+
 @ApiTags('check-in')
 @Controller('Checkin')
 export class CheckInController {
@@ -57,18 +71,20 @@ export class CheckInController {
 
   @Put('UpdateCheckin')
   @RequirePermissions(Permission.CheckIn)
-  checkIn(@Body() input: CheckInBachelorDto) {
-    return this.checkIns.checkInBachelor(
-      input.studentCode,
-      input.status,
-      input.cancellationConfirmation,
+  async checkIn(@Body() input: CheckInBachelorDto) {
+    return checkInResponse(
+      await this.checkIns.checkInBachelor(
+        input.studentCode,
+        input.status,
+        input.cancellationConfirmation,
+      ),
     );
   }
 
   @Put('UpdateCheckinStudentCode')
   @RequirePermissions(Permission.CheckIn)
-  checkInByStudentCode(@Query('studentCode') studentCode: string) {
-    return this.checkIns.checkInBachelor(studentCode, true);
+  async checkInByStudentCode(@Query('studentCode') studentCode: string) {
+    return checkInResponse(await this.checkIns.checkInBachelor(studentCode, true));
   }
 
   @Get('GetAll')

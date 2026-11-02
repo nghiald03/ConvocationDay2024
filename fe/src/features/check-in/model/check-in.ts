@@ -4,6 +4,15 @@ export type CheckInBachelorInput = {
   cancellationConfirmation?: string;
 };
 
+export type CheckInResult = {
+  studentCode: string;
+  fullName: string;
+  chair: string | null;
+  chairParent: string | null;
+  /** true khi phiên đã khóa và tân cử nhân vừa bị xếp xuống cuối phiên. */
+  late: boolean;
+};
+
 export type CheckIn = {
   checkinId: number;
   hallName: string;

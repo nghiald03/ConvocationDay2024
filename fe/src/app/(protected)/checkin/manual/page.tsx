@@ -33,6 +33,11 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { checkInBachelor } from '@/features/check-in/api/check-in-bachelor';
+import {
+  CHECK_IN_LOCK_UNKNOWN_WARNING,
+  getCheckInLockWarning,
+} from '@/features/check-in/model/get-check-in-lock-warning';
+import { showLateCheckInNotice } from '@/features/check-in/ui/show-late-check-in-notice';
 import { moveBachelorToTemporarySession } from '@/features/bachelor/api/move-bachelor-to-temporary-session';
 import { transferBachelorSession } from '@/features/bachelor/api/transfer-bachelor-session';
 import { createNotification } from '@/features/notification/api/create-notification';
@@ -217,15 +222,27 @@ export default function ManualCheckinPage() {
       confirmationInput.placeholder = studentCode;
       confirmationInput.autocomplete = 'off';
 
+      // Đọc trạng thái mới nhất ngay trước khi hỏi vì phiên có thể vừa bị khóa.
+      const lockWarning = nextStatus
+        ? await getSessionsByHallName(row.hallName)
+            .then((sessions) => getCheckInLockWarning(sessions, row.sessionNum))
+            .catch(() => CHECK_IN_LOCK_UNKNOWN_WARNING)
+        : null;
+
       const confirm = await swal({
         title: nextStatus ? 'Checkin' : 'Hủy checkin',
         text: nextStatus
-          ? `Bạn có muốn checkin cho tân cử nhân ${row.fullName} không?`
+          ? [
+              `Bạn có muốn checkin cho tân cử nhân ${row.fullName} không?`,
+              lockWarning,
+            ]
+              .filter(Boolean)
+              .join('\n\n')
           : `Nhập đúng MSSV ${studentCode} để xác nhận hủy checkin cho ${row.fullName}.`,
         icon: 'warning',
         content: nextStatus ? undefined : (confirmationInput as any),
         buttons: nextStatus ? ['Không', 'Checkin'] : ['Không', 'Hủy checkin'],
-        dangerMode: !nextStatus,
+        dangerMode: !nextStatus || lockWarning !== null,
       });
 
       if (!confirm) return;
@@ -254,16 +271,20 @@ export default function ManualCheckinPage() {
             : { cancellationConfirmation: confirmationInput.value.trim() }),
         };
         // Prefer explicit mutate + try/catch so we can handle specific 400 messages
-        await checkinAction.mutateAsync(nData);
-        toast.success(
-          nextStatus
-            ? `Checkin cho ${row.fullName} thành công`
-            : `Hủy checkin cho ${row.fullName} thành công`,
-          {
-          position: 'top-right',
-          duration: 3000,
-          }
-        );
+        const result = await checkinAction.mutateAsync(nData);
+        if (result?.late) {
+          await showLateCheckInNotice(result);
+        } else {
+          toast.success(
+            nextStatus
+              ? `Checkin cho ${row.fullName} thành công`
+              : `Hủy checkin cho ${row.fullName} thành công`,
+            {
+              position: 'top-right',
+              duration: 3000,
+            }
+          );
+        }
       } catch (err: any) {
         const msg =
           err?.response?.data?.message ??
@@ -271,20 +292,10 @@ export default function ManualCheckinPage() {
           err?.message ??
           '';
 
-        // If session closed / student missed the session -> prompt transfer
-        if (typeof msg === 'string' && msg.includes('bỏ lỡ')) {
-          // prompt transfer flow
-          try {
-            await promptTransferToAnotherSession(row);
-          } catch (e) {
-            // ignore transfer errors here
-          }
-        } else {
-          toast.error(`Không thể checkin vì ${msg}`, {
-            position: 'top-right',
-            duration: 3000,
-          });
-        }
+        toast.error(`Không thể checkin vì ${msg}`, {
+          position: 'top-right',
+          duration: 3000,
+        });
       } finally {
         // Gỡ disable dù thành công hay lỗi
         setProcessingIds((prev) => {
@@ -294,7 +305,7 @@ export default function ManualCheckinPage() {
         });
       }
     },
-    [checkinAction, promptTransferToAnotherSession]
+    [checkinAction]
   );
 
   // ---- Đăng ký session bù
@@ -456,6 +467,26 @@ export default function ManualCheckinPage() {
         },
       },
       {
+        id: 'transfer',
+        header: 'Chuyển phiên',
+        cell: ({ row }) => (
+          <Button
+            size='sm'
+            variant='outline'
+            onClick={() => {
+              // toast.promise đã hiện lỗi cho người dùng
+              promptTransferToAnotherSession(row.original).catch(() => undefined);
+            }}
+            disabled={
+              row.original.checkIn === true ||
+              processingIds.has(row.original.studentCode)
+            }
+          >
+            Chuyển phiên
+          </Button>
+        ),
+      },
+      {
         id: 'notify',
         header: 'Thông báo',
         cell: ({ row }) => (
@@ -476,6 +507,7 @@ export default function ManualCheckinPage() {
       sendNotifyMutation.isPending,
       isMN,
       handleCheckin,
+      promptTransferToAnotherSession,
       handleSendNotify,
     ]
   );
