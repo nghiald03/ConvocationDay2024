@@ -73,6 +73,15 @@ export class BachelorDto {
   @MaxLength(50)
   @ApiProperty({ example: 'A1-P1' })
   chairParent!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() || null : value,
+  )
+  @ApiPropertyOptional({ example: 'Phòng 101', nullable: true })
+  checkinRoom?: string | null;
 }
 
 export class MoveToTemporarySessionDto {

@@ -31,6 +31,24 @@ export class StatisticsService {
       .orderBy(asc(halls.name), asc(sessions.sessionNumber));
   }
 
+  /** Thống kê theo phòng; bachelor chưa xếp phòng gom vào dòng room = null. */
+  async checkinRoomSummary() {
+    return this.database
+      .select({
+        room: sql<string | null>`min(${bachelors.checkinRoom})`,
+        totalStudents: count(bachelors.id),
+        checkedInCount: sql<number>`count(${bachelors.id}) filter (where ${bachelors.checkIn} = true)::int`,
+        openSessionUncheckedCount: sql<number>`count(${bachelors.id}) filter (where ${bachelors.checkIn} is not true and ${checkIns.status} = true)::int`,
+      })
+      .from(bachelors)
+      .leftJoin(
+        checkIns,
+        and(eq(checkIns.hallId, bachelors.hallId), eq(checkIns.sessionId, bachelors.sessionId)),
+      )
+      .groupBy(sql`lower(${bachelors.checkinRoom})`)
+      .orderBy(sql`min(${bachelors.checkinRoom}) nulls last`);
+  }
+
   async hallOverview() {
     const rows = await this.database
       .select({

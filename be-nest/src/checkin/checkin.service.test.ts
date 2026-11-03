@@ -3,6 +3,8 @@ import type { BachelorService } from '../bachelor/bachelor.service.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { CheckInService, nextChairAtEnd } from './checkin.service.js';
 
+const allRooms = { unrestricted: true } as const;
+
 type Row = Record<string, unknown>;
 
 function createService(options: {
@@ -80,6 +82,49 @@ describe('nextChairAtEnd', () => {
 });
 
 describe('CheckInService.checkInBachelor', () => {
+  test('tài khoản giới hạn phòng không check-in được phòng khác và không ghi gì', async () => {
+    const { service, updates } = createService({
+      bachelor: { ...lateBachelor, checkinRoom: 'Phòng 102' },
+      checkIn: { id: 1, status: true },
+    });
+
+    expect(
+      await rejectionMessage(
+        service.checkInBachelor('SV007', true, { unrestricted: false, rooms: ['Phòng 101'] }),
+      ),
+    ).toBe('Bạn không được phân quyền check-in phòng Phòng 102.');
+    expect(updates).toHaveLength(0);
+  });
+
+  test('tài khoản giới hạn phòng check-in được phòng của mình, không phân biệt hoa thường', async () => {
+    const { service, updates } = createService({
+      bachelor: { ...lateBachelor, checkinRoom: 'PHÒNG 101' },
+      checkIn: { id: 1, status: true },
+    });
+
+    const result = await service.checkInBachelor('SV007', true, {
+      unrestricted: false,
+      rooms: ['phòng 101'],
+    });
+
+    expect(result.late).toBe(false);
+    expect(updates).toHaveLength(1);
+  });
+
+  test('tài khoản giới hạn phòng không thao tác được tân cử nhân chưa xếp phòng', async () => {
+    const { service, updates } = createService({
+      bachelor: { ...lateBachelor, checkinRoom: null },
+      checkIn: { id: 1, status: true },
+    });
+
+    expect(
+      await rejectionMessage(
+        service.checkInBachelor('SV007', true, { unrestricted: false, rooms: ['Phòng 101'] }),
+      ),
+    ).toBe('Tân cử nhân chưa được xếp phòng check-in, vui lòng liên hệ quản lý.');
+    expect(updates).toHaveLength(0);
+  });
+
   test('phiên đang mở: check-in bình thường và giữ nguyên ghế', async () => {
     const { service, updates } = createService({
       bachelor: lateBachelor,
@@ -87,7 +132,7 @@ describe('CheckInService.checkInBachelor', () => {
       otherChairs: ['8', '100'],
     });
 
-    const result = await service.checkInBachelor('SV007', true);
+    const result = await service.checkInBachelor('SV007', true, allRooms);
 
     expect(result.late).toBe(false);
     expect(result.bachelor.chair).toBe('7');
@@ -102,7 +147,7 @@ describe('CheckInService.checkInBachelor', () => {
       otherChairs: ['1', '2', '100'],
     });
 
-    const result = await service.checkInBachelor('sv007', true);
+    const result = await service.checkInBachelor('sv007', true, allRooms);
 
     expect(result.late).toBe(true);
     expect(result.bachelor.chair).toBe('101');
@@ -123,7 +168,7 @@ describe('CheckInService.checkInBachelor', () => {
       otherChairs: ['1', '100'],
     });
 
-    const result = await service.checkInBachelor('SV007', true);
+    const result = await service.checkInBachelor('SV007', true, allRooms);
 
     expect(result.late).toBe(false);
     expect(result.bachelor.chair).toBe('101');
@@ -136,7 +181,7 @@ describe('CheckInService.checkInBachelor', () => {
       checkIn: { id: 1, status: false },
     });
 
-    expect(await rejectionMessage(service.checkInBachelor('SV007', false, 'SV007'))).toBe(
+    expect(await rejectionMessage(service.checkInBachelor('SV007', false, allRooms, 'SV007'))).toBe(
       'Phiên đã khóa nên không thể hủy check-in. Vui lòng mở lại phiên trước.',
     );
     expect(updates).toHaveLength(0);
@@ -148,7 +193,7 @@ describe('CheckInService.checkInBachelor', () => {
   ])('từ chối khi phiên %s và không đổi ghế', async (_name, checkIn) => {
     const { service, updates } = createService({ bachelor: lateBachelor, checkIn });
 
-    expect(await rejectionMessage(service.checkInBachelor('SV007', true))).toBe(
+    expect(await rejectionMessage(service.checkInBachelor('SV007', true, allRooms))).toBe(
       'Phiên này chưa được mở, vui lòng đến đúng phiên của bạn.',
     );
     expect(updates).toHaveLength(0);

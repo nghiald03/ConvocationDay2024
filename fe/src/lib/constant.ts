@@ -10,4 +10,5 @@ export const expectedHeaders = [
   'SessionInDay',
   'Vi_tri_ghe',
   'Vi_tri_ghe_phu_huynh',
+  'Checkin_room',
 ];

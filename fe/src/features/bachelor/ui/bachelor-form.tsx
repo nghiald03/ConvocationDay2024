@@ -56,6 +56,11 @@ const formSchema = z.object({
   sessionNum: z.string({ message: 'Phiên trao bằng không được để trống' }),
   image: z.string({ message: 'Image không được để trống' }),
   major: z.string({ message: 'Chuyên ngành không được để trống' }),
+  checkinRoom: z
+    .string({ message: 'Phòng checkin không được để trống' })
+    .trim()
+    .min(1, 'Phòng checkin không được để trống')
+    .max(50, 'Phòng checkin tối đa 50 ký tự'),
 });
 
 type ComponentProps = {
@@ -127,6 +132,7 @@ export default function AddOrUpdateBachelor({
         sessionNum: values.sessionNum,
         chair: values.chair.toString(),
         chairParent: values.chairParent.toString(),
+        checkinRoom: values.checkinRoom,
       };
       return updateBachelorRequest(dataUpload);
     },
@@ -159,6 +165,7 @@ export default function AddOrUpdateBachelor({
           sessionNum: parseInt(values.sessionNum),
           chair: values.chair,
           chairParent: values.chairParent,
+          checkinRoom: values.checkinRoom,
         });
       } else {
         createBachelors([
@@ -172,6 +179,7 @@ export default function AddOrUpdateBachelor({
             sessionNum: parseInt(values.sessionNum),
             chair: values.chair,
             chairParent: values.chairParent,
+            checkinRoom: values.checkinRoom,
           },
         ]);
       }
@@ -391,6 +399,21 @@ export default function AddOrUpdateBachelor({
                 />
               </div>
             </div>
+
+            <FormField
+              control={form.control}
+              name='checkinRoom'
+              defaultValue={bachelor?.checkinRoom ?? ''}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phòng checkin</FormLabel>
+                  <FormControl>
+                    <Input placeholder='' type='text' maxLength={50} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <DialogClose>

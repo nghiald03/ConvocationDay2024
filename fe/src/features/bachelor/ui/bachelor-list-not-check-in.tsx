@@ -116,6 +116,7 @@ export default function BachelorListNotCheckin() {
     { accessorKey: 'sessionNum', header: 'Session' },
     { accessorKey: 'chair', header: 'Ghế' },
     { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
+    { accessorKey: 'checkinRoom', header: 'Phòng checkin' },
     {
       id: 'action',
       header: 'Thông báo',

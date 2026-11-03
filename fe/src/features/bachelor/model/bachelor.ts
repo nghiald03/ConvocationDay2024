@@ -12,6 +12,7 @@ export type Bachelor = {
   sessionNum: number;
   chair: string;
   chairParent: string;
+  checkinRoom?: string | null;
   checkIn?: boolean;
   timeCheckIn?: string;
   hall?: string | null;

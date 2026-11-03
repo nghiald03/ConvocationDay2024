@@ -16,6 +16,8 @@ import { ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Permission } from '../auth/permissions.js';
+import type { ActorContext } from '../common/guards/actor-context.js';
+import { CurrentActor } from '../common/guards/current-actor.decorator.js';
 import { RequirePermissions } from '../common/guards/require-permissions.decorator.js';
 import { RequireRoles } from '../common/guards/require-roles.decorator.js';
 import { BachelorService } from './bachelor.service.js';
@@ -55,6 +57,11 @@ class BachelorListQuery {
   @IsInt()
   @ApiPropertyOptional({ example: 1 })
   hallId?: number;
+
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ example: 'Phòng 101' })
+  checkinRoom?: string;
 
   @IsOptional()
   @IsIn(['checked', 'unchecked'])
@@ -189,6 +196,7 @@ export class BachelorController {
       sessionId: row.sessionId,
       chair: row.chair,
       chairParent: row.chairParent,
+      checkinRoom: row.checkinRoom,
       sessionInDay: row.sessionInDay,
       checkIn: row.checkIn,
       timeCheckIn: row.timeCheckIn,
@@ -202,10 +210,12 @@ export class BachelorController {
   async moveToTemporary(
     @Param('studentCode') studentCode: string,
     @Body() input: MoveToTemporarySessionDto,
+    @CurrentActor() actor: ActorContext,
   ) {
     const { bachelor, session, hall } = await this.bachelors.moveToTemporarySession(
       studentCode,
       input.isMorning,
+      await this.bachelors.checkInRoomScope(actor),
     );
     return {
       status: 200,
@@ -225,10 +235,14 @@ export class BachelorController {
 
   @Put('TransferLateStudent')
   @RequirePermissions(Permission.CheckIn)
-  async transferLateStudent(@Body() input: TransferLateStudentDto) {
+  async transferLateStudent(
+    @Body() input: TransferLateStudentDto,
+    @CurrentActor() actor: ActorContext,
+  ) {
     const { bachelor, session } = await this.bachelors.transferLateStudent(
       input.studentCode,
       input.newSessionId,
+      await this.bachelors.checkInRoomScope(actor),
     );
     return {
       status: 200,

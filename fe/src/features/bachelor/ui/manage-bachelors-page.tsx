@@ -214,6 +214,10 @@ export default function ManageBachelorsPage() {
       header: 'Ghế phụ huynh',
     },
     {
+      accessorKey: 'checkinRoom',
+      header: 'Phòng checkin',
+    },
+    {
       id: 'action',
       header: 'Hành động',
 

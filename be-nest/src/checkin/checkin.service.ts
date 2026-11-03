@@ -1,6 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { and, asc, count, eq, ilike, ne, sql } from 'drizzle-orm';
 import { BachelorService } from '../bachelor/bachelor.service.js';
+import { assertCheckInRoomAllowed, type CheckInRoomScope } from '../bachelor/checkin-room-scope.js';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { bachelors, checkIns, halls, sessions } from '../database/schema/domain-schema.js';
@@ -23,6 +24,7 @@ export class CheckInService {
   async checkInBachelor(
     studentCode: string,
     status: boolean,
+    scope: CheckInRoomScope,
     cancellationConfirmation?: string,
   ) {
     return this.database.transaction(async (transaction) => {
@@ -33,6 +35,7 @@ export class CheckInService {
         .limit(1)
         .for('update');
       if (!bachelor) throw new BadRequestException('Không tìm thấy tân cử nhân trong hệ thống.');
+      assertCheckInRoomAllowed(scope, bachelor.checkinRoom);
       if (bachelor.hallId === null || bachelor.sessionId === null) {
         throw new BadRequestException('Tân cử nhân chưa được xếp hội trường hoặc phiên.');
       }

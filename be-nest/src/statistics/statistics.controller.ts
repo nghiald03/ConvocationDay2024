@@ -16,6 +16,15 @@ export class StatisticsController {
     return { status: 200, message: 'Lấy hội trường đang hoạt động thành công!', data };
   }
 
+  @Get('checkin-room-summary')
+  async checkinRoomSummary() {
+    return {
+      status: 200,
+      message: 'Lấy thống kê check-in theo phòng thành công!',
+      data: await this.statistics.checkinRoomSummary(),
+    };
+  }
+
   @Get('hall-overview')
   async hallOverview() {
     const data = await this.statistics.hallOverview();

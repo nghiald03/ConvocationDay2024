@@ -25,6 +25,7 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import CheckinRoomSummary from '@/features/statistics/ui/checkin-room-summary';
 import UncheckedInTable from '@/features/statistics/ui/unchecked-in-table';
 import { Button } from '@/components/ui/button';
 import {
@@ -237,6 +238,8 @@ export default function HallOverviewPage() {
           </Card>
         </div>
       )}
+
+      <CheckinRoomSummary />
 
       {/* Hall Overview Section */}
       {overview.length > 0 && (

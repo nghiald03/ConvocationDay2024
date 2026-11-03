@@ -72,7 +72,8 @@ The system has 4 distinct user roles with separate interfaces:
 
 Key entities:
 
-- `Bachelor`: Graduate information (StudentCode, FullName, Hall, Session, Chair assignments)
+- `Bachelor`: Graduate information (StudentCode, FullName, Hall, Session, Chair assignments, CheckinRoom)
+- `user_checkin_room`: Rooms a CK account may check in; no rows means no rooms. Accounts with `bachelors.manage` are unrestricted, enforced server-side by `CheckInRoomScope`
 - `CheckIn`: Check-in status tracking by hall/session
 - `Notification`: Announcement system (Title, Content, Priority, Hall/Session scope, Status)
 - `User`: System users with role-based access (MN, CK, US, NO)

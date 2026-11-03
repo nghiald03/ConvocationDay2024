@@ -43,6 +43,7 @@ interface BachelorSeed {
   sessionIndex: number;
   chair: string;
   chairParent: string;
+  checkinRoom: string;
   checkIn: boolean;
   status: boolean;
   bachelorStatus: string | null;
@@ -70,6 +71,7 @@ function createBachelors(): BachelorSeed[] {
       sessionIndex,
       chair: `${String.fromCharCode(65 + hallIndex)}${row}-${seat}`,
       chairParent: `${String.fromCharCode(65 + hallIndex)}${row}-P${seat}`,
+      checkinRoom: `Phòng ${(index % 4) + 101}`,
       checkIn: checkedIn,
       status: checkedIn && index % 5 === 0,
       bachelorStatus: checkedIn && index % 5 === 0 ? 'Ready' : null,
@@ -204,16 +206,16 @@ async function seed(): Promise<void> {
         `insert into bachelor (
           student_code, full_name, mail, faculty, major, image, status, bachelor_status,
           hall_id, session_id, chair, chair_parent, session_in_day, check_in,
-          time_check_in, attendance_status
+          time_check_in, attendance_status, checkin_room
         ) values (
           $1, $2, $3, $4, $5, $6, $7, $8,
-          $9, $10, $11, $12, $13, $14, $15, $16
+          $9, $10, $11, $12, $13, $14, $15, $16, $17
         )`,
         [
           item.studentCode, item.fullName, item.mail, item.faculty, item.major, item.image,
           item.status, item.bachelorStatus, hallIds[item.hallIndex], sessionIds[item.sessionIndex],
           item.chair, item.chairParent, (item.sessionIndex % 3) + 1, item.checkIn,
-          item.timeCheckIn, item.attendanceStatus,
+          item.timeCheckIn, item.attendanceStatus, item.checkinRoom,
         ],
       );
     }

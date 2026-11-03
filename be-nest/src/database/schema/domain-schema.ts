@@ -53,6 +53,7 @@ export const bachelors = pgTable(
     sessionId: integer('session_id').references(() => sessions.id, { onDelete: 'restrict' }),
     chair: varchar('chair', { length: 50 }),
     chairParent: varchar('chair_parent', { length: 50 }),
+    checkinRoom: varchar('checkin_room', { length: 50 }),
     sessionInDay: integer('session_in_day'),
     checkIn: boolean('check_in'),
     timeCheckIn: timestamp('time_check_in', { withTimezone: true }),
@@ -64,6 +65,7 @@ export const bachelors = pgTable(
     index('bachelor_session_id_idx').on(table.sessionId),
     index('bachelor_hall_session_idx').on(table.hallId, table.sessionId),
     index('bachelor_check_in_idx').on(table.checkIn),
+    index('bachelor_checkin_room_normalized_idx').on(sql`lower(${table.checkinRoom})`),
     check('bachelor_attendance_status_check', sql`${table.attendanceStatus} between 0 and 3`),
   ],
 );

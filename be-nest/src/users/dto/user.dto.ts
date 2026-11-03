@@ -18,6 +18,16 @@ const normalizeRoles = ({ value }: { value: unknown }) =>
     ? [...new Set(value.filter((role): role is string => typeof role === 'string').map((role) => role.trim().toUpperCase()))]
     : value;
 
+const normalizeRooms = ({ value }: { value: unknown }) => {
+  if (!Array.isArray(value)) return value;
+  const byKey = new Map<string, string>();
+  for (const room of value) {
+    if (typeof room !== 'string' || !room.trim()) continue;
+    if (!byKey.has(room.trim().toLowerCase())) byKey.set(room.trim().toLowerCase(), room.trim());
+  }
+  return [...byKey.values()];
+};
+
 export class CreateUserDto {
   @ApiProperty({ example: 'checkin01@convocation.local' })
   @IsEmail()
@@ -46,6 +56,15 @@ export class CreateUserDto {
   @IsString({ each: true })
   @Transform(normalizeRoles)
   roles!: string[];
+
+  @ApiPropertyOptional({ example: ['Phòng 101'] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  @MaxLength(50, { each: true })
+  @Transform(normalizeRooms)
+  checkinRooms?: string[];
 }
 
 export class UpdateUserDto {
@@ -65,6 +84,15 @@ export class UpdateUserDto {
   @IsString({ each: true })
   @Transform(normalizeRoles)
   roles?: string[];
+
+  @ApiPropertyOptional({ example: ['Phòng 101'] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  @MaxLength(50, { each: true })
+  @Transform(normalizeRooms)
+  checkinRooms?: string[];
 
   @ApiPropertyOptional({ example: false })
   @IsOptional()

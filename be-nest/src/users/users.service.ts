@@ -5,7 +5,7 @@ import { and, asc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { authAccount, authSession, authUser } from '../database/schema/auth-schema.js';
-import { roles, userRoles } from '../database/schema/authorization-schema.js';
+import { roles, userCheckinRooms, userRoles } from '../database/schema/authorization-schema.js';
 
 const MANAGER_ROLE = 'MN';
 
@@ -14,6 +14,7 @@ export interface UserSummary {
   email: string;
   name: string;
   roles: string[];
+  checkinRooms: string[];
   disabled: boolean;
   lockedUntil: Date | null;
   createdAt: Date;
@@ -39,6 +40,7 @@ export class UsersService {
         lockoutEnd: authUser.lockoutEnd,
         createdAt: authUser.createdAt,
         roles: sql<string[]>`coalesce(array_agg(${userRoles.roleCode} order by ${userRoles.roleCode}) filter (where ${userRoles.roleCode} is not null), '{}')`,
+        checkinRooms: sql<string[]>`coalesce((select array_agg(${userCheckinRooms.room}::text order by ${userCheckinRooms.room}) from ${userCheckinRooms} where ${userCheckinRooms.userId} = ${authUser.id}), '{}')`,
       })
       .from(authUser)
       .leftJoin(userRoles, eq(userRoles.userId, authUser.id))
@@ -50,7 +52,7 @@ export class UsersService {
     }));
   }
 
-  async create(input: { email: string; name: string; password: string; roles: string[] }) {
+  async create(input: { email: string; name: string; password: string; roles: string[]; checkinRooms?: string[] }) {
     await this.assertRolesExist(input.roles);
     const [existing] = await this.database
       .select({ id: authUser.id })
@@ -79,11 +81,16 @@ export class UsersService {
         password: passwordHash,
       });
       await transaction.insert(userRoles).values(input.roles.map((roleCode) => ({ userId, roleCode })));
+      await this.replaceCheckinRooms(transaction, userId, input.checkinRooms ?? []);
     });
     return this.get(userId);
   }
 
-  async update(actorId: string, userId: string, input: { name?: string; roles?: string[]; disabled?: boolean }) {
+  async update(
+    actorId: string,
+    userId: string,
+    input: { name?: string; roles?: string[]; checkinRooms?: string[]; disabled?: boolean },
+  ) {
     const current = await this.get(userId);
     if (input.roles) await this.assertRolesExist(input.roles);
 
@@ -111,6 +118,7 @@ export class UsersService {
         await transaction.delete(userRoles).where(eq(userRoles.userId, userId));
         await transaction.insert(userRoles).values(input.roles.map((roleCode) => ({ userId, roleCode })));
       }
+      if (input.checkinRooms) await this.replaceCheckinRooms(transaction, userId, input.checkinRooms);
       // Role or status changes take effect on the next request, not after the session expires.
       if (input.roles || input.disabled) {
         await transaction.delete(authSession).where(eq(authSession.userId, userId));
@@ -161,6 +169,13 @@ export class UsersService {
     const user = (await this.list()).find((item) => item.id === userId);
     if (!user) throw new NotFoundException({ code: 'user/not-found', message: 'Không tìm thấy tài khoản.' });
     return user;
+  }
+
+  private async replaceCheckinRooms(transaction: Transaction, userId: string, rooms: string[]) {
+    await transaction.delete(userCheckinRooms).where(eq(userCheckinRooms.userId, userId));
+    if (rooms.length) {
+      await transaction.insert(userCheckinRooms).values(rooms.map((room) => ({ userId, room })));
+    }
   }
 
   private async assertRolesExist(requested: string[]) {

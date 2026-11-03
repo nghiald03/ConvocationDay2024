@@ -14,6 +14,9 @@ import { ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Permission } from '../auth/permissions.js';
+import { BachelorService } from '../bachelor/bachelor.service.js';
+import type { ActorContext } from '../common/guards/actor-context.js';
+import { CurrentActor } from '../common/guards/current-actor.decorator.js';
 import { Public } from '../common/guards/public.decorator.js';
 import { RequirePermissions } from '../common/guards/require-permissions.decorator.js';
 import { RequireRoles } from '../common/guards/require-roles.decorator.js';
@@ -67,15 +70,34 @@ function checkInResponse({ bachelor, late }: Awaited<ReturnType<CheckInService['
 @ApiTags('check-in')
 @Controller('Checkin')
 export class CheckInController {
-  constructor(private readonly checkIns: CheckInService) {}
+  constructor(
+    private readonly checkIns: CheckInService,
+    private readonly bachelors: BachelorService,
+  ) {}
+
+  @Get('rooms')
+  @RequirePermissions(Permission.CheckIn)
+  async rooms(@CurrentActor() actor: ActorContext) {
+    const [rooms, scope] = await Promise.all([
+      this.bachelors.listCheckInRooms(),
+      this.bachelors.checkInRoomScope(actor),
+    ]);
+    return {
+      status: 200,
+      message: 'Lấy danh sách phòng check-in thành công!',
+      // assignedRooms = null: được thao tác mọi phòng.
+      data: { rooms, assignedRooms: scope.unrestricted ? null : scope.rooms },
+    };
+  }
 
   @Put('UpdateCheckin')
   @RequirePermissions(Permission.CheckIn)
-  async checkIn(@Body() input: CheckInBachelorDto) {
+  async checkIn(@Body() input: CheckInBachelorDto, @CurrentActor() actor: ActorContext) {
     return checkInResponse(
       await this.checkIns.checkInBachelor(
         input.studentCode,
         input.status,
+        await this.bachelors.checkInRoomScope(actor),
         input.cancellationConfirmation,
       ),
     );
@@ -83,8 +105,17 @@ export class CheckInController {
 
   @Put('UpdateCheckinStudentCode')
   @RequirePermissions(Permission.CheckIn)
-  async checkInByStudentCode(@Query('studentCode') studentCode: string) {
-    return checkInResponse(await this.checkIns.checkInBachelor(studentCode, true));
+  async checkInByStudentCode(
+    @Query('studentCode') studentCode: string,
+    @CurrentActor() actor: ActorContext,
+  ) {
+    return checkInResponse(
+      await this.checkIns.checkInBachelor(
+        studentCode,
+        true,
+        await this.bachelors.checkInRoomScope(actor),
+      ),
+    );
   }
 
   @Get('GetAll')
@@ -97,8 +128,9 @@ export class CheckInController {
     };
   }
 
+  // Tác động mọi phòng nên không thể cho tài khoản CK vốn bị giới hạn theo phòng.
   @Put('UncheckAll')
-  @RequirePermissions(Permission.CheckIn)
+  @RequirePermissions(Permission.ManageBachelors)
   async uncheckAll(@Headers('x-confirm-destructive') confirmation: string | undefined) {
     const expected = 'UNCHECK ALL BACHELORS';
     if (confirmation !== expected) {

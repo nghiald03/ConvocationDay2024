@@ -33,6 +33,8 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { checkInBachelor } from '@/features/check-in/api/check-in-bachelor';
+import { canCheckInRoom } from '@/features/check-in/model/check-in-room';
+import { checkInRoomsQueryOptions } from '@/features/check-in/queries/check-in-rooms-query-options';
 import {
   CHECK_IN_LOCK_UNKNOWN_WARNING,
   getCheckInLockWarning,
@@ -67,6 +69,8 @@ export default function ManualCheckinPage() {
   const [searchTextQuery] = useDebounce(search, 700);
   const [hall, setHall] = useState('-1');
   const [session, setSession] = useState('-1');
+  const [room, setRoom] = useState('-1');
+  const [roomDefaulted, setRoomDefaulted] = useState(false);
 
   const [bachelorList, setBachelorList] = useState<Bachelor[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -88,9 +92,10 @@ export default function ManualCheckinPage() {
     const params: BachelorListParams = { pageIndex, pageSize };
     if (hall !== '-1') params.hall = hall;
     if (session !== '-1') params.session = session;
+    if (room !== '-1') params.checkinRoom = room;
     if (searchTextQuery) params.search = searchTextQuery;
     return params;
-  }, [hall, pageIndex, pageSize, searchTextQuery, session]);
+  }, [hall, pageIndex, pageSize, room, searchTextQuery, session]);
 
   // ---- Fetch list, rút gọn queryFn
   const { data: bachelorDT, isLoading } = useQuery({
@@ -103,6 +108,19 @@ export default function ManualCheckinPage() {
   const { data: hallList, error: hallListEr } = useQuery(hallQueryOptions);
 
   const { data: sessionList } = useQuery(sessionQueryOptions);
+
+  const { data: checkInRooms } = useQuery(checkInRoomsQueryOptions);
+  const assignedRooms = checkInRooms?.assignedRooms;
+  const roomOptions = assignedRooms ?? checkInRooms?.rooms ?? [];
+  const hasNoAssignedRoom = assignedRooms?.length === 0;
+
+  // Tài khoản bị giới hạn phòng mở màn hình là thấy ngay phòng của mình.
+  useEffect(() => {
+    if (roomDefaulted || !checkInRooms) return;
+    setRoomDefaulted(true);
+    const firstRoom = checkInRooms.assignedRooms?.[0];
+    if (firstRoom) setRoom(firstRoom);
+  }, [checkInRooms, roomDefaulted]);
 
   useEffect(() => {
     if (hallListEr) {
@@ -450,6 +468,7 @@ export default function ManualCheckinPage() {
       { accessorKey: 'sessionInDay', header: 'Phiên theo ngày' },
       { accessorKey: 'chair', header: 'Ghế' },
       { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
+      { accessorKey: 'checkinRoom', header: 'Phòng checkin' },
       {
         accessorKey: 'checkIn',
         header: 'Checkin',
@@ -460,7 +479,10 @@ export default function ManualCheckinPage() {
           return (
             <Switch
               checked={row.getValue<boolean>('checkIn')}
-              disabled={isProcessing}
+              disabled={
+                isProcessing ||
+                !canCheckInRoom(assignedRooms, row.original.checkinRoom)
+              }
               onCheckedChange={() => handleCheckin(row.original)}
             />
           );
@@ -479,7 +501,8 @@ export default function ManualCheckinPage() {
             }}
             disabled={
               row.original.checkIn === true ||
-              processingIds.has(row.original.studentCode)
+              processingIds.has(row.original.studentCode) ||
+              !canCheckInRoom(assignedRooms, row.original.checkinRoom)
             }
           >
             Chuyển phiên
@@ -509,6 +532,7 @@ export default function ManualCheckinPage() {
       handleCheckin,
       promptTransferToAnotherSession,
       handleSendNotify,
+      assignedRooms,
     ]
   );
 
@@ -533,6 +557,11 @@ export default function ManualCheckinPage() {
       <Card className='mt-3 animate-fade-up'>
         <CardContent className='p-3'>
           <MultiHallStatusDisplay />
+          {hasNoAssignedRoom && (
+            <p className='my-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive'>
+              Tài khoản của bạn chưa được phân phòng checkin nên chưa thể checkin. Vui lòng liên hệ quản lý.
+            </p>
+          )}
           <TableCustom
             title='Danh sách tân cử nhân'
             isLoading={isLoading}
@@ -573,6 +602,30 @@ export default function ManualCheckinPage() {
                             {item.hallName}
                           </SelectItem>
                         ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={room}
+                  onValueChange={(value) => {
+                    setRoom(value);
+                    setPageIndex(1);
+                  }}
+                >
+                  <SelectTrigger className='w-[260px]'>
+                    <SelectValue placeholder='Chọn phòng checkin' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Phòng checkin</SelectLabel>
+                      <SelectItem value='-1' key='all'>
+                        Toàn bộ phòng
+                      </SelectItem>
+                      {roomOptions.map((item) => (
+                        <SelectItem key={item} value={item}>
+                          {item}
+                        </SelectItem>
+                      ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>

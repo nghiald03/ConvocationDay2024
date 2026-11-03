@@ -5,6 +5,7 @@ export type ManagedUser = {
   email: string;
   name: string;
   roles: string[];
+  checkinRooms: string[];
   disabled: boolean;
   lockedUntil: string | null;
   createdAt: string;
@@ -20,11 +21,11 @@ export async function getRoles() {
   return (await httpClient.get<Role[]>('/Users/roles')).data;
 }
 
-export async function createUser(input: { email: string; name: string; password: string; roles: string[] }) {
+export async function createUser(input: { email: string; name: string; password: string; roles: string[]; checkinRooms: string[] }) {
   return (await httpClient.post<ManagedUser>('/Users', input)).data;
 }
 
-export async function updateUser(id: string, input: { name?: string; roles?: string[]; disabled?: boolean }) {
+export async function updateUser(id: string, input: { name?: string; roles?: string[]; checkinRooms?: string[]; disabled?: boolean }) {
   return (await httpClient.put<ManagedUser>(`/Users/${encodeURIComponent(id)}`, input)).data;
 }
 

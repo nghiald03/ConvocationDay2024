@@ -11,6 +11,7 @@ interface BachelorExportRow {
   sessionInDay: number | null;
   chair: string;
   chairParent: string;
+  checkinRoom?: string | null;
   checkIn: boolean;
   timeCheckIn: string;
   description?: string;
@@ -59,6 +60,7 @@ export const exportToExcel = async (
         'Session In Day': sessionInDay,
         Chair: chair,
         'Chair Parent': chairParent,
+        'Checkin Room': s.checkinRoom ?? '',
         'Checked In': checkIn,
         'Check-In Time': checkInTime,
       };

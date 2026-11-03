@@ -1,8 +1,12 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, ilike, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, isNotNull, or, sql, type SQL } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
+import { Permission } from '../auth/permissions.js';
+import type { ActorContext } from '../common/guards/actor-context.js';
+import { userCheckinRooms } from '../database/schema/authorization-schema.js';
 import { bachelors, checkIns, halls, sessions } from '../database/schema/domain-schema.js';
+import { assertCheckInRoomAllowed, type CheckInRoomScope } from './checkin-room-scope.js';
 import type { BachelorDto, BachelorListItemDto } from './dto/bachelor.dto.js';
 
 class BachelorImportError extends Error {}
@@ -30,6 +34,7 @@ export class BachelorService {
     keySearch?: string;
     hallId?: number;
     sessionId?: number;
+    checkinRoom?: string;
     openCheckInOnly?: boolean;
     closedCheckInOnly?: boolean;
     checkedIn?: boolean;
@@ -41,6 +46,9 @@ export class BachelorService {
     }
     if (options.hallId !== undefined) filters.push(eq(bachelors.hallId, options.hallId));
     if (options.sessionId !== undefined) filters.push(eq(bachelors.sessionId, options.sessionId));
+    if (options.checkinRoom) {
+      filters.push(sql`lower(${bachelors.checkinRoom}) = ${options.checkinRoom.trim().toLowerCase()}`);
+    }
     if (options.checkedIn === true) filters.push(eq(bachelors.checkIn, true));
     if (options.checkedIn === false) filters.push(sql`${bachelors.checkIn} is not true`);
     if (options.openCheckInOnly || options.closedCheckInOnly) {
@@ -65,6 +73,7 @@ export class BachelorService {
         description: sessions.description,
         chair: bachelors.chair,
         chairParent: bachelors.chairParent,
+        checkinRoom: bachelors.checkinRoom,
         checkIn: bachelors.checkIn,
         timeCheckIn: bachelors.timeCheckIn,
         attendanceStatus: bachelors.attendanceStatus,
@@ -108,6 +117,7 @@ export class BachelorService {
         sessionInDay: item.sessionInDay,
         chair: item.chair,
         chairParent: item.chairParent,
+        checkinRoom: item.checkinRoom,
       })),
     };
   }
@@ -146,6 +156,7 @@ export class BachelorService {
             sessionInDay: item.sessionInDay,
             chair: item.chair,
             chairParent: item.chairParent,
+            checkinRoom: item.checkinRoom,
             checkIn: false,
           });
         });
@@ -191,6 +202,7 @@ export class BachelorService {
         sessionInDay: item.sessionInDay,
         chair: item.chair,
         chairParent: item.chairParent,
+        checkinRoom: item.checkinRoom,
       })
       .where(sql`lower(${bachelors.studentCode}) = ${item.studentCode.toLowerCase()}`)
       .returning();
@@ -224,6 +236,7 @@ export class BachelorService {
             sessionId,
             chair: item.chair,
             chairParent: item.chairParent,
+            checkinRoom: item.checkinRoom,
           })
           .where(
             and(
@@ -266,7 +279,29 @@ export class BachelorService {
       .orderBy(asc(bachelors.id));
   }
 
-  async moveToTemporarySession(studentCode: string, isMorning: boolean) {
+  /** Đọc mới mỗi lần để việc đổi phân phòng có hiệu lực ngay, không cần đăng nhập lại. */
+  async checkInRoomScope(actor: ActorContext): Promise<CheckInRoomScope> {
+    if (actor.permissions.includes(Permission.ManageBachelors)) return { unrestricted: true };
+    const rows = await this.database
+      .select({ room: userCheckinRooms.room })
+      .from(userCheckinRooms)
+      .where(eq(userCheckinRooms.userId, actor.userId))
+      .orderBy(asc(userCheckinRooms.room));
+    return { unrestricted: false, rooms: rows.map(({ room }) => room) };
+  }
+
+  /** Danh sách phòng đang có; gộp các dòng chỉ khác chữ hoa/thường. */
+  async listCheckInRooms(): Promise<string[]> {
+    const rows = await this.database
+      .select({ room: sql<string>`min(${bachelors.checkinRoom})` })
+      .from(bachelors)
+      .where(isNotNull(bachelors.checkinRoom))
+      .groupBy(sql`lower(${bachelors.checkinRoom})`)
+      .orderBy(sql`min(${bachelors.checkinRoom})`);
+    return rows.map(({ room }) => room);
+  }
+
+  async moveToTemporarySession(studentCode: string, isMorning: boolean, scope: CheckInRoomScope) {
     return this.database.transaction(async (transaction) => {
       const [bachelor] = await transaction
         .select()
@@ -275,6 +310,7 @@ export class BachelorService {
         .limit(1)
         .for('update');
       if (!bachelor) throw new BadRequestException('Tân cử nhân chưa được import vào hệ thống!');
+      assertCheckInRoomAllowed(scope, bachelor.checkinRoom);
       if (bachelor.hallId === null) throw new BadRequestException('Tân cử nhân chưa được xếp hội trường.');
       const hallId = bachelor.hallId;
       const [session] = await transaction
@@ -302,7 +338,7 @@ export class BachelorService {
     });
   }
 
-  async transferLateStudent(studentCode: string, newSessionId: number) {
+  async transferLateStudent(studentCode: string, newSessionId: number, scope: CheckInRoomScope) {
     return this.database.transaction(async (transaction) => {
       const [bachelor] = await transaction
         .select()
@@ -311,6 +347,7 @@ export class BachelorService {
         .limit(1)
         .for('update');
       if (!bachelor) throw new BadRequestException('Không tìm thấy tân cử nhân trong hệ thống!');
+      assertCheckInRoomAllowed(scope, bachelor.checkinRoom);
       if (bachelor.hallId === null) throw new BadRequestException('Tân cử nhân chưa được xếp hội trường.');
       const hallId = bachelor.hallId;
       if (bachelor.checkIn) {

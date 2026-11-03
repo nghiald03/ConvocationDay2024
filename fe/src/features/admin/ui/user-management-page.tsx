@@ -33,6 +33,7 @@ import {
   type ManagedUser,
 } from '@/features/admin/api/manage-users';
 import { useSession } from '@/features/auth/queries/session-provider';
+import { checkInRoomsQueryOptions } from '@/features/check-in/queries/check-in-rooms-query-options';
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
@@ -48,6 +49,7 @@ type UserForm = {
   name: string;
   password: string;
   roles: string[];
+  checkinRooms: string[];
 };
 
 function generatePassword() {
@@ -61,6 +63,8 @@ export default function UserManagementPage() {
   const currentUser = useSession();
   const { data: users = [], isLoading } = useQuery({ queryKey: usersKey, queryFn: getUsers });
   const { data: roles = [] } = useQuery({ queryKey: ['admin', 'roles'], queryFn: getRoles, staleTime: Infinity });
+  const { data: checkInRooms } = useQuery(checkInRoomsQueryOptions);
+  const [newRoom, setNewRoom] = React.useState('');
   const [form, setForm] = React.useState<UserForm | null>(null);
   const [passwordFor, setPasswordFor] = React.useState<{ user: ManagedUser; password: string } | null>(null);
   const [search, setSearch] = React.useState('');
@@ -77,8 +81,8 @@ export default function UserManagementPage() {
   const save = useMutation({
     mutationFn: (value: UserForm) =>
       value.user
-        ? updateUser(value.user.id, { name: value.name.trim(), roles: value.roles })
-        : createUser({ email: value.email.trim(), name: value.name.trim(), password: value.password, roles: value.roles }),
+        ? updateUser(value.user.id, { name: value.name.trim(), roles: value.roles, checkinRooms: value.checkinRooms })
+        : createUser({ email: value.email.trim(), name: value.name.trim(), password: value.password, roles: value.roles, checkinRooms: value.checkinRooms }),
     onSuccess: (_result, value) => {
       toast.success(value.user ? 'Đã cập nhật tài khoản.' : 'Đã tạo tài khoản.');
       setForm(null);
@@ -126,6 +130,22 @@ export default function UserManagementPage() {
     if (confirmed) remove.mutate(user);
   };
 
+  const roomChoices = [
+    ...new Set([...(checkInRooms?.rooms ?? []), ...(form?.checkinRooms ?? [])]),
+  ].sort((first, second) => first.localeCompare(second, 'vi'));
+  const showsRoomField = form?.roles.includes('CK') && !form.roles.includes('MN');
+
+  const addRoom = () => {
+    const room = newRoom.trim();
+    if (!room) return;
+    setForm((current) => {
+      if (!current) return current;
+      const exists = current.checkinRooms.some((item) => item.toLowerCase() === room.toLowerCase());
+      return exists ? current : { ...current, checkinRooms: [...current.checkinRooms, room] };
+    });
+    setNewRoom('');
+  };
+
   const formValid =
     form !== null &&
     form.name.trim().length > 0 &&
@@ -144,7 +164,7 @@ export default function UserManagementPage() {
             onChange={(event) => setSearch(event.target.value)}
           />
           <Button
-            onClick={() => setForm({ user: null, email: '', name: '', password: generatePassword(), roles: ['CK'] })}
+            onClick={() => setForm({ user: null, email: '', name: '', password: generatePassword(), roles: ['CK'], checkinRooms: [] })}
           >
             Thêm tài khoản
           </Button>
@@ -180,6 +200,11 @@ export default function UserManagementPage() {
                       ))}
                       {!user.roles.length && <span className='text-muted-foreground'>—</span>}
                     </div>
+                    {user.roles.includes('CK') && !user.roles.includes('MN') && (
+                      <div className='mt-1 text-xs text-muted-foreground'>
+                        Phòng: {user.checkinRooms.length ? user.checkinRooms.join(', ') : 'chưa phân phòng'}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     {user.disabled ? (
@@ -197,7 +222,7 @@ export default function UserManagementPage() {
                       <Button
                         size='sm'
                         variant='outline'
-                        onClick={() => setForm({ user, email: user.email, name: user.name, password: '', roles: user.roles })}
+                        onClick={() => setForm({ user, email: user.email, name: user.name, password: '', roles: user.roles, checkinRooms: user.checkinRooms })}
                       >
                         Sửa
                       </Button>
@@ -310,6 +335,52 @@ export default function UserManagementPage() {
                 ))}
               </div>
             </div>
+            {showsRoomField && (
+              <div className='space-y-2'>
+                <Label>Phòng được check-in</Label>
+                <p className='text-sm text-muted-foreground'>
+                  Tài khoản chưa được chọn phòng nào thì không check-in được.
+                </p>
+                <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
+                  {roomChoices.map((room) => (
+                    <label key={room} className='flex cursor-pointer items-center gap-2 text-sm'>
+                      <Checkbox
+                        checked={form?.checkinRooms.includes(room) ?? false}
+                        onCheckedChange={(checked) =>
+                          setForm(
+                            (current) =>
+                              current && {
+                                ...current,
+                                checkinRooms: checked
+                                  ? [...current.checkinRooms, room]
+                                  : current.checkinRooms.filter((item) => item !== room),
+                              }
+                          )
+                        }
+                      />
+                      {room}
+                    </label>
+                  ))}
+                </div>
+                <div className='flex gap-2'>
+                  <Input
+                    placeholder='Thêm phòng chưa có trong danh sách…'
+                    maxLength={50}
+                    value={newRoom}
+                    onChange={(event) => setNewRoom(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addRoom();
+                      }
+                    }}
+                  />
+                  <Button type='button' variant='outline' onClick={addRoom}>
+                    Thêm
+                  </Button>
+                </div>
+              </div>
+            )}
             <DialogFooter>
               <Button type='button' variant='outline' onClick={() => setForm(null)}>
                 Hủy

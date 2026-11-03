@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { hallOverviewQueryOptions } from '@/features/statistics/queries/hall-overview-query-options';
+import CheckinRoomSummary from '@/features/statistics/ui/checkin-room-summary';
 import { cn } from '@/lib/utils';
 
 type Counts = { total: number; checked: number };
@@ -137,6 +138,8 @@ export default function CheckinStatistics() {
           className='bg-info/10 text-info'
         />
       </div>
+
+      <CheckinRoomSummary />
 
       <Card>
         <CardContent className='p-0'>

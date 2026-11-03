@@ -1,4 +1,4 @@
-import { pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, primaryKey, text, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { authUser } from './auth-schema.js';
 
 export const roles = pgTable('role', {
@@ -36,4 +36,16 @@ export const userRoles = pgTable(
     assignedAt: timestamp('assigned_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.roleCode] })],
+);
+
+/** Phòng check-in mà một tài khoản CK được phép thao tác. Không có dòng nào nghĩa là không có phòng nào. */
+export const userCheckinRooms = pgTable(
+  'user_checkin_room',
+  {
+    userId: text('user_id')
+      .notNull()
+      .references(() => authUser.id, { onDelete: 'cascade' }),
+    room: varchar('room', { length: 50 }).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.room] })],
 );

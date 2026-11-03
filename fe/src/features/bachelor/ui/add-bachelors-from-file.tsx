@@ -40,6 +40,7 @@ const EXPECTED_HEADERS = [
   'SessionInDay',
   'Vi_tri_ghe',
   'Vi_tri_ghe_phu_huynh',
+  'Checkin_room',
 ] as const;
 
 /**
@@ -86,6 +87,7 @@ export default function AddBachelorFromFile() {
     { accessorKey: 'sessionInDay', header: 'SessionInDay' },
     { accessorKey: 'chair', header: 'Ghế' },
     { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
+    { accessorKey: 'checkinRoom', header: 'Phòng checkin' },
   ];
 
   const resetInput = () => {
@@ -201,6 +203,7 @@ export default function AddBachelorFromFile() {
             sessionInDay: parsedSessionInDay,
             chair: getByHeader(row, 'Vi_tri_ghe'),
             chairParent: getByHeader(row, 'Vi_tri_ghe_phu_huynh'),
+            checkinRoom: String(getByHeader(row, 'Checkin_room')).trim(),
           };
 
           return bachelor;
@@ -252,6 +255,7 @@ export default function AddBachelorFromFile() {
         sessionInDay: item.sessionInDay ?? null,
         chair: item.chair?.toString(),
         chairParent: item.chairParent?.toString(),
+        checkinRoom: item.checkinRoom,
       }));
       return createBachelors(dataUpload);
     },
