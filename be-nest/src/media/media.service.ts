@@ -8,7 +8,7 @@ import { mediaAssets } from '../database/schema/media-schema.js';
 import { MediaValidatorService } from './media-validator.service.js';
 import { ObjectStorageService } from './object-storage.service.js';
 
-const ownerTypes = new Set(['bachelor', 'notification', 'export', 'temp']);
+const ownerTypes = new Set(['library', 'bachelor', 'notification', 'export', 'temp']);
 
 @Injectable()
 export class MediaService {
@@ -81,8 +81,7 @@ export class MediaService {
       .select()
       .from(mediaAssets)
       .where(eq(mediaAssets.status, 0))
-      .orderBy(desc(mediaAssets.createdAt))
-      .limit(1000);
+      .orderBy(desc(mediaAssets.createdAt));
   }
 
   async rename(id: string, originalName: string) {
@@ -135,6 +134,8 @@ export class MediaService {
 
   objectKey(ownerType: string, ownerId: string, mediaId: string): string {
     const compactId = mediaId.replaceAll('-', '');
+    // Shared by every account, so the key deliberately carries no owner.
+    if (ownerType === 'library') return `library/${compactId}.webp`;
     if (ownerType === 'bachelor') return `bachelors/${ownerId}/avatar/${compactId}.webp`;
     if (ownerType === 'notification') return `notifications/${ownerId}/${compactId}.webp`;
     if (ownerType === 'export') return `exports/${ownerId}/${compactId}.webp`;

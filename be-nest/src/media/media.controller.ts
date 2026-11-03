@@ -48,7 +48,7 @@ export class MediaController {
       required: ['image'],
       properties: {
         image: { type: 'string', format: 'binary' },
-        ownerType: { type: 'string', enum: ['bachelor', 'notification', 'export', 'temp'], example: 'temp' },
+        ownerType: { type: 'string', enum: ['library', 'bachelor', 'notification', 'export', 'temp'], example: 'library' },
         ownerId: { type: 'string', example: 'TEST260001' },
       },
     },
@@ -62,7 +62,7 @@ export class MediaController {
   ) {
     const asset = await this.media.upload(
       file,
-      ownerType ?? 'temp',
+      ownerType ?? 'library',
       ownerId ?? actor.userId,
       actor.userId,
     );
@@ -77,7 +77,7 @@ export class MediaController {
       required: ['images'],
       properties: {
         images: { type: 'array', maxItems: MAX_BULK_FILES, items: { type: 'string', format: 'binary' } },
-        ownerType: { type: 'string', enum: ['bachelor', 'notification', 'export', 'temp'], example: 'temp' },
+        ownerType: { type: 'string', enum: ['library', 'bachelor', 'notification', 'export', 'temp'], example: 'library' },
         ownerId: { type: 'string', example: 'TEST260001' },
       },
     },
@@ -100,7 +100,7 @@ export class MediaController {
     }
     const uploaded = await this.media.uploadMany(
       files,
-      ownerType ?? 'temp',
+      ownerType ?? 'library',
       ownerId ?? actor.userId,
       actor.userId,
     );

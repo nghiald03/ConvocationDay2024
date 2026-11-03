@@ -8,6 +8,21 @@ function file(name: string): Express.Multer.File {
   return { originalname: name } as Express.Multer.File;
 }
 
+describe('MediaService.objectKey', () => {
+  test('ảnh thư viện dùng chung không phụ thuộc tài khoản tải lên', () => {
+    const service = new MediaService(
+      {} as AppDatabase,
+      {} as ObjectStorageService,
+      {} as MediaValidatorService,
+    );
+    const id = '11111111-2222-3333-4444-555555555555';
+    const expected = 'library/11111111222233334444555555555555.webp';
+
+    expect(service.objectKey('library', 'user-a', id)).toBe(expected);
+    expect(service.objectKey('library', 'user-b', id)).toBe(expected);
+  });
+});
+
 describe('MediaService bulk upload', () => {
   test('xóa metadata và object đã tạo khi một tệp sau đó tải lên thất bại', async () => {
     const deletedObjects: string[] = [];

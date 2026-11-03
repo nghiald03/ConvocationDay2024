@@ -144,15 +144,28 @@ export default function MediaManagementPage() {
   // ===== Mutations =====
   const uploadMutation = useMutation({
     mutationFn: (files: FileList) => uploadMediaImages(files, setUploadProgress),
-    onSuccess: async () => {
-      toast.success('Tải lên thành công');
+    onSuccess: async ({ uploaded, failed }) => {
       setUploadProgress(0);
-      setSelectedFiles(null);
+      if (failed.length === 0) {
+        toast.success(`Đã tải lên ${uploaded.length} ảnh`);
+        setSelectedFiles(null);
+      } else {
+        const names = failed.slice(0, 5).map((file) => file.name).join(', ');
+        const more = failed.length > 5 ? '…' : '';
+        toast.error(
+          `Đã tải lên ${uploaded.length} ảnh, lỗi ${failed.length} ảnh: ${names}${more}. Các ảnh lỗi vẫn được giữ lại để thử lại.`,
+          { duration: 10_000 }
+        );
+        // Keep only the failures selected so a retry cannot duplicate uploaded images.
+        const remaining = new DataTransfer();
+        failed.forEach((file) => remaining.items.add(file));
+        setSelectedFiles(remaining.files);
+      }
       await queryClient.invalidateQueries({ queryKey: mediaKeys.list() });
     },
     onError: (e: any) => {
       console.error(e);
-      toast.error('Tải lên thất bại');
+      toast.error(e?.message || 'Tải lên thất bại');
       setUploadProgress(0);
     },
   });
