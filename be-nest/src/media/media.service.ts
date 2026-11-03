@@ -108,6 +108,11 @@ export class MediaService {
   }
 
   async softDelete(id: string): Promise<boolean> {
+    const asset = await this.get(id);
+    if (!asset) return false;
+    // Ảnh thư viện có link công khai nên phải xóa object thì link mới hết tác dụng.
+    // Xóa trước: nếu MinIO lỗi, ảnh vẫn hiện trong kho thay vì báo đã xóa mà link còn mở được.
+    if (asset.ownerType === 'library') await this.storage.delete(asset.objectKey);
     const rows = await this.database
       .update(mediaAssets)
       .set({ status: 1, deletedAt: new Date() })
@@ -123,6 +128,7 @@ export class MediaService {
       contentType: asset.contentType,
       mimeType: asset.contentType,
       path: `/backend-api/media/${asset.id}/content`,
+      publicUrl: asset.ownerType === 'library' ? this.storage.publicUrl(asset.objectKey) : null,
       size: asset.size,
       width: asset.width,
       height: asset.height,

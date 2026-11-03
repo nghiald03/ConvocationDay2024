@@ -728,12 +728,12 @@ export default function MediaManagementPage() {
                   <Button
                     variant='outline'
                     size='sm'
-                    onClick={() => copyUrl(current.path)}
+                    onClick={() => copyUrl(current.publicUrl ?? current.path)}
                   >
                     <Copy className='size-4 mr-2' /> Copy URL
                   </Button>
                   <a
-                    href={current.path}
+                    href={current.publicUrl ?? current.path}
                     target='_blank'
                     rel='noreferrer'
                     className='contents'
@@ -771,7 +771,7 @@ export default function MediaManagementPage() {
                     current.height
                   }\nMIME: ${current.mimeType}\nTạo lúc: ${new Date(
                     current.createdAt
-                  ).toLocaleString('vi-VN')}\nURL: ${current.path}`}
+                  ).toLocaleString('vi-VN')}\nURL: ${current.publicUrl ?? current.path}`}
                 />
 
                 <div className='mt-3 space-y-2'>

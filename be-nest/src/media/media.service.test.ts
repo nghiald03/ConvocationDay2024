@@ -23,6 +23,78 @@ describe('MediaService.objectKey', () => {
   });
 });
 
+describe('MediaService public links', () => {
+  const libraryAsset = { id: 'a1', objectKey: 'library/a1.webp', ownerType: 'library', status: 0 };
+
+  function createService(asset: Record<string, unknown>, deleteObject = () => Promise.resolve()) {
+    const updated: unknown[] = [];
+    const deleted: string[] = [];
+    const database = {
+      select: () => ({
+        from: () => ({ where: () => ({ limit: () => Promise.resolve([asset]) }) }),
+      }),
+      update: () => ({
+        set: (values: unknown) => ({
+          where: () => ({
+            returning: () => {
+              updated.push(values);
+              return Promise.resolve([asset]);
+            },
+          }),
+        }),
+      }),
+    } as unknown as AppDatabase;
+    const storage = {
+      delete: async (key: string) => {
+        await deleteObject();
+        deleted.push(key);
+      },
+      publicUrl: (key: string) => `https://image.example.com/bucket/${key}`,
+    } as unknown as ObjectStorageService;
+    const service = new MediaService(database, storage, {} as MediaValidatorService);
+    return { service, updated, deleted };
+  }
+
+  test('chỉ ảnh thư viện mới có link công khai', () => {
+    const { service } = createService(libraryAsset);
+    const dto = (ownerType: string) =>
+      service.toDto({ ...libraryAsset, ownerType } as never).publicUrl;
+
+    expect(dto('library')).toBe('https://image.example.com/bucket/library/a1.webp');
+    expect(dto('temp')).toBeNull();
+    expect(dto('bachelor')).toBeNull();
+  });
+
+  test('xóa ảnh thư viện xóa luôn object để link hết tác dụng', async () => {
+    const { service, updated, deleted } = createService(libraryAsset);
+
+    expect(await service.softDelete('a1')).toBe(true);
+    expect(deleted).toEqual(['library/a1.webp']);
+    expect(updated).toHaveLength(1);
+  });
+
+  test('MinIO lỗi thì không đánh dấu đã xóa', async () => {
+    const { service, updated } = createService(libraryAsset, () =>
+      Promise.reject(new Error('MinIO unavailable')),
+    );
+
+    let failure: unknown;
+    await service.softDelete('a1').catch((error: unknown) => {
+      failure = error;
+    });
+
+    expect((failure as Error).message).toBe('MinIO unavailable');
+    expect(updated).toHaveLength(0);
+  });
+
+  test('tệp không thuộc thư viện vẫn giữ object khi xóa mềm', async () => {
+    const { service, deleted } = createService({ ...libraryAsset, ownerType: 'temp' });
+
+    expect(await service.softDelete('a1')).toBe(true);
+    expect(deleted).toHaveLength(0);
+  });
+});
+
 describe('MediaService bulk upload', () => {
   test('xóa metadata và object đã tạo khi một tệp sau đó tải lên thất bại', async () => {
     const deletedObjects: string[] = [];

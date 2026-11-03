@@ -17,6 +17,7 @@ export class ObjectStorageService {
   private readonly internalClient: S3Client;
   private readonly publicClient: S3Client;
   private readonly bucket: string;
+  private readonly publicEndpoint: string;
 
   constructor(config: ConfigService) {
     const credentials = {
@@ -33,6 +34,7 @@ export class ObjectStorageService {
       endpoint: config.getOrThrow<string>('S3_PUBLIC_ENDPOINT'),
     });
     this.bucket = config.getOrThrow<string>('S3_BUCKET');
+    this.publicEndpoint = config.getOrThrow<string>('S3_PUBLIC_ENDPOINT').replace(/\/+$/, '');
   }
 
   async ensureBucket(): Promise<void> {
@@ -71,6 +73,11 @@ export class ObjectStorageService {
       throw new Error('MinIO không trả về luồng dữ liệu hợp lệ.');
     }
     return result.Body;
+  }
+
+  /** Link cố định; chỉ mở được với prefix có chính sách đọc công khai (library/). */
+  publicUrl(key: string): string {
+    return `${this.publicEndpoint}/${this.bucket}/${key}`;
   }
 
   async presignGet(key: string, expiresIn = 300): Promise<string> {

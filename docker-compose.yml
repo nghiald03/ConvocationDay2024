@@ -44,7 +44,10 @@ services:
           sleep 2
         done
         mc mb --ignore-existing "shared/$${S3_BUCKET}"
-        mc anonymous set none "shared/$${S3_BUCKET}"
+        # Public links: anyone may read one object in library/ by its exact random key.
+        # Listing the bucket and every other prefix stay private.
+        printf '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::%s/library/*"]}]}' "$${S3_BUCKET}" > /tmp/public-library.json
+        mc anonymous set-json /tmp/public-library.json "shared/$${S3_BUCKET}"
     environment: *minio-credentials
     restart: 'no'
     networks:
