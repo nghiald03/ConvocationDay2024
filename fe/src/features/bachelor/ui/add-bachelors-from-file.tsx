@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,9 +61,18 @@ const normalizeHeader = (s: unknown) =>
     .replace(/[^a-z0-9_]/g, '_')
     .replace(/_+/g, '_');
 
-export default function AddBachelorFromFile() {
+type AddBachelorFromFileDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+// Không đặt dialog này trong DropdownMenuContent: cửa sổ chọn file làm window mất focus,
+// menu tự đóng và unmount luôn dialog trước khi onChange của input kịp chạy.
+export default function AddBachelorFromFile({
+  open,
+  onOpenChange,
+}: AddBachelorFromFileDialogProps) {
   const [excelData, setExcelData] = useState<Bachelor[] | null>(null);
-  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -264,7 +272,7 @@ export default function AddBachelorFromFile() {
         duration: 5000,
         position: 'top-right',
       });
-      setOpen(false);
+      onOpenChange(false);
       setExcelData([]);
       if (inputRef.current) inputRef.current.value = '';
       queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
@@ -282,17 +290,14 @@ export default function AddBachelorFromFile() {
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          size='md'
-          variant='outline'
-          className='w-full flex justify-start'
-        >
-          Thêm tân cử nhân từ file
-        </Button>
-      </DialogTrigger>
-
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        // Dialog không còn unmount theo menu, nên phải tự xoá preview của lần trước.
+        if (!nextOpen) setExcelData(null);
+        onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent size='lg'>
         <DialogHeader>
           <DialogTitle>Thêm tân cử nhân từ file</DialogTitle>

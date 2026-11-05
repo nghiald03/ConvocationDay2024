@@ -249,6 +249,7 @@ export default function ManageBachelorsPage() {
     },
   ];
   const [tabsSelect, setTabsSelect] = useState('bachelorList');
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
@@ -420,8 +421,17 @@ export default function ManageBachelorsPage() {
                               </Button>
                             </AddOrUpdateBachelor>
                           </DropdownMenuItem>
-                          <DropdownMenuItem className='p-0' asChild>
-                            <AddBachelorFromFile />
+                          <DropdownMenuItem
+                            className='p-0'
+                            onSelect={() => setIsImportOpen(true)}
+                          >
+                            <Button
+                              className='w-full flex justify-start'
+                              size='md'
+                              variant={'outline'}
+                            >
+                              Thêm tân cử nhân từ file
+                            </Button>
                           </DropdownMenuItem>
                           <DropdownMenuItem className='p-0'>
                             <Button
@@ -437,6 +447,10 @@ export default function ManageBachelorsPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      <AddBachelorFromFile
+                        open={isImportOpen}
+                        onOpenChange={setIsImportOpen}
+                      />
                     </div>
                   </>
                 }
