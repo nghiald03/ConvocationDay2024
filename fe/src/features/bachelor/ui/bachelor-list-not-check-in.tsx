@@ -112,7 +112,7 @@ export default function BachelorListNotCheckin() {
     { accessorKey: 'studentCode', header: 'MSSV' },
     { accessorKey: 'fullName', header: 'Họ tên' },
     { accessorKey: 'major', header: 'Ngành' },
-    { accessorKey: 'hallName', header: 'Hội trường' },
+    { accessorKey: 'hallName', header: 'Side' },
     { accessorKey: 'sessionNum', header: 'Session' },
     { accessorKey: 'chair', header: 'Ghế' },
     { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
@@ -162,12 +162,12 @@ export default function BachelorListNotCheckin() {
           />
           <Select value={hall} onValueChange={resetPage(setHall)}>
             <SelectTrigger className='w-[180px]'>
-              <SelectValue placeholder='Chọn hội trường' />
+              <SelectValue placeholder='Chọn side' />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectLabel>Hội trường</SelectLabel>
-                <SelectItem value={ALL}>Toàn bộ hội trường</SelectItem>
+                <SelectLabel>Side</SelectLabel>
+                <SelectItem value={ALL}>Toàn bộ side</SelectItem>
                 {hallList?.map((item) => (
                   <SelectItem key={item.hallId} value={String(item.hallId)}>
                     {item.hallName}

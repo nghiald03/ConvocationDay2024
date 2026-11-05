@@ -52,7 +52,7 @@ const IntroPage = () => {
                       <li>
                         <strong>Database:</strong> Sử dụng{' '}
                         <code>Microsoft SQL Server</code> để lưu trữ thông tin
-                        tân cử nhân, hội trường, buổi lễ, và trạng thái
+                        tân cử nhân, side, buổi lễ, và trạng thái
                         check-in.
                       </li>
                       <li>
@@ -93,7 +93,7 @@ const IntroPage = () => {
                           </li>
                           <li>
                             Upload ảnh đại diện (tên file: <code>MSSV.png</code>
-                            ) và quản lý hội trường, buổi lễ.
+                            ) và quản lý side, buổi lễ.
                           </li>
                           <li>Mở/đóng check-in theo thời gian quy định.</li>
                         </ul>

@@ -90,7 +90,7 @@ export default function AddBachelorFromFile({
     { accessorKey: 'fullName', header: 'Họ và tên' },
     { accessorKey: 'studentCode', header: 'MSSV' },
     { accessorKey: 'mail', header: 'Mail' },
-    { accessorKey: 'hallName', header: 'Hội trường' },
+    { accessorKey: 'hallName', header: 'Side' },
     { accessorKey: 'sessionNum', header: 'Session' },
     { accessorKey: 'sessionInDay', header: 'SessionInDay' },
     { accessorKey: 'chair', header: 'Ghế' },

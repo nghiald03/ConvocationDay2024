@@ -178,7 +178,7 @@ export class BachelorService {
       .from(halls)
       .where(sql`lower(${halls.name}) = ${item.hallName.toLowerCase()}`)
       .limit(1);
-    if (!hall) throw new BadRequestException('Hội trường không tồn tại!');
+    if (!hall) throw new BadRequestException('Side không tồn tại!');
     const [session] = await this.database
       .select()
       .from(sessions)
@@ -317,7 +317,7 @@ export class BachelorService {
         .for('update');
       if (!bachelor) throw new BadRequestException('Tân cử nhân chưa được import vào hệ thống!');
       assertCheckInRoomAllowed(scope, bachelor.checkinRoom);
-      if (bachelor.hallId === null) throw new BadRequestException('Tân cử nhân chưa được xếp hội trường.');
+      if (bachelor.hallId === null) throw new BadRequestException('Tân cử nhân chưa được xếp side.');
       const hallId = bachelor.hallId;
       const [session] = await transaction
         .select()
@@ -350,7 +350,7 @@ export class BachelorService {
         .for('update');
       if (!bachelor) throw new BadRequestException('Không tìm thấy tân cử nhân trong hệ thống!');
       assertCheckInRoomAllowed(scope, bachelor.checkinRoom);
-      if (bachelor.hallId === null) throw new BadRequestException('Tân cử nhân chưa được xếp hội trường.');
+      if (bachelor.hallId === null) throw new BadRequestException('Tân cử nhân chưa được xếp side.');
       const hallId = bachelor.hallId;
       if (bachelor.checkIn) {
         throw new BadRequestException('Tân cử nhân đã check-in nên không thể chuyển phiên!');

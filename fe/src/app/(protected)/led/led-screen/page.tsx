@@ -48,7 +48,7 @@ function BachelorIdentityOverlay({ bachelor }: { bachelor: Bachelor }) {
       <div className='mt-1 flex flex-wrap gap-x-4 gap-y-1 text-base font-semibold'>
         <span>MSSV: {bachelor.studentCode}</span>
         {bachelor.chair ? <span>Ghế: {bachelor.chair}</span> : null}
-        <span>Hall: {bachelor.hallName}</span>
+        <span>Side: {bachelor.hallName}</span>
         <span>Session: {bachelor.sessionNum}</span>
       </div>
     </div>
@@ -318,7 +318,7 @@ export default function LedScreen() {
         ) : (
           <Card className='mt-3'>
             <CardContent className='p-6 text-sm text-muted-foreground'>
-              {(!hall || !session) && 'Hãy chọn hall & session để bắt đầu.'}
+              {(!hall || !session) && 'Hãy chọn side & session để bắt đầu.'}
               {hall &&
                 session &&
                 isFetchingCurrent &&

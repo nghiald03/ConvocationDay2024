@@ -1144,7 +1144,7 @@ export default function NotificationDisplayPage() {
                                 </span>
                               </div>
                               <h3 className='font-bold text-white text-base tracking-wide'>
-                                HỘI TRƯỜNG {hall.hallName}
+                                SIDE {hall.hallName}
                               </h3>
                             </div>
 

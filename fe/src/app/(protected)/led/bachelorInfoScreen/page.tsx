@@ -24,7 +24,7 @@ export default function BachelorInfoScreen() {
         <div className='flex flex-col items-center gap-4 p-8 bg-white dark:bg-slate-900 rounded-lg shadow-xl'>
           <Loader2 className='w-10 h-10 text-orange-500 animate-spin' />
           <p className='text-lg font-medium text-muted-foreground'>
-            Đang tải danh sách Hội trường...
+            Đang tải danh sách Side...
           </p>
         </div>
       </div>
@@ -42,7 +42,7 @@ export default function BachelorInfoScreen() {
             </div>
             <div>
               <h1 className='text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-600 to-indigo-600 bg-clip-text text-transparent'>
-                Theo dõi Đa Hội trường
+                Theo dõi Đa Side
               </h1>
               <p className='text-sm text-muted-foreground mt-1'>
                 Thông tin sinh viên tốt nghiệp hiện tại của tất cả các Hall

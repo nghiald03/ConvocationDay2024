@@ -41,26 +41,26 @@ export default function HallManagementPage() {
     mutationFn: ({ hall, name }: NonNullable<Editing>) =>
       hall ? updateHall(hall.hallId, name.trim()) : createHall(name.trim()).then(() => undefined),
     onSuccess: (_result, { hall }) => {
-      toast.success(hall ? 'Đã cập nhật hội trường.' : 'Đã tạo hội trường.');
+      toast.success(hall ? 'Đã cập nhật side.' : 'Đã tạo side.');
       setEditing(null);
       void refresh();
     },
-    onError: (error) => toast.error(getHttpErrorMessage(error, 'Lưu hội trường thất bại.')),
+    onError: (error) => toast.error(getHttpErrorMessage(error, 'Lưu side thất bại.')),
   });
 
   const remove = useMutation({
     mutationFn: (hall: Hall) => deleteHall(hall.hallId),
     onSuccess: () => {
-      toast.success('Đã xóa hội trường.');
+      toast.success('Đã xóa side.');
       void refresh();
     },
-    onError: (error) => toast.error(getHttpErrorMessage(error, 'Xóa hội trường thất bại.')),
+    onError: (error) => toast.error(getHttpErrorMessage(error, 'Xóa side thất bại.')),
   });
 
   const confirmDelete = async (hall: Hall) => {
     const confirmed = await swal({
       title: `Xóa "${hall.hallName}"?`,
-      text: 'Chỉ xóa được hội trường chưa có tân cử nhân hoặc dữ liệu check-in.',
+      text: 'Chỉ xóa được side chưa có tân cử nhân hoặc dữ liệu check-in.',
       icon: 'warning',
       buttons: ['Hủy', 'Xóa'],
       dangerMode: true,
@@ -71,15 +71,15 @@ export default function HallManagementPage() {
   return (
     <Card>
       <CardHeader className='flex flex-row items-center justify-between gap-3 space-y-0'>
-        <CardTitle>Quản lý hội trường</CardTitle>
-        <Button onClick={() => setEditing({ hall: null, name: '' })}>Thêm hội trường</Button>
+        <CardTitle>Quản lý side</CardTitle>
+        <Button onClick={() => setEditing({ hall: null, name: '' })}>Thêm side</Button>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className='w-24'>ID</TableHead>
-              <TableHead>Tên hội trường</TableHead>
+              <TableHead>Tên side</TableHead>
               <TableHead className='w-48 text-right'>Thao tác</TableHead>
             </TableRow>
           </TableHeader>
@@ -110,7 +110,7 @@ export default function HallManagementPage() {
             {!halls.length && (
               <TableRow>
                 <TableCell colSpan={3} className='text-center text-muted-foreground'>
-                  {isLoading ? 'Đang tải…' : 'Chưa có hội trường nào.'}
+                  {isLoading ? 'Đang tải…' : 'Chưa có side nào.'}
                 </TableCell>
               </TableRow>
             )}
@@ -121,7 +121,7 @@ export default function HallManagementPage() {
       <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing?.hall ? 'Sửa hội trường' : 'Thêm hội trường'}</DialogTitle>
+            <DialogTitle>{editing?.hall ? 'Sửa side' : 'Thêm side'}</DialogTitle>
           </DialogHeader>
           <form
             className='space-y-4'
@@ -131,7 +131,7 @@ export default function HallManagementPage() {
             }}
           >
             <div className='space-y-2'>
-              <Label htmlFor='hall-name'>Tên hội trường</Label>
+              <Label htmlFor='hall-name'>Tên side</Label>
               <Input
                 id='hall-name'
                 autoFocus

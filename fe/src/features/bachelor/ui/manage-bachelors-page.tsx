@@ -198,7 +198,7 @@ export default function ManageBachelorsPage() {
     },
     {
       accessorKey: 'hallName',
-      header: 'Hội trường',
+      header: 'Side',
     },
     {
       accessorKey: 'sessionNum',
@@ -346,14 +346,14 @@ export default function ManageBachelorsPage() {
                             <SelectValue
                               className=' h-full'
                               color='primary'
-                              placeholder='Chọn hội trường'
+                              placeholder='Chọn side'
                             />
                           </SelectTrigger>
                           <SelectContent color='primary'>
                             <SelectGroup>
-                              <SelectLabel>Hội Trường</SelectLabel>
+                              <SelectLabel>Side</SelectLabel>
                               <SelectItem value='-1' key='all'>
-                                Toàn bộ hội trường
+                                Toàn bộ side
                               </SelectItem>
                               {hallList?.map((item) => (
                                   <SelectItem

@@ -122,7 +122,7 @@ export default function ManualCheckinPage() {
 
   useEffect(() => {
     if (hallListEr) {
-      toast.error('Lỗi khi lấy danh sách hội trường', {
+      toast.error('Lỗi khi lấy danh sách side', {
         duration: 5000,
         position: 'top-right',
       });
@@ -160,7 +160,7 @@ export default function ManualCheckinPage() {
     async (row: any) => {
       const hallName = row.hallName;
       if (!hallName) {
-        toast.error('Không tìm thấy hội trường để chuyển phiên');
+        toast.error('Không tìm thấy side để chuyển phiên');
         return;
       }
 
@@ -169,7 +169,7 @@ export default function ManualCheckinPage() {
       console.log('sessions', sessions);
 
       if (!sessions || sessions.length === 0) {
-        toast.error('Không tìm thấy phiên khả dụng cho hội trường này');
+        toast.error('Không tìm thấy phiên khả dụng cho side này');
         return;
       }
 
@@ -462,7 +462,7 @@ export default function ManualCheckinPage() {
       { accessorKey: 'fullName', header: 'Tên' },
       { accessorKey: 'studentCode', header: 'MSSV' },
       { accessorKey: 'mail', header: 'Mail' },
-      { accessorKey: 'hallName', header: 'Hội trường' },
+      { accessorKey: 'hallName', header: 'Side' },
       {
         accessorKey: 'sessionNum',
         header: 'Phiên tổng',
@@ -592,14 +592,14 @@ export default function ManualCheckinPage() {
                   <SelectTrigger color='primary' className='w-[300px]'>
                     <SelectValue
                       color='primary'
-                      placeholder='Chọn hội trường'
+                      placeholder='Chọn side'
                     />
                   </SelectTrigger>
                   <SelectContent color='primary'>
                     <SelectGroup>
-                      <SelectLabel>Hội Trường</SelectLabel>
+                      <SelectLabel>Side</SelectLabel>
                       <SelectItem value='-1' key='all'>
-                        Toàn bộ hội trường
+                        Toàn bộ side
                       </SelectItem>
                       {hallList?.map((item) => (
                           <SelectItem key={item.hallId} value={String(item.hallId)}>

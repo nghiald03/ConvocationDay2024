@@ -866,7 +866,7 @@ export default function SeatMapPage() {
                 <Camera className="w-8 h-8 text-primary" />
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                Vui lòng chọn hội trường và session để hiển thị sơ đồ chỗ ngồi
+                Vui lòng chọn side và session để hiển thị sơ đồ chỗ ngồi
               </p>
             </div>
           ) : (
@@ -892,7 +892,7 @@ export default function SeatMapPage() {
                       className="bg-primary text-primary-foreground px-6 py-2 text-base font-bold cursor-pointer hover:bg-primary/90 transition-colors"
                       onClick={exitFull}
                     >
-                      SƠ ĐỒ HỘI TRƯỜNG {hallSymbol}
+                      SƠ ĐỒ SIDE {hallSymbol}
                     </Badge>
                   </div>
 
@@ -1033,7 +1033,7 @@ export default function SeatMapPage() {
                         rounded="lg"
                         className="bg-primary text-primary-foreground px-4 py-2 font-bold"
                       >
-                        SƠ ĐỒ HỘI TRƯỜNG {hallSymbol}
+                        SƠ ĐỒ SIDE {hallSymbol}
                       </Badge>
                       <Button
                         size="sm"

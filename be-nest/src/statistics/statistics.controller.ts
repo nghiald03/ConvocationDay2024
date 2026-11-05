@@ -12,8 +12,8 @@ export class StatisticsController {
   @Get('active-halls-summary')
   async activeHallSummary() {
     const data = await this.statistics.activeHallSummary();
-    if (!data.length) throw new NotFoundException('Không tìm thấy hội trường đang mở check-in.');
-    return { status: 200, message: 'Lấy hội trường đang hoạt động thành công!', data };
+    if (!data.length) throw new NotFoundException('Không tìm thấy side đang mở check-in.');
+    return { status: 200, message: 'Lấy side đang hoạt động thành công!', data };
   }
 
   @Get('checkin-room-summary')
@@ -28,7 +28,7 @@ export class StatisticsController {
   @Get('hall-overview')
   async hallOverview() {
     const data = await this.statistics.hallOverview();
-    if (!data.length) throw new NotFoundException('Không tìm thấy dữ liệu hội trường.');
-    return { status: 200, message: 'Lấy tổng quan hội trường thành công!', data };
+    if (!data.length) throw new NotFoundException('Không tìm thấy dữ liệu side.');
+    return { status: 200, message: 'Lấy tổng quan side thành công!', data };
   }
 }

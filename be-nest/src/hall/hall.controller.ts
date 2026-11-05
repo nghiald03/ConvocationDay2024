@@ -16,7 +16,7 @@ export class HallController {
   async create(@Body() input: CreateHallDto) {
     return {
       status: 200,
-      message: 'Tạo hội trường thành công!',
+      message: 'Tạo side thành công!',
       data: await this.halls.create(input.hallName),
     };
   }
@@ -26,16 +26,16 @@ export class HallController {
   async list() {
     const data = await this.halls.list();
     return data.length
-      ? { status: 200, message: 'Lấy danh sách hội trường thành công!', data }
-      : { status: 204, message: 'Không có hội trường nào!' };
+      ? { status: 200, message: 'Lấy danh sách side thành công!', data }
+      : { status: 204, message: 'Không có side nào!' };
   }
 
   @Put('UpdateHall/:hallId')
   @RequirePermissions(Permission.ManageHalls)
   async update(@Param('hallId', ParseIntPipe) id: number, @Body() input: CreateHallDto) {
     const success = await this.halls.update(id, input.hallName);
-    if (!success) return { status: 400, message: 'Cập nhật hội trường thất bại!' };
-    return { status: 200, message: 'Cập nhật hội trường thành công!', data: true };
+    if (!success) return { status: 400, message: 'Cập nhật side thất bại!' };
+    return { status: 200, message: 'Cập nhật side thành công!', data: true };
   }
 
   @Delete('DeleteHall/:hallId')
@@ -45,9 +45,9 @@ export class HallController {
     if (!success) {
       return {
         status: 400,
-        message: 'Xóa thất bại! Hãy chắc chắn hội trường không còn tân cử nhân hoặc bản ghi check-in nào.',
+        message: 'Xóa thất bại! Hãy chắc chắn side không còn tân cử nhân hoặc bản ghi check-in nào.',
       };
     }
-    return { status: 200, message: 'Xóa hội trường thành công!', data: true };
+    return { status: 200, message: 'Xóa side thành công!', data: true };
   }
 }

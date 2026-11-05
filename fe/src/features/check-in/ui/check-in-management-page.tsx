@@ -159,7 +159,7 @@ export default function CheckInManagementPage() {
       const item = rows.find((r) => r.checkinId === vars.checkinId);
       if (item) {
         toast.success(
-          `Thay trạng thái checkin của hội trường ${item.hallName} session ${item.sessionInDay} thành công!`
+          `Thay trạng thái checkin của side ${item.hallName} session ${item.sessionInDay} thành công!`
         );
       }
     },
@@ -172,7 +172,7 @@ export default function CheckInManagementPage() {
     // Confirm (sweetalert v1: icon hợp lệ: 'warning' | 'success' | 'error' | 'info')
     const confirm = await swal({
       title: 'Thay đổi trạng thái checkin',
-      text: `Bạn có muốn thay đổi trạng thái checkin của hội trường ${row.hallName} session ${row.sessionNum} không?`,
+      text: `Bạn có muốn thay đổi trạng thái checkin của side ${row.hallName} session ${row.sessionNum} không?`,
       icon: 'warning',
       buttons: ['Không', 'Thay đổi'],
       dangerMode: true,
@@ -221,7 +221,7 @@ export default function CheckInManagementPage() {
   // Handler: create session + create checkin
   const handleCreateSession = async () => {
     if (!selectedHall) {
-      toast.error('Vui lòng chọn hội trường');
+      toast.error('Vui lòng chọn side');
       return;
     }
 
@@ -295,7 +295,7 @@ export default function CheckInManagementPage() {
   ========================= */
   const columns: ColumnDef<CheckinRow>[] = [
     { accessorKey: 'checkinId', header: 'ID' },
-    { accessorKey: 'hallName', header: 'Hội trường' },
+    { accessorKey: 'hallName', header: 'Side' },
     { accessorKey: 'sessionNum', header: 'Session' },
     { accessorKey: 'sessionInDay', header: 'Session trong ngày' },
     {
@@ -360,24 +360,24 @@ export default function CheckInManagementPage() {
               <DialogHeader>
                 <DialogTitle>Tạo session mới</DialogTitle>
                 <DialogDescription>
-                  Tạo một session thay thế (session bù) cho hội trường.
+                  Tạo một session thay thế (session bù) cho side.
                 </DialogDescription>
               </DialogHeader>
 
               <div className='grid gap-4 py-4'>
                 <div className='grid grid-cols-6 items-center gap-4 w-full'>
-                  <Label className='text-right col-span-1'>Hội trường</Label>
+                  <Label className='text-right col-span-1'>Side</Label>
                   <div className='col-span-5'>
                     <Select
                       value={selectedHall}
                       onValueChange={(v) => setSelectedHall(v)}
                     >
                       <SelectTrigger className='w-full h-11 border-2'>
-                        <SelectValue placeholder='Chọn hội trường' />
+                        <SelectValue placeholder='Chọn side' />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          <SelectLabel>Hội trường</SelectLabel>
+                          <SelectLabel>Side</SelectLabel>
                           {(hallListRes || []).map((h) => (
                             <SelectItem key={h.hallId} value={String(h.hallId)}>
                               {h.hallName}
@@ -395,7 +395,7 @@ export default function CheckInManagementPage() {
                     <Input
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder='Mô tả (ví dụ: session bù cho hall X)'
+                      placeholder='Mô tả (ví dụ: session bù cho side X)'
                     />
                   </div>
                 </div>

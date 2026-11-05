@@ -15,6 +15,8 @@ export type Bachelor = {
   checkinRoom?: string | null;
   checkIn?: boolean;
   timeCheckIn?: string;
+  /** 0 chưa ghi nhận, 1 đúng giờ, 2 trễ (kể cả force check-in), 3 vắng. */
+  attendanceStatus?: number | null;
   hall?: string | null;
   session?: string | null;
   sessionInDay?: number | null;

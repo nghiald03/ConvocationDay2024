@@ -94,7 +94,7 @@ export default function SeatLocationSearch() {
             {searchResult.map((item) => (
               <div key={item.studentCode} className='mt-4 flex gap-2'>
                 <div className='flex-1'>
-                  Tên: {item.fullName} | MSSV: {item.studentCode} | Hội trường:{' '}
+                  Tên: {item.fullName} | MSSV: {item.studentCode} | Side:{' '}
                   {item.hallName} | Session: {item.sessionNum} | Số ghế:{' '}
                   {item.chair} | Số ghế phụ huynh: {item.chairParent}
                 </div>

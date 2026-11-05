@@ -142,7 +142,7 @@ export default function McControllerPage() {
 
   useEffect(() => {
     if (hallError) {
-      toast.error('Lỗi lấy danh sách hall', {
+      toast.error('Lỗi lấy danh sách side', {
         duration: 3000,
         position: 'top-right',
       });
@@ -262,7 +262,7 @@ export default function McControllerPage() {
   const getBachelorCurrent = useMutation({
     mutationFn: async () => {
       if (!hall || !session) {
-        throw new Error('Chưa chọn hall hoặc session');
+        throw new Error('Chưa chọn side hoặc session');
       }
       return getCurrentLedBachelors(hall, session);
     },
@@ -270,7 +270,7 @@ export default function McControllerPage() {
       applyBachelorWindow(data);
     },
     onError: () => {
-      toast.error('Có lỗi khi lấy dữ liệu. Vui lòng chọn hall/session khác!', {
+      toast.error('Có lỗi khi lấy dữ liệu. Vui lòng chọn side/session khác!', {
         duration: 3000,
         position: 'top-right',
       });
@@ -280,7 +280,7 @@ export default function McControllerPage() {
   const getBachelor1st = useMutation({
     mutationFn: async () => {
       if (!hall || !session) {
-        throw new Error('Chưa chọn hall hoặc session');
+        throw new Error('Chưa chọn side hoặc session');
       }
       return getInitialLedBachelors(hall, session);
     },
@@ -288,7 +288,7 @@ export default function McControllerPage() {
       getBachelorCurrent.mutate();
     },
     onError: () => {
-      toast.error('Có lỗi khi lấy dữ liệu. Vui lòng chọn hall/session khác!', {
+      toast.error('Có lỗi khi lấy dữ liệu. Vui lòng chọn side/session khác!', {
         duration: 3000,
       });
       setBachelorCurrent(null);
@@ -300,7 +300,7 @@ export default function McControllerPage() {
   const getBachelorNext = useMutation({
     mutationFn: async () => {
       if (!hall || !session) {
-        throw new Error('Chưa chọn hall hoặc session');
+        throw new Error('Chưa chọn side hoặc session');
       }
       return getNextLedBachelors(hall, session);
     },
@@ -315,7 +315,7 @@ export default function McControllerPage() {
   const getBachelorBack = useMutation({
     mutationFn: async () => {
       if (!hall || !session) {
-        throw new Error('Chưa chọn hall hoặc session');
+        throw new Error('Chưa chọn side hoặc session');
       }
       return getPreviousLedBachelors(hall, session);
     },
@@ -330,7 +330,7 @@ export default function McControllerPage() {
   // ---- Tự gọi lần đầu khi đã chọn đủ hall/session
   useEffect(() => {
     if (!hall || !session) {
-      toast.error('Chưa chọn hall hoặc session', { duration: 3000 });
+      toast.error('Chưa chọn side hoặc session', { duration: 3000 });
       return;
     }
     getBachelorCurrent.mutate();

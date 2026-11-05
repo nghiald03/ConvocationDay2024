@@ -52,7 +52,7 @@ const formSchema = z.object({
   chairParent: z.string({
     message: 'Số ghế của phụ huynh không được để trống',
   }),
-  hallName: z.string({ message: 'Hội trường không được để trống' }),
+  hallName: z.string({ message: 'Side không được để trống' }),
   sessionNum: z.string({ message: 'Phiên trao bằng không được để trống' }),
   image: z.string({ message: 'Image không được để trống' }),
   major: z.string({ message: 'Chuyên ngành không được để trống' }),
@@ -294,7 +294,7 @@ export default function AddOrUpdateBachelor({
                   defaultValue={bachelor?.hallName}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Hội trường</FormLabel>
+                      <FormLabel>Side</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={bachelor?.hallName}

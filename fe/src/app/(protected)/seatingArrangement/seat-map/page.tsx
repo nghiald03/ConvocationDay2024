@@ -856,7 +856,7 @@ export default function SeatMapPage() {
                 <Camera className='w-8 h-8 text-orange-500' />
               </div>
               <p className='text-base text-gray-600 text-center'>
-                Vui lòng chọn hội trường và session để hiển thị sơ đồ chỗ ngồi
+                Vui lòng chọn side và session để hiển thị sơ đồ chỗ ngồi
               </p>
             </div>
           ) : (
@@ -883,7 +883,7 @@ export default function SeatMapPage() {
 
                     <div className='flex items-center justify-center'>
                       <div className='bg-gradient-to-b from-orange-600 to-amber-600 text-white text-center px-6 py-3 rounded-xl font-bold shadow-lg'>
-                        SƠ ĐỒ HỘI TRƯỜNG {hallSymbol}
+                        SƠ ĐỒ SIDE {hallSymbol}
                       </div>
                     </div>
 
@@ -1045,7 +1045,7 @@ export default function SeatMapPage() {
                       </div>
                       <div className='flex items-center justify-center'>
                         <div className='bg-gradient-to-b from-orange-600 to-amber-600 text-white text-center px-4 py-2 rounded-xl font-bold shadow-lg'>
-                          SƠ ĐỒ HỘI TRƯỜNG {hallSymbol}
+                          SƠ ĐỒ SIDE {hallSymbol}
                         </div>
                       </div>
                       <div className='flex items-center justify-end gap-2'>

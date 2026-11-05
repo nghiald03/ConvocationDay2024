@@ -42,6 +42,6 @@ export function nextChairAtEnd(
   if (issued.number < last) return format(LATE_ROWS[issued.rowIndex]!, Math.max(first, issued.number + 1));
 
   const nextRow = LATE_ROWS[issued.rowIndex + 1];
-  if (!nextRow) throw new Error('Đã hết hàng ghế cuối phiên của hội trường này.');
+  if (!nextRow) throw new Error('Đã hết hàng ghế cuối phiên của side này.');
   return format(nextRow, first);
 }

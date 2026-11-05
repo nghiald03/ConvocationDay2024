@@ -360,7 +360,7 @@ export default function NotificationDisplayLitePage() {
                               </span>
                             </div>
                             <h3 className='font-bold text-white text-base mb-3'>
-                              HỘI TRƯỜNG {hall.hallName}
+                              SIDE {hall.hallName}
                             </h3>
                             <div className='inline-flex items-center justify-center'>
                               <div className='bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-4 py-2 rounded-full shadow-lg'>
@@ -378,7 +378,7 @@ export default function NotificationDisplayLitePage() {
               ) : (
                 <div className='mb-6 flex justify-center'>
                   <div className='text-sm text-slate-400 bg-slate-800/50 border border-slate-700 rounded-full px-3 py-1'>
-                    Hiện không có hội trường nào đang hoạt động
+                    Hiện không có side nào đang hoạt động
                   </div>
                 </div>
               )}

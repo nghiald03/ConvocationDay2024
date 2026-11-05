@@ -355,15 +355,16 @@ describe('force check-in', () => {
 
     const current = (id: number) => ({ id, bachelorStatus: 'Current' });
 
-    test('đủ khoảng cách: check-in, giữ nguyên ghế, bỏ qua trạng thái phiên', async () => {
+    test('đủ khoảng cách: check-in tính trễ, giữ nguyên ghế, bỏ qua trạng thái phiên', async () => {
       const ordered = [...ids(20), 100];
       const { service, updates } = createForceService({ ledRows: [current(5)], ordered });
 
       const result = await service.forceCheckIn('sv100', allRooms);
 
+      // late=false: ghế không bị dời xuống cuối nên giao diện không hiện thông báo đổi ghế.
       expect(result.late).toBe(false);
       expect(updates).toHaveLength(1);
-      expect(updates[0]).toMatchObject({ checkIn: true, status: true, attendanceStatus: 1 });
+      expect(updates[0]).toMatchObject({ checkIn: true, status: true, attendanceStatus: 2 });
       expect(updates[0]).not.toHaveProperty('chair');
       expect(updates[0]).not.toHaveProperty('sessionId');
     });

@@ -66,7 +66,7 @@ export class CheckInService {
       if (!bachelor) throw new BadRequestException('Không tìm thấy tân cử nhân trong hệ thống.');
       assertCheckInRoomAllowed(scope, bachelor.checkinRoom);
       if (bachelor.hallId === null || bachelor.sessionId === null) {
-        throw new BadRequestException('Tân cử nhân chưa được xếp hội trường hoặc phiên.');
+        throw new BadRequestException('Tân cử nhân chưa được xếp side hoặc phiên.');
       }
       const hallId = bachelor.hallId;
       const sessionId = bachelor.sessionId;
@@ -143,6 +143,7 @@ export class CheckInService {
   /**
    * Check-in bất chấp phiên mở/khóa, giữ nguyên ghế; chỉ khi LED còn cách đủ xa.
    * Mã khẩn cấp được ForceCheckInCodeService kiểm tra trước khi gọi hàm này.
+   * Luôn ghi nhận là trễ (attendanceStatus 2) để báo cáo phân biệt với check-in đúng giờ.
    */
   async forceCheckIn(studentCode: string, scope: CheckInRoomScope) {
     return this.database.transaction(async (transaction) => {
@@ -151,7 +152,7 @@ export class CheckInService {
       if (!found) throw new BadRequestException('Không tìm thấy tân cử nhân trong hệ thống.');
       assertCheckInRoomAllowed(scope, found.checkinRoom);
       if (found.hallId === null || found.sessionId === null) {
-        throw new BadRequestException('Tân cử nhân chưa được xếp hội trường hoặc phiên.');
+        throw new BadRequestException('Tân cử nhân chưa được xếp side hoặc phiên.');
       }
       const hallId = found.hallId;
       const sessionId = found.sessionId;
@@ -185,7 +186,7 @@ export class CheckInService {
 
       const [updated] = await transaction
         .update(bachelors)
-        .set({ timeCheckIn: new Date(), checkIn: true, status: true, attendanceStatus: 1 })
+        .set({ timeCheckIn: new Date(), checkIn: true, status: true, attendanceStatus: 2 })
         .where(eq(bachelors.id, bachelor.id))
         .returning();
       return { bachelor: updated!, late: false };

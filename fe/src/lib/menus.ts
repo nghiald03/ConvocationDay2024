@@ -92,6 +92,14 @@ export function getMenuList(pathname: string): Group[] {
           submenus: [],
         },
         {
+          id: "seat-board",
+          href: "/led/seat-board",
+          label: "Sơ đồ check-in đầu giờ",
+          active: pathname.includes("/led/seat-board"),
+          icon: "mdi:seat-outline",
+          submenus: [],
+        },
+        {
           id: "seat-map",
           href: "/seatingArrangement/seat-map",
           label: "Sơ đồ chỗ ngồi",
@@ -206,7 +214,7 @@ export function getMenuList(pathname: string): Group[] {
         {
           id: "hall",
           href: "/manage/hall",
-          label: "Quản lí DS Hội trường",
+          label: "Quản lí DS Side",
           active: pathname.includes("/manage/hall"),
           icon: "fluent-mdl2:settings",
           submenus: [],

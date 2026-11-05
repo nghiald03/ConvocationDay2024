@@ -14,8 +14,17 @@ interface BachelorExportRow {
   checkinRoom?: string | null;
   checkIn: boolean;
   timeCheckIn: string;
+  attendanceStatus?: number | null;
   description?: string;
   Description?: string;
+}
+
+/** 1 đúng giờ, 2 trễ (gồm cả force check-in), 3 vắng; 0 hoặc trống là chưa ghi nhận. */
+export function attendanceLabel(status: number | null | undefined) {
+  if (status === 1) return 'On time';
+  if (status === 2) return 'Late';
+  if (status === 3) return 'Absent';
+  return '';
 }
 
 // Hàm để export dữ liệu
@@ -63,6 +72,7 @@ export const exportToExcel = async (
         'Checkin Room': s.checkinRoom ?? '',
         'Checked In': checkIn,
         'Check-In Time': checkInTime,
+        Attendance: attendanceLabel(s.attendanceStatus),
       };
     });
 

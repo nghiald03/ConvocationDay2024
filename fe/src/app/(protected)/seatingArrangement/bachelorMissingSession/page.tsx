@@ -119,7 +119,7 @@ export default function Page() {
 
   useEffect(() => {
     if (hallListEr) {
-      toast.error('Lỗi khi lấy danh sách hội trường', {
+      toast.error('Lỗi khi lấy danh sách side', {
         duration: 5000,
         position: 'top-right',
       });
@@ -171,7 +171,7 @@ export default function Page() {
     },
     {
       accessorKey: 'hallName',
-      header: 'Hội trường',
+      header: 'Side',
     },
     {
       accessorKey: 'sessionNum',
@@ -275,14 +275,14 @@ export default function Page() {
                     <SelectTrigger color='primary' className='w-[180px]'>
                       <SelectValue
                         color='primary'
-                        placeholder='Chọn hội trường'
+                        placeholder='Chọn side'
                       />
                     </SelectTrigger>
                     <SelectContent color='primary'>
                       <SelectGroup>
-                        <SelectLabel>Hội Trường</SelectLabel>
+                        <SelectLabel>Side</SelectLabel>
                         <SelectItem value='-1' key='all'>
-                          Toàn bộ hội trường
+                          Toàn bộ side
                         </SelectItem>
                         {hallList?.map((item) => (
                             <SelectItem key={item.hallId} value={String(item.hallId)}>
@@ -329,14 +329,14 @@ export default function Page() {
                         <SelectTrigger color='primary' className='w-full'>
                           <SelectValue
                             color='primary'
-                            placeholder='Chọn hội trường'
+                            placeholder='Chọn side'
                           />
                         </SelectTrigger>
                         <SelectContent color='primary'>
                           <SelectGroup>
-                            <SelectLabel>Hội Trường</SelectLabel>
+                            <SelectLabel>Side</SelectLabel>
                             <SelectItem value='-1' key='all'>
-                              Toàn bộ hội trường
+                              Toàn bộ side
                             </SelectItem>
                             {hallList?.map((item) => (
                                 <SelectItem

@@ -144,7 +144,7 @@ export default function CheckinStatistics() {
       <Card>
         <CardContent className='p-0'>
           <div className='flex items-center justify-between px-4 py-3 border-b'>
-            <div className='font-medium'>Chi tiết theo hội trường / session</div>
+            <div className='font-medium'>Chi tiết theo side / session</div>
             {dataUpdatedAt > 0 && (
               <div className='text-xs text-muted-foreground'>
                 Cập nhật lúc {new Date(dataUpdatedAt).toLocaleTimeString('vi-VN')} · tự làm mới mỗi
@@ -155,7 +155,7 @@ export default function CheckinStatistics() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Hội trường</TableHead>
+                <TableHead>Side</TableHead>
                 <TableHead>Session</TableHead>
                 <TableHead className='text-right'>Tổng</TableHead>
                 <TableHead className='text-right'>Đã checkin</TableHead>

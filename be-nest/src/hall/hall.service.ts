@@ -22,7 +22,7 @@ export class HallService {
       .where(sql`lower(${halls.name}) = ${name.toLowerCase()}`)
       .limit(1);
     if (existing) {
-      throw new BadRequestException({ code: 'hall/already-exists', message: 'Hội trường đã tồn tại!' });
+      throw new BadRequestException({ code: 'hall/already-exists', message: 'Side đã tồn tại!' });
     }
     const [created] = await this.database.insert(halls).values({ name }).returning();
     return { hallId: created!.id, hallName: created!.name };
@@ -35,7 +35,7 @@ export class HallService {
       .where(and(sql`lower(${halls.name}) = ${name.toLowerCase()}`, ne(halls.id, id)))
       .limit(1);
     if (duplicate) {
-      throw new BadRequestException({ code: 'hall/already-exists', message: 'Hội trường đã tồn tại!' });
+      throw new BadRequestException({ code: 'hall/already-exists', message: 'Side đã tồn tại!' });
     }
     const rows = await this.database.update(halls).set({ name }).where(eq(halls.id, id)).returning();
     return rows.length > 0;

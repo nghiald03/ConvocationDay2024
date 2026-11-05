@@ -39,7 +39,7 @@ export type HallSessionPickerProps = {
 export default function HallSessionPicker({
   onChange,
   storageKey = 'hallsession',
-  title = 'Chọn hội trường và session',
+  title = 'Chọn side và session',
 }: HallSessionPickerProps) {
   const [hall, setHall] = useState<string>('');
   const [session, setSession] = useState<string>('');
@@ -80,7 +80,7 @@ export default function HallSessionPicker({
 
   // Thông báo lỗi fetch
   useEffect(() => {
-    if (hallErr) toast.error('Lỗi lấy danh sách hội trường');
+    if (hallErr) toast.error('Lỗi lấy danh sách side');
     if (sessionsErr) toast.error('Lỗi lấy danh sách session');
   }, [hallErr, sessionsErr]);
 
@@ -137,7 +137,7 @@ export default function HallSessionPicker({
           {/* Cột 1: Hội trường */}
           <div className='space-y-2'>
             <Label htmlFor='hall-select' className='text-sm font-medium'>
-              Hội trường
+              Side
             </Label>
 
             <Select
@@ -148,13 +148,13 @@ export default function HallSessionPicker({
               <SelectTrigger
                 id='hall-select'
                 className='w-full h-11 border-2 hover:border-orange-400 focus:ring-orange-500'
-                aria-label='Chọn hội trường'
+                aria-label='Chọn side'
               >
-                <SelectValue placeholder='🏛️ Chọn hội trường' />
+                <SelectValue placeholder='🏛️ Chọn side' />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectLabel>Hội trường</SelectLabel>
+                  <SelectLabel>Side</SelectLabel>
                   {halls.map((h) => (
                     <SelectItem key={h.hallId} value={String(h.hallId)}>
                       {h.hallName}

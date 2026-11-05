@@ -178,8 +178,8 @@ export class NotificationService {
   }
 
   private scope(hallName: string | null, sessionNumber: number | null): string {
-    if (hallName && sessionNumber !== null) return `Hội trường ${hallName} - Đợt ${sessionNumber}`;
-    if (hallName) return `Hội trường ${hallName}`;
+    if (hallName && sessionNumber !== null) return `Side ${hallName} - Đợt ${sessionNumber}`;
+    if (hallName) return `Side ${hallName}`;
     if (sessionNumber !== null) return `Đợt ${sessionNumber}`;
     return 'Toàn trường';
   }

@@ -44,7 +44,7 @@ const BachelorDetailCard: React.FC<BachelorDetailCardProps> = ({
         <div className='flex items-center gap-2'>
           <Building2 className='w-5 h-5 text-orange-600 dark:text-orange-400' />
           <CardTitle className='text-lg font-bold text-orange-600 dark:text-orange-400'>
-            Hall: {hallName} - Session{' '}
+            Side: {hallName} - Session{' '}
             {bachelorCurrent?.sessionInDay
               ? `#${bachelorCurrent.sessionInDay}`
               : 'N/A'}{' '}
@@ -127,7 +127,7 @@ export function MultiHallStatusDisplay() {
       <Card className='border-2 shadow-lg'>
         <CardContent className='p-12 text-center'>
           <Loader2 className='w-8 h-8 inline mr-2 animate-spin text-orange-500' />{' '}
-          Đang tải danh sách Hội trường...
+          Đang tải danh sách Side...
         </CardContent>
       </Card>
     );
@@ -153,7 +153,7 @@ export function MultiHallStatusDisplay() {
           <div className='text-center py-10 text-muted-foreground'>
             <WifiOff className='w-12 h-12 mx-auto mb-4 text-slate-400' />
             <p className='text-lg font-semibold'>
-              Không tìm thấy Hội trường nào trong danh sách.
+              Không tìm thấy Side nào trong danh sách.
             </p>
           </div>
         ) : (

@@ -178,7 +178,7 @@ export default function HallOverviewPage() {
               <div className='flex items-center justify-between'>
                 <div className='space-y-1'>
                   <p className='text-sm font-medium text-muted-foreground'>
-                    Tổng hội trường
+                    Tổng side
                   </p>
                   <p className='text-3xl font-bold'>{totalHalls}</p>
                 </div>
@@ -246,10 +246,10 @@ export default function HallOverviewPage() {
         <div className='space-y-4'>
           <div className='flex items-center justify-between'>
             <h2 className='text-2xl font-bold tracking-tight'>
-              Tổng quan các hội trường
+              Tổng quan các side
             </h2>
             <Badge color='secondary' className='text-sm'>
-              {overview.length} hội trường
+              {overview.length} side
             </Badge>
           </div>
 
@@ -262,7 +262,7 @@ export default function HallOverviewPage() {
                 <CardHeader className='pb-3'>
                   <div className='flex items-center justify-between'>
                     <CardTitle className='text-xl'>
-                      Hội trường {hall.hallName}
+                      Side {hall.hallName}
                     </CardTitle>
                     <Badge color='secondary' className='text-xs'>
                       {hall.totalSessions} phiên
@@ -386,7 +386,7 @@ export default function HallOverviewPage() {
                 <CardHeader className='pb-3'>
                   <div className='flex items-center justify-between'>
                     <CardTitle className='text-xl'>
-                      Hội trường {item.hallName}
+                      Side {item.hallName}
                     </CardTitle>
                     <Badge className='text-xs'>
                       Session {item.sessionNumber}

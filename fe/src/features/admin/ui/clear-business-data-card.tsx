@@ -12,8 +12,8 @@ import toast from 'react-hot-toast';
 
 const tableLabels: Record<string, string> = {
   bachelor: 'Tân cử nhân',
-  check_in: 'Hội trường–phiên check-in',
-  hall: 'Hội trường',
+  check_in: 'Side–phiên check-in',
+  hall: 'Side',
   session: 'Phiên',
   notification: 'Thông báo',
   media_asset: 'Media (ảnh đã upload)',
