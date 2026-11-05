@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, ilike, isNotNull, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, isNotNull, ne, or, sql, type SQL } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { Permission } from '../auth/permissions.js';
@@ -8,6 +8,7 @@ import { userCheckinRooms } from '../database/schema/authorization-schema.js';
 import { bachelors, checkIns, halls, sessions } from '../database/schema/domain-schema.js';
 import { assertCheckInRoomAllowed, type CheckInRoomScope } from './checkin-room-scope.js';
 import type { BachelorDto, BachelorListItemDto } from './dto/bachelor.dto.js';
+import { nextChairAtEnd } from './next-chair-at-end.js';
 
 class BachelorImportError extends Error {}
 
@@ -328,11 +329,7 @@ export class BachelorService {
         .insert(checkIns)
         .values({ hallId, sessionId: session.id, status: false })
         .onConflictDoNothing();
-      const chairs = await transaction
-        .select({ chair: bachelors.chair })
-        .from(bachelors)
-        .where(and(eq(bachelors.hallId, hallId), eq(bachelors.sessionId, session.id)));
-      const chair = this.firstAvailableChair(chairs.map(({ chair }) => chair));
+      const chair = await this.chairAtEndOfSession(transaction, hallId, session.id, bachelor.id);
       const [updated] = await transaction
         .update(bachelors)
         .set({ sessionId: session.id, sessionInDay: session.sessionInDay, chair, chairParent: `PH${chair}` })
@@ -368,11 +365,7 @@ export class BachelorService {
         .insert(checkIns)
         .values({ hallId, sessionId: session.id, status: false })
         .onConflictDoNothing();
-      const chairs = await transaction
-        .select({ chair: bachelors.chair })
-        .from(bachelors)
-        .where(and(eq(bachelors.hallId, hallId), eq(bachelors.sessionId, session.id)));
-      const chair = this.firstAvailableChair(chairs.map(({ chair }) => chair));
+      const chair = await this.chairAtEndOfSession(transaction, hallId, session.id, bachelor.id);
       const [updated] = await transaction
         .update(bachelors)
         .set({
@@ -388,11 +381,30 @@ export class BachelorService {
     });
   }
 
-  private firstAvailableChair(values: (string | null)[]): string {
-    const occupied = new Set(values);
-    let candidate = 1;
-    while (occupied.has(String(candidate))) candidate += 1;
-    return String(candidate);
+  private async chairAtEndOfSession(
+    transaction: Parameters<Parameters<AppDatabase['transaction']>[0]>[0],
+    hallId: number,
+    sessionId: number,
+    bachelorId: number,
+  ): Promise<string> {
+    // Khóa cùng dòng check-in với luồng đến trễ để các lượt xếp cuối phiên không nhận trùng ghế.
+    await transaction
+      .select({ id: checkIns.id })
+      .from(checkIns)
+      .where(and(eq(checkIns.hallId, hallId), eq(checkIns.sessionId, sessionId)))
+      .limit(1)
+      .for('update');
+    const others = await transaction
+      .select({ chair: bachelors.chair })
+      .from(bachelors)
+      .where(
+        and(
+          eq(bachelors.hallId, hallId),
+          eq(bachelors.sessionId, sessionId),
+          ne(bachelors.id, bachelorId),
+        ),
+      );
+    return nextChairAtEnd(others.map(({ chair }) => chair));
   }
 
   private async findOrCreateHall(transaction: Parameters<Parameters<AppDatabase['transaction']>[0]>[0], name: string) {

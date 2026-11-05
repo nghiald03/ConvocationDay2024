@@ -2,17 +2,10 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { and, asc, count, eq, ilike, ne, sql } from 'drizzle-orm';
 import { BachelorService } from '../bachelor/bachelor.service.js';
 import { assertCheckInRoomAllowed, type CheckInRoomScope } from '../bachelor/checkin-room-scope.js';
+import { nextChairAtEnd } from '../bachelor/next-chair-at-end.js';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { bachelors, checkIns, halls, sessions } from '../database/schema/domain-schema.js';
-
-/** Thứ tự gọi trên LED đi theo số ghế, nên ghế lớn nhất + 1 là vị trí cuối phiên. */
-export function nextChairAtEnd(chairs: (string | null)[]): string {
-  const numbers = chairs
-    .filter((chair): chair is string => chair !== null && /^[0-9]+$/.test(chair))
-    .map(Number);
-  return String(Math.max(0, ...numbers) + 1);
-}
 
 @Injectable()
 export class CheckInService {
@@ -129,7 +122,8 @@ export class CheckInService {
   async uncheckAll(): Promise<void> {
     await this.database
       .update(bachelors)
-      .set({ timeCheckIn: null, checkIn: false, status: false, attendanceStatus: 0 });
+      // Xóa cả trạng thái LED: còn 'Current' thì người đó sẽ không check-in lại được.
+      .set({ timeCheckIn: null, checkIn: false, status: false, attendanceStatus: 0, bachelorStatus: null });
   }
 
   async listStatuses(status?: boolean) {

@@ -85,3 +85,95 @@ describe('BachelorService bulk error messages', () => {
     ]);
   });
 });
+
+describe('BachelorService chuyển phiên', () => {
+  const allRooms = { unrestricted: true } as const;
+  const student = {
+    id: 7,
+    studentCode: 'SV007',
+    hallId: 1,
+    sessionId: 2,
+    checkIn: false,
+    checkinRoom: 'P.005',
+    chair: 'A05',
+  };
+  const target = { id: 3, sessionNumber: 3, sessionInDay: 3 };
+
+  function createService(selectResults: unknown[][]) {
+    const updates: Record<string, unknown>[] = [];
+    const queue = [...selectResults];
+    const query = () => {
+      const result = queue.shift() ?? [];
+      const chain = {
+        from: () => chain,
+        where: () => chain,
+        limit: () => chain,
+        for: () => chain,
+        then: (resolve: (rows: unknown[]) => unknown) => Promise.resolve(result).then(resolve),
+      };
+      return chain;
+    };
+    const transaction = {
+      select: query,
+      insert: () => ({ values: () => ({ onConflictDoNothing: () => Promise.resolve() }) }),
+      update: () => ({
+        set: (values: Record<string, unknown>) => ({
+          where: () => ({
+            returning: () => {
+              updates.push(values);
+              return Promise.resolve([{ ...student, ...values }]);
+            },
+          }),
+        }),
+      }),
+    };
+    const database = {
+      transaction: (run: (tx: typeof transaction) => unknown) => run(transaction),
+    } as unknown as AppDatabase;
+    return { service: new BachelorService(database), updates };
+  }
+
+  const targetChairs = [{ chair: 'A01' }, { chair: 'I24' }, { chair: 'Z01' }];
+
+  test('chuyển sang phiên khác: xuống cuối phiên đích, không lấy ghế 1', async () => {
+    const { service, updates } = createService([[student], [target], [{ id: 9 }], targetChairs]);
+
+    await service.transferLateStudent('sv007', target.id, allRooms);
+
+    expect(updates[0]).toMatchObject({
+      sessionId: target.id,
+      chair: 'Z02',
+      chairParent: 'PHZ02',
+      attendanceStatus: 2,
+    });
+    expect(updates[0]).not.toHaveProperty('hallId');
+  });
+
+  test('chuyển vào phiên tạm: xuống cuối phiên đích, không lấy ghế 1', async () => {
+    const { service, updates } = createService([
+      [student],
+      [target],
+      [{ id: 9 }],
+      targetChairs,
+      [{ id: 1, name: 'Khu vực 1' }],
+    ]);
+
+    await service.moveToTemporarySession('sv007', true, allRooms);
+
+    expect(updates[0]).toMatchObject({ sessionId: target.id, chair: 'Z02', chairParent: 'PHZ02' });
+    expect(updates[0]).not.toHaveProperty('hallId');
+  });
+
+  test('phiên đích đánh số thường vẫn lấy ghế lớn nhất + 1', async () => {
+    const { service, updates } = createService([
+      [student],
+      [target],
+      [{ id: 9 }],
+      [{ chair: '1' }, { chair: '2' }, { chair: '4' }],
+    ]);
+
+    await service.transferLateStudent('sv007', target.id, allRooms);
+
+    expect(updates[0]).toMatchObject({ chair: '5', chairParent: 'PH5' });
+  });
+});

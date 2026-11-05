@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import type { BachelorService } from '../bachelor/bachelor.service.js';
 import type { AppDatabase } from '../database/database.types.js';
-import { CheckInService, nextChairAtEnd } from './checkin.service.js';
+import { nextChairAtEnd } from '../bachelor/next-chair-at-end.js';
+import { CheckInService } from './checkin.service.js';
 
 const allRooms = { unrestricted: true } as const;
 
@@ -75,9 +76,19 @@ describe('nextChairAtEnd', () => {
     expect(nextChairAtEnd(['9', '10'])).toBe('11');
   });
 
-  test('bỏ qua ghế không phải số và phiên chưa có ghế', () => {
-    expect(nextChairAtEnd(['A1', null, '3'])).toBe('4');
+  test('phiên chưa có ghế bắt đầu từ 1', () => {
+    expect(nextChairAtEnd([null])).toBe('1');
     expect(nextChairAtEnd([])).toBe('1');
+  });
+
+  test('sơ đồ ghế theo hàng: xếp vào hàng Z để đứng sau mọi ghế thật', () => {
+    expect(nextChairAtEnd(['A01', 'I24', 'J35'])).toBe('Z01');
+    expect(nextChairAtEnd(['A01', null, 'Z01', 'Z09'])).toBe('Z10');
+    expect(nextChairAtEnd(['A01', 'z02'])).toBe('Z03');
+  });
+
+  test('sơ đồ ghế theo hàng lẫn ghế số vẫn dùng hàng Z', () => {
+    expect(nextChairAtEnd(['A01', '3'])).toBe('Z01');
   });
 });
 
@@ -161,6 +172,21 @@ describe('CheckInService.checkInBachelor', () => {
     });
   });
 
+  test('phiên đã khóa: ghế theo hàng xuống cuối phiên mà vẫn giữ hội trường và phiên', async () => {
+    const { service, updates } = createService({
+      bachelor: lateBachelor,
+      checkIn: { id: 1, status: false },
+      otherChairs: ['A01', 'I24'],
+    });
+
+    const result = await service.checkInBachelor('sv007', true, allRooms);
+
+    expect(result.late).toBe(true);
+    expect(updates[0]).toMatchObject({ chair: 'Z01', chairParent: 'PHZ01', attendanceStatus: 2 });
+    expect(updates[0]).not.toHaveProperty('hallId');
+    expect(updates[0]).not.toHaveProperty('sessionId');
+  });
+
   test('phiên đã khóa: quét lại người đã check-in không đổi ghế', async () => {
     const { service, updates } = createService({
       bachelor: { ...lateBachelor, checkIn: true, chair: '101' },
@@ -197,5 +223,26 @@ describe('CheckInService.checkInBachelor', () => {
       'Phiên này chưa được mở, vui lòng đến đúng phiên của bạn.',
     );
     expect(updates).toHaveLength(0);
+  });
+});
+
+describe('CheckInService.uncheckAll', () => {
+  test('xóa cả trạng thái LED để người đang chiếu check-in lại được', async () => {
+    const updates: Record<string, unknown>[] = [];
+    const database = {
+      update: () => ({
+        set: (values: Record<string, unknown>) => {
+          updates.push(values);
+          return Promise.resolve();
+        },
+      }),
+    } as unknown as AppDatabase;
+    const service = new CheckInService(database, {} as BachelorService);
+
+    await service.uncheckAll();
+
+    expect(updates).toEqual([
+      { timeCheckIn: null, checkIn: false, status: false, attendanceStatus: 0, bachelorStatus: null },
+    ]);
   });
 });

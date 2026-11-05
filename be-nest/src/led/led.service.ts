@@ -1,9 +1,10 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { bachelors } from '../database/schema/domain-schema.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
+import { chairOrder } from './chair-order.js';
 
 @Injectable()
 export class LedService {
@@ -25,7 +26,7 @@ export class LedService {
     return this.database
       .select()
       .from(bachelors)
-      .orderBy(sql`case when ${bachelors.chair} ~ '^[0-9]+$' then ${bachelors.chair}::integer else 2147483647 end`);
+      .orderBy(...chairOrder);
   }
 
   first(hallId: number, sessionId: number) {
@@ -60,7 +61,7 @@ export class LedService {
             eq(bachelors.status, true),
           ),
         )
-        .orderBy(sql`case when ${bachelors.chair} ~ '^[0-9]+$' then ${bachelors.chair}::integer else 2147483647 end`)
+        .orderBy(...chairOrder)
         .for('update');
       if (!rows.length) return null;
       const currentIndex = rows.findIndex(({ bachelorStatus }) => bachelorStatus === 'Current');
