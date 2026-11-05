@@ -52,12 +52,13 @@ docker-compose up -d
 
 ### User Roles
 
-The system has 4 distinct user roles with separate interfaces:
+The system has 5 distinct user roles with separate interfaces:
 
 1. **Manager (MN)**: Manages graduates, halls, sessions, controls check-in availability, and creates notifications
 2. **Checkiner (CK)**: Handles check-in process using student codes
-3. **MC (US)**: Controls LED display and manages ceremony presentation
-4. **Noticer (NO)**: Manages and broadcasts notifications through TTS system
+3. **Check-in Lead (CL)**: Checkiner who may check in any room, without room assignments
+4. **MC (US)**: Controls LED display and manages ceremony presentation
+5. **Noticer (NO)**: Manages and broadcasts notifications through TTS system
 
 ### Core Data Flow
 
@@ -73,10 +74,10 @@ The system has 4 distinct user roles with separate interfaces:
 Key entities:
 
 - `Bachelor`: Graduate information (StudentCode, FullName, Hall, Session, Chair assignments, CheckinRoom)
-- `user_checkin_room`: Rooms a CK account may check in; no rows means no rooms. Accounts with `bachelors.manage` are unrestricted, enforced server-side by `CheckInRoomScope`
+- `user_checkin_room`: Rooms a CK account may check in; no rows means no rooms. Accounts with `bachelors.manage` or `checkin.all-rooms` are unrestricted, enforced server-side by `CheckInRoomScope`
 - `CheckIn`: Check-in status tracking by hall/session
 - `Notification`: Announcement system (Title, Content, Priority, Hall/Session scope, Status)
-- `User`: System users with role-based access (MN, CK, US, NO)
+- `User`: System users with role-based access (MN, CK, CL, US, NO)
 - `Hall`: Ceremony halls
 - `Session`: Ceremony sessions (100, 111)
 

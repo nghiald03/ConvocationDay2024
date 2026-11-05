@@ -18,7 +18,7 @@ class LedWindowQuery {
 
 @ApiTags('led')
 @Controller('Mc')
-@RequireRoles('MN', 'MC', 'CK')
+@RequireRoles('MN', 'MC', 'CK', 'CL')
 export class LedController {
   constructor(private readonly led: LedService) {}
 

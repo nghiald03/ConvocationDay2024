@@ -75,7 +75,7 @@ export class BachelorController {
   constructor(private readonly bachelors: BachelorService) {}
 
   @Get('search')
-  @RequireRoles('MN', 'CK', 'US')
+  @RequireRoles('MN', 'CK', 'CL', 'US')
   async search(@Query() query: BachelorListQuery) {
     return {
       status: 200,
@@ -85,7 +85,7 @@ export class BachelorController {
   }
 
   @Get('GetAll')
-  @RequireRoles('MN', 'CK', 'US', 'MC')
+  @RequireRoles('MN', 'CK', 'CL', 'US', 'MC')
   async list(@Query() query: BachelorListQuery) {
     const { checkInStatus, ...filters } = query;
     const data = await this.bachelors.list(

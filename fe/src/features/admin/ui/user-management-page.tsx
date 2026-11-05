@@ -52,6 +52,11 @@ type UserForm = {
   checkinRooms: string[];
 };
 
+/** MN và CL được check-in mọi phòng nên việc phân phòng không có tác dụng với họ. */
+function usesRoomAssignment(roles: string[]) {
+  return roles.includes('CK') && !roles.includes('MN') && !roles.includes('CL');
+}
+
 function generatePassword() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
   const bytes = crypto.getRandomValues(new Uint8Array(16));
@@ -133,7 +138,7 @@ export default function UserManagementPage() {
   const roomChoices = [
     ...new Set([...(checkInRooms?.rooms ?? []), ...(form?.checkinRooms ?? [])]),
   ].sort((first, second) => first.localeCompare(second, 'vi'));
-  const showsRoomField = form?.roles.includes('CK') && !form.roles.includes('MN');
+  const showsRoomField = form !== null && usesRoomAssignment(form.roles);
 
   const addRoom = () => {
     const room = newRoom.trim();
@@ -200,7 +205,7 @@ export default function UserManagementPage() {
                       ))}
                       {!user.roles.length && <span className='text-muted-foreground'>—</span>}
                     </div>
-                    {user.roles.includes('CK') && !user.roles.includes('MN') && (
+                    {usesRoomAssignment(user.roles) && (
                       <div className='mt-1 text-xs text-muted-foreground'>
                         Phòng: {user.checkinRooms.length ? user.checkinRooms.join(', ') : 'chưa phân phòng'}
                       </div>

@@ -281,7 +281,12 @@ export class BachelorService {
 
   /** Đọc mới mỗi lần để việc đổi phân phòng có hiệu lực ngay, không cần đăng nhập lại. */
   async checkInRoomScope(actor: ActorContext): Promise<CheckInRoomScope> {
-    if (actor.permissions.includes(Permission.ManageBachelors)) return { unrestricted: true };
+    if (
+      actor.permissions.includes(Permission.ManageBachelors) ||
+      actor.permissions.includes(Permission.CheckInAllRooms)
+    ) {
+      return { unrestricted: true };
+    }
     const rows = await this.database
       .select({ room: userCheckinRooms.room })
       .from(userCheckinRooms)

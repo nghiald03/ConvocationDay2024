@@ -34,7 +34,7 @@ export function getMenuList(pathname: string): Group[] {
     {
       groupLabel: "",
       id: "dashboard",
-      roleAccess: ["MN", "CK", "MC", "US", "NO", "PQ", "PC"],
+      roleAccess: ["MN", "CK", "CL", "MC", "US", "NO", "PQ", "PC"],
       menus: [
         {
           id: "dashboard",
@@ -161,7 +161,7 @@ export function getMenuList(pathname: string): Group[] {
     {
       groupLabel: "Check in",
       id: "checkin",
-      roleAccess: ["CK", "MN"],
+      roleAccess: ["CK", "CL", "MN"],
       menus: [
         {
           id: "checkin",

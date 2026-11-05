@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test';
+import { expandPermissions } from '../auth/permissions.js';
+import type { ActorContext } from '../common/guards/actor-context.js';
 import type { AppDatabase } from '../database/database.types.js';
 import type { BachelorDto } from './dto/bachelor.dto.js';
 import { BachelorService } from './bachelor.service.js';
@@ -14,6 +16,44 @@ const bachelor: BachelorDto = {
   chair: 'A1',
   chairParent: 'A',
 };
+
+describe('BachelorService.checkInRoomScope', () => {
+  const actorWith = (roles: string[]): ActorContext => ({
+    userId: 'user-1',
+    email: 'user@example.edu.vn',
+    fullName: 'Người dùng',
+    roles,
+    permissions: expandPermissions(roles),
+  });
+  const databaseWithRooms = (rooms: string[]) =>
+    ({
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            orderBy: () => Promise.resolve(rooms.map((room) => ({ room }))),
+          }),
+        }),
+      }),
+    }) as unknown as AppDatabase;
+
+  test('CL được check-in mọi phòng dù không được phân phòng', async () => {
+    const service = new BachelorService(databaseWithRooms([]));
+    expect(await service.checkInRoomScope(actorWith(['CL']))).toEqual({ unrestricted: true });
+  });
+
+  test('tài khoản vừa CK vừa CL không bị phân phòng của CK giới hạn', async () => {
+    const service = new BachelorService(databaseWithRooms(['P.005']));
+    expect(await service.checkInRoomScope(actorWith(['CK', 'CL']))).toEqual({ unrestricted: true });
+  });
+
+  test('CK vẫn chỉ được check-in phòng đã phân', async () => {
+    const service = new BachelorService(databaseWithRooms(['P.005']));
+    expect(await service.checkInRoomScope(actorWith(['CK']))).toEqual({
+      unrestricted: false,
+      rooms: ['P.005'],
+    });
+  });
+});
 
 describe('BachelorService bulk error messages', () => {
   test('không để lộ lỗi PostgreSQL tiếng Anh khi import thất bại', async () => {

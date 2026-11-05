@@ -111,6 +111,15 @@ const IntroPage = () => {
                         </ul>
                       </li>
                       <li>
+                        <strong>Check-in Lead (Trưởng nhóm Check-in):</strong>
+                        <ul className='list-disc pl-6 space-y-2'>
+                          <li>
+                            Có các quyền của Checkiner và được check-in cho mọi
+                            phòng, không cần phân phòng.
+                          </li>
+                        </ul>
+                      </li>
+                      <li>
                         <strong>MC (Người Điều Khiển Lễ):</strong>
                         <ul className='list-disc pl-6 space-y-2'>
                           <li>Hiển thị danh sách tân cử nhân đã check-in.</li>

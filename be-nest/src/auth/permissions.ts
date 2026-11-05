@@ -4,6 +4,7 @@ export const Permission = {
   ManageSessions: 'sessions.manage',
   ManageBachelors: 'bachelors.manage',
   CheckIn: 'checkin.execute',
+  CheckInAllRooms: 'checkin.all-rooms',
   RequestPhotoQueue: 'photo-queue.request',
   ControlLed: 'led.control',
   ControlPhotoQueue: 'photo-queue.control',
@@ -17,6 +18,7 @@ export type PermissionName = (typeof Permission)[keyof typeof Permission];
 export const permissionsByRole: Readonly<Record<string, readonly PermissionName[]>> = {
   MN: Object.values(Permission),
   CK: [Permission.CheckIn],
+  CL: [Permission.CheckIn, Permission.CheckInAllRooms],
   PQ: [Permission.RequestPhotoQueue],
   MC: [Permission.ControlLed],
   PC: [Permission.ControlPhotoQueue],

@@ -164,7 +164,7 @@ export class CheckInController {
   }
 
   @Get('GetCountCheckin')
-  @RequireRoles('CK', 'MN')
+  @RequireRoles('CK', 'CL', 'MN')
   async counts() {
     return {
       status: 200,
@@ -220,7 +220,7 @@ export class CheckInController {
   }
 
   @Get('GetStudentsNotCheckedInOpenSessions')
-  @RequireRoles('MN', 'CK')
+  @RequireRoles('MN', 'CK', 'CL')
   async notCheckedInOpen(@Query() query: CheckInListQuery) {
     const data = await this.checkIns.studentsNotCheckedInOpenSessions(query);
     return {
