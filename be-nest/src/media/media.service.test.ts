@@ -95,6 +95,57 @@ describe('MediaService public links', () => {
   });
 });
 
+describe('MediaService owner id', () => {
+  function createUploadService() {
+    const database = {
+      insert: () => ({
+        values: (values: Record<string, unknown>) => ({
+          returning: () => Promise.resolve([values]),
+        }),
+      }),
+    } as unknown as AppDatabase;
+    const storage = { put: () => Promise.resolve() } as unknown as ObjectStorageService;
+    const validator = {
+      validateAndNormalize: () =>
+        Promise.resolve({
+          bytes: Buffer.from('image'),
+          contentType: 'image/webp',
+          width: 1,
+          height: 1,
+        }),
+    } as unknown as MediaValidatorService;
+    return new MediaService(database, storage, validator);
+  }
+
+  test('tài khoản có dấu chấm trong ID vẫn tải được ảnh thư viện', async () => {
+    const asset = await createUploadService().upload(
+      file('photo.png'),
+      'library',
+      'demo-manager.demo',
+      'demo-manager.demo',
+    );
+
+    expect(asset.objectKey).toStartWith('library/');
+    expect(asset.ownerId).toBe('demo-manager.demo');
+  });
+
+  test.each(['..', '../other', 'a..b', '.hidden', 'a/b', ''])(
+    'từ chối mã sở hữu không an toàn cho object key: %p',
+    async (ownerId) => {
+      let failure: unknown;
+      await createUploadService()
+        .upload(file('photo.png'), 'temp', ownerId, 'actor-1')
+        .catch((error: unknown) => {
+          failure = error;
+        });
+
+      expect((failure as { response?: { code?: string } }).response?.code).toBe(
+        'media/invalid-owner',
+      );
+    },
+  );
+});
+
 describe('MediaService bulk upload', () => {
   test('xóa metadata và object đã tạo khi một tệp sau đó tải lên thất bại', async () => {
     const deletedObjects: string[] = [];

@@ -156,7 +156,8 @@ export class MediaService {
         message: 'Loại đối tượng sở hữu tệp không được hỗ trợ.',
       });
     }
-    if (!/^[a-zA-Z0-9-]{1,64}$/.test(ownerId)) {
+    // ID tài khoản có thể chứa dấu chấm; chặn ".." và "." đầu chuỗi vì giá trị này nằm trong object key.
+    if (!/^(?!\.)(?!.*\.\.)[a-zA-Z0-9._-]{1,64}$/.test(ownerId)) {
       throw new BadRequestException({
         code: 'media/invalid-owner',
         message: 'Mã đối tượng sở hữu tệp không hợp lệ.',
