@@ -32,7 +32,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { checkInBachelor } from '@/features/check-in/api/check-in-bachelor';
+import { checkInBachelor, forceCheckInBachelor } from '@/features/check-in/api/check-in-bachelor';
+import { createClickBurst } from '@/features/check-in/model/click-burst';
 import { canCheckInRoom } from '@/features/check-in/model/check-in-room';
 import { checkInRoomsQueryOptions } from '@/features/check-in/queries/check-in-rooms-query-options';
 import {
@@ -42,8 +43,6 @@ import {
 import { showLateCheckInNotice } from '@/features/check-in/ui/show-late-check-in-notice';
 import { moveBachelorToTemporarySession } from '@/features/bachelor/api/move-bachelor-to-temporary-session';
 import { transferBachelorSession } from '@/features/bachelor/api/transfer-bachelor-session';
-import { createNotification } from '@/features/notification/api/create-notification';
-import type { CreateNotificationRequest } from '@/features/notification/model/notification';
 import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
 import { sessionQueryOptions } from '@/features/session/queries/session-query-options';
 import { getSessionsByHallName } from '@/features/session/api/get-sessions-by-hall-name';
@@ -52,15 +51,18 @@ import { getBachelors } from '@/features/bachelor/api/get-bachelors';
 import type { BachelorListParams } from '@/features/bachelor/model/bachelor-page';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
-import { useEffect, useMemo, useState, useCallback } from 'react';
-import { useSession } from '@/features/auth/queries/session-provider';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import swal from 'sweetalert';
 import { useDebounce } from 'use-debounce';
 import { MultiHallStatusDisplay } from '@/features/led/ui/multi-hall-status-display';
+import { useSession } from '@/features/auth/queries/session-provider';
+import { canViewForceCode } from '@/features/check-in/model/force-code';
+import { ForceCodeBadge } from '@/features/check-in/ui/force-code-badge';
 
 export default function ManualCheckinPage() {
   const queryClient = useQueryClient();
+  const showForceCode = canViewForceCode(useSession()?.roles);
 
   const DEFAULT_PAGE_SIZE = 20;
   const [pageIndex, setPageIndex] = useState(1);
@@ -77,10 +79,6 @@ export default function ManualCheckinPage() {
   const [applying, setApplying] = useState(false);
   const [mssv, setMSSV] = useState('');
   const [sessionBachelor, setSessionBachelor] = useState<string | null>(null);
-
-  // ---- Chặn gửi thông báo nếu không phải role MN
-  const sessionUser = useSession();
-  const isMN = sessionUser?.role === 'MN';
 
   // Set MSSV đang xử lý để disable switch theo từng hàng
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
@@ -326,6 +324,71 @@ export default function ManualCheckinPage() {
     [checkinAction]
   );
 
+  // Force check-in: bỏ qua phiên mở/khóa, server kiểm tra mã khẩn cấp và khoảng cách với LED.
+  const handleForceCheckin = useCallback(
+    async (row: any) => {
+      const studentCode: string = row.studentCode;
+      if (row.checkIn) {
+        toast.error(`${row.fullName} đã check-in rồi.`, { position: 'top-right', duration: 3000 });
+        return;
+      }
+      const codeInput = document.createElement('input');
+      codeInput.className = 'swal-content__input';
+      codeInput.autocomplete = 'off';
+      codeInput.autocapitalize = 'characters';
+      codeInput.spellcheck = false;
+      codeInput.maxLength = 4;
+      codeInput.placeholder = 'Mã 4 ký tự';
+      codeInput.style.textTransform = 'uppercase';
+      codeInput.style.letterSpacing = '0.3em';
+
+      const confirm = await swal({
+        title: 'Force check-in',
+        text: `Check-in khẩn cấp cho ${row.fullName} (${studentCode}) bất kể phiên đang mở hay khóa.\n\nHỏi Check-in Lead hoặc Manager để lấy mã 4 ký tự (đổi sau mỗi 5 phút).`,
+        icon: 'warning',
+        content: codeInput as any,
+        buttons: ['Không', 'Force check-in'],
+        dangerMode: true,
+      });
+      const emergencyCode = codeInput.value.trim();
+      if (!confirm || !emergencyCode) return;
+
+      setProcessingIds((prev) => new Set(prev).add(studentCode));
+      try {
+        const result = await forceCheckInBachelor({ studentCode, emergencyCode });
+        toast.success(`Force check-in cho ${row.fullName} thành công. Ghế: ${result?.chair ?? '-'}`, {
+          position: 'top-right',
+          duration: 4000,
+        });
+        queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
+      } catch (err: any) {
+        const msg = err?.response?.data?.message ?? err?.message ?? '';
+        toast.error(`Không thể force check-in: ${msg}`, { position: 'top-right', duration: 5000 });
+      } finally {
+        setProcessingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(studentCode);
+          return next;
+        });
+      }
+    },
+    [queryClient]
+  );
+
+  // Nhấn 1 lần: check-in thường (chờ một nhịp để phân biệt). Nhấn nhanh 4 lần: force check-in.
+  const switchHandlers = useRef({ single: handleCheckin, burst: handleForceCheckin });
+  switchHandlers.current = { single: handleCheckin, burst: handleForceCheckin };
+  const handleSwitchClick = useMemo(
+    () =>
+      createClickBurst<any>({
+        count: 4,
+        windowMs: 450,
+        onSingle: (row) => void switchHandlers.current.single(row),
+        onBurst: (row) => void switchHandlers.current.burst(row),
+      }),
+    []
+  );
+
   // ---- Đăng ký session bù
   const updateBachelorMissingSession = useMutation({
     mutationFn: () => {
@@ -393,55 +456,6 @@ export default function ManualCheckinPage() {
     }
   }, [error]);
 
-  const sendNotifyMutation = useMutation({
-    mutationFn: async (payload: { message: string }) => {
-      const req: CreateNotificationRequest = {
-        title: 'Thông báo hội trường',
-        content: payload.message,
-        // priority: 2 => normal (giữ đồng bộ với mock trang Notify của anh)
-        priority: 2,
-        isAutomatic: false,
-        repeatCount: 1,
-      };
-      return createNotification(req);
-    },
-    onSuccess: (res) => {
-      toast.success(res.message ?? 'Đã gửi thông báo!', {
-        duration: 3000,
-        position: 'top-right',
-      });
-    },
-    onError: (err: any) => {
-      toast.error(
-        'Gửi thông báo thất bại: ' +
-          (err?.response?.data?.message ||
-            err?.message ||
-            'Lỗi không xác định'),
-        { duration: 4000, position: 'top-right' }
-      );
-    },
-  });
-
-  const handleSendNotify = useCallback(
-    (row: any) => {
-      if (!isMN) {
-        toast.error('Bạn không có quyền gửi thông báo', {
-          duration: 3000,
-          position: 'top-right',
-        });
-        return;
-      }
-      const hallLabel =
-        row.hallName != null && row.hallName !== ''
-          ? row.hallName
-          : 'hội trường';
-      const message = `Xin mời Tân cử nhân ${row.fullName} với mã số sinh viên ${row.studentCode} tới hội trường ${hallLabel} thuộc phiên ${row.sessionInDay} để làm thủ tục checkin trước khi cổng checkin đóng lại.`;
-
-      sendNotifyMutation.mutate({ message });
-    },
-    [isMN, sendNotifyMutation]
-  );
-
   const columns: ColumnDef<any>[] = useMemo(
     () => [
       { accessorKey: 'id', header: 'ID' },
@@ -483,7 +497,9 @@ export default function ManualCheckinPage() {
                 isProcessing ||
                 !canCheckInRoom(assignedRooms, row.original.checkinRoom)
               }
-              onCheckedChange={() => handleCheckin(row.original)}
+              onCheckedChange={() =>
+                handleSwitchClick(row.original.studentCode, row.original)
+              }
             />
           );
         },
@@ -509,29 +525,12 @@ export default function ManualCheckinPage() {
           </Button>
         ),
       },
-      {
-        id: 'notify',
-        header: 'Thông báo',
-        cell: ({ row }) => (
-          <Button
-            size='sm'
-            variant='outline'
-            onClick={() => handleSendNotify(row.original)}
-            disabled={!isMN || sendNotifyMutation.isPending}
-          >
-            {sendNotifyMutation.isPending ? 'Đang gửi...' : 'Gửi thông báo'}
-          </Button>
-        ),
-      },
     ],
     [
       processingIds,
       updateBachelorMissingSession.isPending,
-      sendNotifyMutation.isPending,
-      isMN,
-      handleCheckin,
+      handleSwitchClick,
       promptTransferToAnotherSession,
-      handleSendNotify,
       assignedRooms,
     ]
   );
@@ -557,6 +556,11 @@ export default function ManualCheckinPage() {
       <Card className='mt-3 animate-fade-up'>
         <CardContent className='p-3'>
           <MultiHallStatusDisplay />
+          {showForceCode && (
+            <div className='mt-3'>
+              <ForceCodeBadge />
+            </div>
+          )}
           {hasNoAssignedRoom && (
             <p className='my-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive'>
               Tài khoản của bạn chưa được phân phòng checkin nên chưa thể checkin. Vui lòng liên hệ quản lý.

@@ -395,16 +395,13 @@ export class BachelorService {
       .limit(1)
       .for('update');
     const others = await transaction
-      .select({ chair: bachelors.chair })
+      .select({ chair: bachelors.chair, sessionId: bachelors.sessionId })
       .from(bachelors)
-      .where(
-        and(
-          eq(bachelors.hallId, hallId),
-          eq(bachelors.sessionId, sessionId),
-          ne(bachelors.id, bachelorId),
-        ),
-      );
-    return nextChairAtEnd(others.map(({ chair }) => chair));
+      .where(and(eq(bachelors.hallId, hallId), ne(bachelors.id, bachelorId)));
+    return nextChairAtEnd(
+      others.filter((other) => other.sessionId === sessionId).map(({ chair }) => chair),
+      others.map(({ chair }) => chair),
+    );
   }
 
   private async findOrCreateHall(transaction: Parameters<Parameters<AppDatabase['transaction']>[0]>[0], name: string) {

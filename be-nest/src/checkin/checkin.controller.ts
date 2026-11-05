@@ -21,9 +21,11 @@ import { Public } from '../common/guards/public.decorator.js';
 import { RequirePermissions } from '../common/guards/require-permissions.decorator.js';
 import { RequireRoles } from '../common/guards/require-roles.decorator.js';
 import { CheckInService } from './checkin.service.js';
+import { ForceCheckInCodeService } from './force-check-in-code.service.js';
 import {
   CheckInBachelorDto,
   CreateCheckInDto,
+  ForceCheckInDto,
   UpdateCheckInStatusDto,
 } from './dto/checkin.dto.js';
 
@@ -73,6 +75,7 @@ export class CheckInController {
   constructor(
     private readonly checkIns: CheckInService,
     private readonly bachelors: BachelorService,
+    private readonly forceCodes: ForceCheckInCodeService,
   ) {}
 
   @Get('rooms')
@@ -101,6 +104,26 @@ export class CheckInController {
         input.cancellationConfirmation,
       ),
     );
+  }
+
+  @Get('ForceCode')
+  @RequireRoles('CL', 'MN')
+  forceCode() {
+    return {
+      status: 200,
+      message: 'Lấy mã force check-in thành công!',
+      data: this.forceCodes.current(),
+    };
+  }
+
+  @Put('ForceCheckin')
+  @RequirePermissions(Permission.CheckIn)
+  async forceCheckIn(@Body() input: ForceCheckInDto, @CurrentActor() actor: ActorContext) {
+    this.forceCodes.assertValid(actor.userId, input.emergencyCode);
+    const response = checkInResponse(
+      await this.checkIns.forceCheckIn(input.studentCode, await this.bachelors.checkInRoomScope(actor)),
+    );
+    return { ...response, message: 'Force check-in thành công!' };
   }
 
   @Put('UpdateCheckinStudentCode')

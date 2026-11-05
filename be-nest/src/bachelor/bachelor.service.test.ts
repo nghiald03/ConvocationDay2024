@@ -133,7 +133,8 @@ describe('BachelorService chuyển phiên', () => {
     return { service: new BachelorService(database), updates };
   }
 
-  const targetChairs = [{ chair: 'A01' }, { chair: 'I24' }, { chair: 'Z01' }];
+  const inTarget = (chair: string) => ({ chair, sessionId: target.id });
+  const targetChairs = [inTarget('A01'), inTarget('I24'), inTarget('Z01')];
 
   test('chuyển sang phiên khác: xuống cuối phiên đích, không lấy ghế 1', async () => {
     const { service, updates } = createService([[student], [target], [{ id: 9 }], targetChairs]);
@@ -164,12 +165,25 @@ describe('BachelorService chuyển phiên', () => {
     expect(updates[0]).not.toHaveProperty('hallId');
   });
 
+  test('chuyển phiên bên Left vẫn nhận số của bên Left dù phiên đích còn trống', async () => {
+    const { service, updates } = createService([
+      [{ ...student, chair: 'A30' }],
+      [target],
+      [{ id: 9 }],
+      [{ chair: 'A25', sessionId: 2 }, { chair: 'J50', sessionId: 2 }],
+    ]);
+
+    await service.transferLateStudent('sv007', target.id, allRooms);
+
+    expect(updates[0]).toMatchObject({ chair: 'Z25', chairParent: 'PHZ25' });
+  });
+
   test('phiên đích đánh số thường vẫn lấy ghế lớn nhất + 1', async () => {
     const { service, updates } = createService([
       [student],
       [target],
       [{ id: 9 }],
-      [{ chair: '1' }, { chair: '2' }, { chair: '4' }],
+      [inTarget('1'), inTarget('2'), inTarget('4')],
     ]);
 
     await service.transferLateStudent('sv007', target.id, allRooms);

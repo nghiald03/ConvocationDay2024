@@ -9,3 +9,8 @@ export async function checkInBachelor(input: CheckInBachelorInput) {
   );
   return response.data.data;
 }
+
+export async function forceCheckInBachelor(input: { studentCode: string; emergencyCode: string }) {
+  const response = await httpClient.put<ApiResponse<CheckInResult>>('/Checkin/ForceCheckin', input);
+  return response.data.data;
+}

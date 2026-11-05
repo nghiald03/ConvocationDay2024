@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { BachelorService } from '../bachelor/bachelor.service.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { nextChairAtEnd } from '../bachelor/next-chair-at-end.js';
-import { CheckInService } from './checkin.service.js';
+import { assertForceCheckInGap, CheckInService } from './checkin.service.js';
 
 const allRooms = { unrestricted: true } as const;
 
@@ -26,8 +26,13 @@ function createService(options: {
               return Promise.resolve(row ? [row] : []);
             },
           }),
-          then: (resolve: (rows: { chair: string | null }[]) => void) =>
-            resolve((options.otherChairs ?? []).map((chair) => ({ chair }))),
+          then: (resolve: (rows: { chair: string | null; sessionId: unknown }[]) => void) =>
+            resolve(
+              (options.otherChairs ?? []).map((chair) => ({
+                chair,
+                sessionId: options.bachelor.sessionId,
+              })),
+            ),
         }),
       }),
     }),
@@ -83,12 +88,40 @@ describe('nextChairAtEnd', () => {
 
   test('sơ đồ ghế theo hàng: xếp vào hàng Z để đứng sau mọi ghế thật', () => {
     expect(nextChairAtEnd(['A01', 'I24', 'J35'])).toBe('Z01');
-    expect(nextChairAtEnd(['A01', null, 'Z01', 'Z09'])).toBe('Z10');
-    expect(nextChairAtEnd(['A01', 'z02'])).toBe('Z03');
+    expect(nextChairAtEnd(['A01', 'A24', null, 'Z01', 'Z09'])).toBe('Z10');
+    expect(nextChairAtEnd(['A01', 'A24', 'z02'])).toBe('Z03');
   });
 
   test('sơ đồ ghế theo hàng lẫn ghế số vẫn dùng hàng Z', () => {
     expect(nextChairAtEnd(['A01', '3'])).toBe('Z01');
+  });
+
+  const right = ['A1', 'A24', 'J24'];
+  const left = ['A25', 'I46', 'J50'];
+
+  test('bên Right không tràn sang số của bên Left', () => {
+    expect(nextChairAtEnd(right)).toBe('Z1');
+    expect(nextChairAtEnd([...right, 'Z23'])).toBe('Z24');
+    expect(nextChairAtEnd([...right, 'Z24'])).toBe('ZA1');
+    expect(nextChairAtEnd([...right, 'Z24', 'ZA1'])).toBe('ZA2');
+    expect(nextChairAtEnd([...right, 'Z24', 'ZA24'])).toBe('ZB1');
+  });
+
+  test('bên Left bắt đầu từ số của bên Left và không về số của bên Right', () => {
+    expect(nextChairAtEnd(left)).toBe('Z25');
+    expect(nextChairAtEnd([...left, 'Z49'])).toBe('Z50');
+    expect(nextChairAtEnd([...left, 'Z50'])).toBe('ZA25');
+    expect(nextChairAtEnd([...left, 'Z1'])).toBe('Z25');
+  });
+
+  test('dãy số lấy theo cả hội trường, không theo riêng phiên ít ghế', () => {
+    expect(nextChairAtEnd(['A25', 'I41', 'Z41'], ['A25', 'J50', 'A25', 'I41', 'Z41'])).toBe('Z42');
+    expect(nextChairAtEnd([], left)).toBe('Z25');
+  });
+
+  test('giữ đúng kiểu ghế của dữ liệu và ghế Z01 đã cấp', () => {
+    expect(nextChairAtEnd(['A1', 'J24', 'Z01'])).toBe('Z2');
+    expect(nextChairAtEnd(['A01', 'J24', 'Z09'])).toBe('Z10');
   });
 });
 
@@ -244,5 +277,120 @@ describe('CheckInService.uncheckAll', () => {
     expect(updates).toEqual([
       { timeCheckIn: null, checkIn: false, status: false, attendanceStatus: 0, bachelorStatus: null },
     ]);
+  });
+});
+
+describe('force check-in', () => {
+  const ids = (count: number) => Array.from({ length: count }, (_, index) => index + 1);
+
+  describe('assertForceCheckInGap', () => {
+    test('cho phép khi người đang chiếu đứng trước đúng 15 hoặc hơn', () => {
+      expect(() => assertForceCheckInGap(ids(30), 16, 1)).not.toThrow();
+      expect(() => assertForceCheckInGap(ids(30), 30, 1)).not.toThrow();
+    });
+
+    test('từ chối khi còn chưa tới 15 người', () => {
+      expect(() => assertForceCheckInGap(ids(30), 15, 1)).toThrow('14');
+    });
+
+    test('từ chối khi người cần check-in đã qua lượt hoặc đang chiếu', () => {
+      expect(() => assertForceCheckInGap(ids(30), 3, 10)).toThrow('đã qua');
+      expect(() => assertForceCheckInGap(ids(30), 10, 10)).toThrow('đã qua');
+    });
+
+    test('LED chưa chiếu ai trong phiên thì không chặn', () => {
+      expect(() => assertForceCheckInGap(ids(3), 1, null)).not.toThrow();
+    });
+  });
+
+  describe('CheckInService.forceCheckIn', () => {
+    const target = {
+      id: 100,
+      studentCode: 'SV100',
+      hallId: 1,
+      sessionId: 3,
+      checkinRoom: 'P.005',
+      checkIn: false,
+      chair: 'B5',
+    };
+
+    function createForceService(options: {
+      target?: Row;
+      ledRows?: Row[];
+      ordered?: number[];
+    }) {
+      const updates: Row[] = [];
+      let queries = 0;
+      const results = [
+        [options.target ?? target],
+        options.ledRows ?? [],
+        [options.target ?? target],
+        (options.ordered ?? []).map((id) => ({ id })),
+      ];
+      const transaction = {
+        select: () => {
+          queries += 1;
+          const result = results.shift() ?? [];
+          const chain: Record<string, unknown> = {};
+          for (const name of ['from', 'where', 'limit', 'orderBy', 'for']) chain[name] = () => chain;
+          chain.then = (resolve: (rows: unknown[]) => unknown) => Promise.resolve(result).then(resolve);
+          return chain;
+        },
+        update: () => ({
+          set: (values: Row) => ({
+            where: () => ({
+              returning: () => {
+                updates.push(values);
+                return Promise.resolve([{ ...target, ...values }]);
+              },
+            }),
+          }),
+        }),
+      };
+      const database = {
+        transaction: (operation: (value: typeof transaction) => Promise<unknown>) => operation(transaction),
+      } as unknown as AppDatabase;
+      return { service: new CheckInService(database, {} as BachelorService), updates, queries: () => queries };
+    }
+
+    const current = (id: number) => ({ id, bachelorStatus: 'Current' });
+
+    test('đủ khoảng cách: check-in, giữ nguyên ghế, bỏ qua trạng thái phiên', async () => {
+      const ordered = [...ids(20), 100];
+      const { service, updates } = createForceService({ ledRows: [current(5)], ordered });
+
+      const result = await service.forceCheckIn('sv100', allRooms);
+
+      expect(result.late).toBe(false);
+      expect(updates).toHaveLength(1);
+      expect(updates[0]).toMatchObject({ checkIn: true, status: true, attendanceStatus: 1 });
+      expect(updates[0]).not.toHaveProperty('chair');
+      expect(updates[0]).not.toHaveProperty('sessionId');
+    });
+
+    test('chưa đủ 15 người thì báo lỗi và không ghi', async () => {
+      const ordered = [...ids(10), 100];
+      const { service, updates } = createForceService({ ledRows: [current(5)], ordered });
+
+      expect(await rejectionMessage(service.forceCheckIn('SV100', allRooms))).toContain('15');
+      expect(updates).toHaveLength(0);
+    });
+
+    test('đã check-in rồi thì báo lỗi', async () => {
+      const { service, updates } = createForceService({ target: { ...target, checkIn: true } });
+
+      expect(await rejectionMessage(service.forceCheckIn('SV100', allRooms))).toContain('đã check-in');
+      expect(updates).toHaveLength(0);
+    });
+
+    test('vẫn áp dụng giới hạn phòng của tài khoản', async () => {
+      const { service, updates } = createForceService({});
+
+      const message = await rejectionMessage(
+        service.forceCheckIn('SV100', { unrestricted: false, rooms: ['P.999'] }),
+      );
+      expect(message).not.toBeNull();
+      expect(updates).toHaveLength(0);
+    });
   });
 });

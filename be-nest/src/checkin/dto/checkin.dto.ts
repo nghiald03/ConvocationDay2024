@@ -18,6 +18,18 @@ export class CheckInBachelorDto {
   cancellationConfirmation?: string;
 }
 
+export class ForceCheckInDto {
+  @ApiProperty({ example: 'TEST260001' })
+  @IsString()
+  @MinLength(1)
+  studentCode!: string;
+
+  @ApiProperty({ example: '0000', description: 'Mã khẩn cấp do ban tổ chức cấp' })
+  @IsString()
+  @MinLength(1)
+  emergencyCode!: string;
+}
+
 export class UpdateCheckInStatusDto {
   @ApiProperty({ example: 1 })
   @Type(() => Number)

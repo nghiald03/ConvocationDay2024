@@ -1,8 +1,33 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, ilike, ne, sql } from 'drizzle-orm';
+import { and, asc, count, eq, ilike, ne, or, sql } from 'drizzle-orm';
 import { BachelorService } from '../bachelor/bachelor.service.js';
 import { assertCheckInRoomAllowed, type CheckInRoomScope } from '../bachelor/checkin-room-scope.js';
 import { nextChairAtEnd } from '../bachelor/next-chair-at-end.js';
+import { chairOrder } from '../led/chair-order.js';
+
+export const FORCE_CHECK_IN_MIN_GAP = 15;
+
+/**
+ * orderedIds: người đã check-in của phiên + người cần force, theo thứ tự gọi trên LED.
+ * Người đang chiếu phải đứng trước người cần force ít nhất FORCE_CHECK_IN_MIN_GAP lượt.
+ */
+export function assertForceCheckInGap(orderedIds: number[], targetId: number, currentId: number | null) {
+  if (currentId === null) return;
+  const currentIndex = orderedIds.indexOf(currentId);
+  const targetIndex = orderedIds.indexOf(targetId);
+  if (currentIndex < 0 || targetIndex < 0) {
+    throw new BadRequestException('Không xác định được vị trí trên LED, vui lòng thử lại.');
+  }
+  if (targetIndex <= currentIndex) {
+    throw new BadRequestException('Tân cử nhân đã qua lượt hoặc đang được chiếu trên LED, không thể force check-in.');
+  }
+  const gap = targetIndex - currentIndex;
+  if (gap < FORCE_CHECK_IN_MIN_GAP) {
+    throw new BadRequestException(
+      `LED đang chiếu chỉ còn cách tân cử nhân ${gap} lượt, cần ít nhất ${FORCE_CHECK_IN_MIN_GAP} lượt để force check-in.`,
+    );
+  }
+}
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { bachelors, checkIns, halls, sessions } from '../database/schema/domain-schema.js';
@@ -69,16 +94,13 @@ export class CheckInService {
         if (bachelor.checkIn) return { bachelor, late: false };
         // Dòng check-in đang bị khóa FOR UPDATE nên các lượt đến muộn cùng phiên không nhận trùng ghế.
         const others = await transaction
-          .select({ chair: bachelors.chair })
+          .select({ chair: bachelors.chair, sessionId: bachelors.sessionId })
           .from(bachelors)
-          .where(
-            and(
-              eq(bachelors.hallId, hallId),
-              eq(bachelors.sessionId, sessionId),
-              ne(bachelors.id, bachelor.id),
-            ),
-          );
-        const chair = nextChairAtEnd(others.map((other) => other.chair));
+          .where(and(eq(bachelors.hallId, hallId), ne(bachelors.id, bachelor.id)));
+        const chair = nextChairAtEnd(
+          others.filter((other) => other.sessionId === sessionId).map((other) => other.chair),
+          others.map((other) => other.chair),
+        );
         const [updated] = await transaction
           .update(bachelors)
           .set({
@@ -101,6 +123,57 @@ export class CheckInService {
           status,
           ...(status ? { attendanceStatus: 1 } : {}),
         })
+        .where(eq(bachelors.id, bachelor.id))
+        .returning();
+      return { bachelor: updated!, late: false };
+    });
+  }
+
+  /**
+   * Check-in bất chấp phiên mở/khóa, giữ nguyên ghế; chỉ khi LED còn cách đủ xa.
+   * Mã khẩn cấp được ForceCheckInCodeService kiểm tra trước khi gọi hàm này.
+   */
+  async forceCheckIn(studentCode: string, scope: CheckInRoomScope) {
+    return this.database.transaction(async (transaction) => {
+      const byCode = sql`lower(${bachelors.studentCode}) = ${studentCode.toLowerCase()}`;
+      const [found] = await transaction.select().from(bachelors).where(byCode).limit(1);
+      if (!found) throw new BadRequestException('Không tìm thấy tân cử nhân trong hệ thống.');
+      assertCheckInRoomAllowed(scope, found.checkinRoom);
+      if (found.hallId === null || found.sessionId === null) {
+        throw new BadRequestException('Tân cử nhân chưa được xếp hội trường hoặc phiên.');
+      }
+      const hallId = found.hallId;
+      const sessionId = found.sessionId;
+      const sameSession = and(eq(bachelors.hallId, hallId), eq(bachelors.sessionId, sessionId));
+
+      // Khóa danh sách LED theo đúng thứ tự LedService dùng, rồi mới khóa người cần force, để tránh deadlock.
+      const ledRows = await transaction
+        .select({ id: bachelors.id, bachelorStatus: bachelors.bachelorStatus })
+        .from(bachelors)
+        .where(and(sameSession, eq(bachelors.status, true)))
+        .orderBy(...chairOrder)
+        .for('update');
+      const [bachelor] = await transaction.select().from(bachelors).where(byCode).limit(1).for('update');
+      if (!bachelor || bachelor.hallId !== hallId || bachelor.sessionId !== sessionId) {
+        throw new BadRequestException('Dữ liệu tân cử nhân vừa thay đổi, vui lòng thử lại.');
+      }
+      if (bachelor.checkIn) throw new BadRequestException('Tân cử nhân này đã check-in rồi.');
+
+      const ordered = await transaction
+        .select({ id: bachelors.id })
+        .from(bachelors)
+        .where(and(sameSession, or(eq(bachelors.status, true), eq(bachelors.id, bachelor.id))))
+        .orderBy(...chairOrder);
+      const current = ledRows.find((row) => row.bachelorStatus === 'Current') ?? null;
+      assertForceCheckInGap(
+        ordered.map((row) => row.id),
+        bachelor.id,
+        current?.id ?? null,
+      );
+
+      const [updated] = await transaction
+        .update(bachelors)
+        .set({ timeCheckIn: new Date(), checkIn: true, status: true, attendanceStatus: 1 })
         .where(eq(bachelors.id, bachelor.id))
         .returning();
       return { bachelor: updated!, late: false };
