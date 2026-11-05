@@ -394,3 +394,18 @@ describe('force check-in', () => {
     });
   });
 });
+
+describe('thông báo force check-in', () => {
+  test('nêu ghế đang chiếu, số lượt còn lại và cách tính', () => {
+    let message = '';
+    try {
+      assertForceCheckInGap([1, 2, 3, 4], 4, 1, 'A2');
+    } catch (error) {
+      message = (error as Error).message;
+    }
+    expect(message).toContain('ghế A2');
+    expect(message).toContain('3 lượt');
+    expect(message).toContain('đã check-in');
+    expect(message).toContain('15');
+  });
+});

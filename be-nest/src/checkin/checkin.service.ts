@@ -9,22 +9,33 @@ export const FORCE_CHECK_IN_MIN_GAP = 15;
 
 /**
  * orderedIds: người đã check-in của phiên + người cần force, theo thứ tự gọi trên LED.
+ * Chỉ người đã check-in mới được LED gọi, nên khoảng cách tính theo lượt gọi thực tế.
  * Người đang chiếu phải đứng trước người cần force ít nhất FORCE_CHECK_IN_MIN_GAP lượt.
  */
-export function assertForceCheckInGap(orderedIds: number[], targetId: number, currentId: number | null) {
+export function assertForceCheckInGap(
+  orderedIds: number[],
+  targetId: number,
+  currentId: number | null,
+  currentChair: string | null = null,
+) {
   if (currentId === null) return;
   const currentIndex = orderedIds.indexOf(currentId);
   const targetIndex = orderedIds.indexOf(targetId);
+  const current = currentChair ? `ghế ${currentChair}` : 'người đang chiếu';
   if (currentIndex < 0 || targetIndex < 0) {
     throw new BadRequestException('Không xác định được vị trí trên LED, vui lòng thử lại.');
   }
   if (targetIndex <= currentIndex) {
-    throw new BadRequestException('Tân cử nhân đã qua lượt hoặc đang được chiếu trên LED, không thể force check-in.');
+    throw new BadRequestException(
+      `Không thể force check-in: LED đang chiếu ${current}, tân cử nhân này đã qua lượt hoặc đang được chiếu.`,
+    );
   }
   const gap = targetIndex - currentIndex;
   if (gap < FORCE_CHECK_IN_MIN_GAP) {
     throw new BadRequestException(
-      `LED đang chiếu chỉ còn cách tân cử nhân ${gap} lượt, cần ít nhất ${FORCE_CHECK_IN_MIN_GAP} lượt để force check-in.`,
+      `Không thể force check-in: LED đang chiếu ${current}, tính theo những người đã check-in thì chỉ còn ${gap} lượt ` +
+        `nữa là gọi tới tân cử nhân này (cần ít nhất ${FORCE_CHECK_IN_MIN_GAP} lượt). ` +
+        `Chờ thêm người ngồi phía trước check-in rồi thử lại.`,
     );
   }
 }
@@ -148,7 +159,7 @@ export class CheckInService {
 
       // Khóa danh sách LED theo đúng thứ tự LedService dùng, rồi mới khóa người cần force, để tránh deadlock.
       const ledRows = await transaction
-        .select({ id: bachelors.id, bachelorStatus: bachelors.bachelorStatus })
+        .select({ id: bachelors.id, bachelorStatus: bachelors.bachelorStatus, chair: bachelors.chair })
         .from(bachelors)
         .where(and(sameSession, eq(bachelors.status, true)))
         .orderBy(...chairOrder)
@@ -169,6 +180,7 @@ export class CheckInService {
         ordered.map((row) => row.id),
         bachelor.id,
         current?.id ?? null,
+        current?.chair ?? null,
       );
 
       const [updated] = await transaction
