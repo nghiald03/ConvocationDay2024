@@ -5,6 +5,13 @@ const MAX_BATCH_BYTES = 20 * 1024 * 1024;
 // Must stay in sync with MAX_BULK_FILES in be-nest/src/media/media-validator.service.ts.
 const MAX_BATCH_FILES = 20;
 const BATCH_TIMEOUT_MS = 120_000;
+const SUPPORTED_IMAGE_TYPES = new Set(['image/png', 'image/jpeg']);
+
+export const SUPPORTED_IMAGE_ACCEPT = '.png,.jpg,.jpeg';
+
+export function isSupportedImage(file: File) {
+  return SUPPORTED_IMAGE_TYPES.has(file.type);
+}
 
 export function createUploadBatches(files: File[]) {
   const batches: File[][] = [];

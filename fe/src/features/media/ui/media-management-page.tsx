@@ -51,7 +51,11 @@ import { deleteMediaAssets } from '@/features/media/api/delete-media-assets';
 import { downloadMediaAssets } from '@/features/media/api/download-media-assets';
 import { exportMediaAssets } from '@/features/media/api/export-media-assets';
 import { updateMediaAsset } from '@/features/media/api/update-media-asset';
-import { uploadMediaImages } from '@/features/media/api/upload-media-images';
+import {
+  isSupportedImage,
+  SUPPORTED_IMAGE_ACCEPT,
+  uploadMediaImages,
+} from '@/features/media/api/upload-media-images';
 import type { MediaAsset } from '@/features/media/model/media-asset';
 import { mediaKeys, mediaListQueryOptions } from '@/features/media/queries/media-query-options';
 
@@ -254,15 +258,15 @@ export default function MediaManagementPage() {
       return;
     }
 
-    const invalids = Array.from(files).filter((f) => f.type !== 'image/png');
+    const invalids = Array.from(files).filter((f) => !isSupportedImage(f));
     invalids.forEach((f) =>
-      toast.error(`File ${f.name} không đúng định dạng (chỉ PNG)`)
+      toast.error(`File ${f.name} không đúng định dạng (chỉ PNG hoặc JPG)`)
     );
 
-    const valids = Array.from(files).filter((f) => f.type === 'image/png');
+    const valids = Array.from(files).filter(isSupportedImage);
     if (valids.length === 0) {
       setSelectedFiles(null);
-      toast.error('Không có file PNG hợp lệ');
+      toast.error('Không có file PNG hoặc JPG hợp lệ');
       return;
     }
     const dt = new DataTransfer();
@@ -487,7 +491,7 @@ export default function MediaManagementPage() {
                 ref={fileInputRef}
                 id='file'
                 type='file'
-                accept='.png'
+                accept={SUPPORTED_IMAGE_ACCEPT}
                 multiple
                 className='hidden'
                 onChange={(e) => handleFileChange(e.target.files)}
@@ -511,7 +515,7 @@ export default function MediaManagementPage() {
               />
             </div>
             <Badge color='secondary' className='whitespace-nowrap'>
-              PNG only
+              PNG, JPG
             </Badge>
           </div>
 
@@ -572,14 +576,14 @@ export default function MediaManagementPage() {
             )}
           >
             <ImageIcon className='size-6' />
-            <div className='text-sm font-medium'>Kéo & thả ảnh PNG vào đây</div>
+            <div className='text-sm font-medium'>Kéo & thả ảnh PNG hoặc JPG vào đây</div>
             <div className='text-xs text-muted-foreground'>
               hoặc bấm để chọn từ máy
             </div>
             <Input
               id='file-hidden'
               type='file'
-              accept='.png'
+              accept={SUPPORTED_IMAGE_ACCEPT}
               multiple
               className='hidden'
               onChange={(e) => handleFileChange(e.target.files)}

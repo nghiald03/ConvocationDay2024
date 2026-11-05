@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import {
   createUploadBatches,
+  isSupportedImage,
   uploadMediaImages,
 } from '../src/features/media/api/upload-media-images';
 import { httpClient } from '../src/lib/http/client';
@@ -13,6 +14,18 @@ function png(name: string, bytes = 1) {
 
 afterEach(() => {
   httpClient.post = originalPost;
+});
+
+describe('isSupportedImage', () => {
+  test('accepts PNG and JPG, rejects other formats', () => {
+    const typed = (name: string, type: string) => new File([new Uint8Array(1)], name, { type });
+
+    expect(isSupportedImage(typed('a.png', 'image/png'))).toBe(true);
+    expect(isSupportedImage(typed('a.jpg', 'image/jpeg'))).toBe(true);
+    expect(isSupportedImage(typed('a.JPEG', 'image/jpeg'))).toBe(true);
+    expect(isSupportedImage(typed('a.gif', 'image/gif'))).toBe(false);
+    expect(isSupportedImage(typed('a.pdf', 'application/pdf'))).toBe(false);
+  });
 });
 
 describe('createUploadBatches', () => {
