@@ -269,21 +269,30 @@ export class BachelorController {
     @Body() input: TransferLateStudentDto,
     @CurrentActor() actor: ActorContext,
   ) {
-    const { bachelor, session } = await this.bachelors.transferLateStudent(
+    const reason = input.reason ?? 'late';
+    const { bachelor, session, hall } = await this.bachelors.transferStudent(
       input.studentCode,
       input.newSessionId,
+      reason,
       await this.bachelors.checkInRoomScope(actor),
+      input.newHallId,
     );
     return {
       status: 200,
-      message: 'Chuyển phiên và đánh dấu tân cử nhân đi trễ thành công!',
+      message:
+        reason === 'late'
+          ? 'Chuyển phiên và đánh dấu tân cử nhân đi trễ thành công!'
+          : 'Chuyển phiên theo yêu cầu BTC thành công!',
       data: {
         studentCode: bachelor.studentCode,
         fullName: bachelor.fullName,
         newSessionId: session.id,
         newSession: session.sessionNumber,
         newSessionInDay: session.sessionInDay,
-        attendanceStatus: 'Late',
+        reason,
+        attendanceStatus: reason === 'late' ? 'Late' : 'Unchanged',
+        newHallId: hall.id,
+        newHall: hall.name,
         newChair: bachelor.chair,
         newChairParent: bachelor.chairParent,
       },

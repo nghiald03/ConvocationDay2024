@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, Optional } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, Optional } from '@nestjs/common';
 import { and, asc, count, eq, ilike, inArray, isNotNull, ne, or, sql, type SQL } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
@@ -7,9 +7,9 @@ import type { ActorContext } from '../common/guards/actor-context.js';
 import { userCheckinRooms } from '../database/schema/authorization-schema.js';
 import { bachelors, checkIns, halls, sessions } from '../database/schema/domain-schema.js';
 import { assertCheckInRoomAllowed, type CheckInRoomScope } from './checkin-room-scope.js';
-import type { BachelorDto, BachelorListItemDto } from './dto/bachelor.dto.js';
+import type { BachelorDto, BachelorListItemDto, TransferReason } from './dto/bachelor.dto.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
-import { nextChairAtEnd } from './next-chair-at-end.js';
+import { nextChairAfterSession, nextChairAtEnd } from './next-chair-at-end.js';
 
 /** Số tân cử nhân ghi trong một câu lệnh INSERT; đủ lớn để ít vòng mạng, đủ nhỏ để không chạm giới hạn tham số. */
 export const IMPORT_BATCH_SIZE = 200;
@@ -306,7 +306,8 @@ export class BachelorService {
         major: item.major,
         hallId: hall.id,
         sessionId: session.id,
-        sessionInDay: item.sessionInDay,
+        // The form does not send sessionInDay; follow the chosen session so an old value is not kept.
+        sessionInDay: item.sessionInDay ?? session.sessionInDay,
         chair: item.chair,
         chairParent: item.chairParent,
         checkinRoom: item.checkinRoom,
@@ -467,7 +468,23 @@ export class BachelorService {
     return result;
   }
 
-  async transferLateStudent(studentCode: string, newSessionId: number, scope: CheckInRoomScope) {
+  /**
+   * Chuyển ca cho tân cử nhân chưa check-in.
+   * late: đến trễ, ghi nhận trễ (attendanceStatus 2). organizer: BTC dời, giữ nguyên trạng thái điểm danh;
+   * chỉ tài khoản không bị giới hạn phòng (MN, CL) được dùng.
+   * Side đích mặc định là side cũ. Ghế luôn tự động: ngay sau ghế cuối của phiên đích trong side đó
+   * (xem nextChairAfterSession), không ghi đè ghế của người đã có trong phiên mới.
+   */
+  async transferStudent(
+    studentCode: string,
+    newSessionId: number,
+    reason: TransferReason,
+    scope: CheckInRoomScope,
+    newHallId?: number,
+  ) {
+    if (reason === 'organizer' && !scope.unrestricted) {
+      throw new ForbiddenException('Chỉ Manager hoặc Check-in Lead được chuyển ca theo yêu cầu BTC.');
+    }
     const result = await this.database.transaction(async (transaction) => {
       const [bachelor] = await transaction
         .select()
@@ -478,7 +495,6 @@ export class BachelorService {
       if (!bachelor) throw new BadRequestException('Không tìm thấy tân cử nhân trong hệ thống!');
       assertCheckInRoomAllowed(scope, bachelor.checkinRoom);
       if (bachelor.hallId === null) throw new BadRequestException('Tân cử nhân chưa được xếp side.');
-      const hallId = bachelor.hallId;
       if (bachelor.checkIn) {
         throw new BadRequestException('Tân cử nhân đã check-in nên không thể chuyển phiên!');
       }
@@ -488,25 +504,60 @@ export class BachelorService {
         .where(eq(sessions.id, newSessionId))
         .limit(1);
       if (!session) throw new BadRequestException('Không tìm thấy phiên đích!');
+      const [hall] = await transaction
+        .select()
+        .from(halls)
+        .where(eq(halls.id, newHallId ?? bachelor.hallId))
+        .limit(1);
+      if (!hall) throw new BadRequestException('Không tìm thấy side đích!');
+      const hallId = hall.id;
       await transaction
         .insert(checkIns)
         .values({ hallId, sessionId: session.id, status: false })
         .onConflictDoNothing();
-      const chair = await this.chairAtEndOfSession(transaction, hallId, session.id, bachelor.id);
+      const chair = await this.chairForTransfer(transaction, hallId, session.id, bachelor.id);
       const [updated] = await transaction
         .update(bachelors)
         .set({
+          hallId,
           sessionId: session.id,
           sessionInDay: session.sessionInDay,
-          attendanceStatus: 2,
+          ...(reason === 'late' ? { attendanceStatus: 2 } : {}),
           chair,
         })
         .where(eq(bachelors.id, bachelor.id))
         .returning();
-      return { bachelor: updated!, session };
+      return { bachelor: updated!, session, hall };
     });
     this.changed(result.bachelor.hallId, result.session.id);
     return result;
+  }
+
+  private async chairForTransfer(
+    transaction: Parameters<Parameters<AppDatabase['transaction']>[0]>[0],
+    hallId: number,
+    sessionId: number,
+    bachelorId: number,
+  ): Promise<string> {
+    const { others } = await this.lockHallSeats(transaction, hallId, sessionId, bachelorId);
+    const sessionChairs = others.filter((other) => other.sessionId === sessionId).map(({ chair }) => chair);
+    const [ledCurrent] = await transaction
+      .select({ chair: bachelors.chair })
+      .from(bachelors)
+      .where(
+        and(
+          eq(bachelors.hallId, hallId),
+          eq(bachelors.sessionId, sessionId),
+          eq(bachelors.status, true),
+          eq(bachelors.bachelorStatus, 'Current'),
+        ),
+      )
+      .limit(1);
+    return nextChairAfterSession(
+      sessionChairs,
+      others.map(({ chair }) => chair),
+      ledCurrent?.chair ?? null,
+    );
   }
 
   private async chairAtEndOfSession(
@@ -515,6 +566,19 @@ export class BachelorService {
     sessionId: number,
     bachelorId: number,
   ): Promise<string> {
+    const { others } = await this.lockHallSeats(transaction, hallId, sessionId, bachelorId);
+    return nextChairAtEnd(
+      others.filter((other) => other.sessionId === sessionId).map(({ chair }) => chair),
+      others.map(({ chair }) => chair),
+    );
+  }
+
+  private async lockHallSeats(
+    transaction: Parameters<Parameters<AppDatabase['transaction']>[0]>[0],
+    hallId: number,
+    sessionId: number,
+    bachelorId: number,
+  ) {
     // Khóa cùng dòng check-in với luồng đến trễ để các lượt xếp cuối phiên không nhận trùng ghế.
     await transaction
       .select({ id: checkIns.id })
@@ -526,10 +590,7 @@ export class BachelorService {
       .select({ chair: bachelors.chair, sessionId: bachelors.sessionId })
       .from(bachelors)
       .where(and(eq(bachelors.hallId, hallId), ne(bachelors.id, bachelorId)));
-    return nextChairAtEnd(
-      others.filter((other) => other.sessionId === sessionId).map(({ chair }) => chair),
-      others.map(({ chair }) => chair),
-    );
+    return { others };
   }
 
   private async findOrCreateHall(transaction: Parameters<Parameters<AppDatabase['transaction']>[0]>[0], name: string) {

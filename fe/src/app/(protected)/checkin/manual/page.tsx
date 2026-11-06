@@ -1,5 +1,8 @@
 'use client';
 import TableCustom from '@/components/table/table';
+import TablePagination from '@/components/table/table-pagination';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { bachelorKeys } from '@/features/bachelor/queries/bachelor-query-options';
 import {
   Breadcrumb,
@@ -11,7 +14,7 @@ import {
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@/components/ui/icon-button';
-import { ArrowRightLeft, Copy } from 'lucide-react';
+import { Copy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
@@ -45,7 +48,10 @@ import { checkInRoomsQueryOptions } from '@/features/check-in/queries/check-in-r
 import { describeCheckInPreview } from '@/features/check-in/model/describe-check-in-preview';
 import { showLateCheckInNotice } from '@/features/check-in/ui/show-late-check-in-notice';
 import { moveBachelorToTemporarySession } from '@/features/bachelor/api/move-bachelor-to-temporary-session';
-import { transferBachelorSession } from '@/features/bachelor/api/transfer-bachelor-session';
+import {
+  transferBachelorSession,
+  type TransferReason,
+} from '@/features/bachelor/api/transfer-bachelor-session';
 import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
 import { sessionQueryOptions } from '@/features/session/queries/session-query-options';
 import { getSessionsByHallName } from '@/features/session/api/get-sessions-by-hall-name';
@@ -68,9 +74,111 @@ import { ForceCodeBadge } from '@/features/check-in/ui/force-code-badge';
 /** Hiện cột "Chuyển phiên" trong bảng check-in. Đang ẩn theo yêu cầu vận hành. */
 const SHOW_TRANSFER_COLUMN = false;
 
+function sessionLabel(sessionNum: number | null | undefined) {
+  if (sessionNum === 100) return 'Session bù sáng';
+  if (sessionNum === 111) return 'Session bù chiều';
+  return sessionNum ?? '-';
+}
+
+function BachelorCheckinCard({
+  bachelor,
+  checkinDisabled,
+  transferDisabled,
+  onCheckin,
+  onTransfer,
+  onRemind,
+}: {
+  bachelor: Bachelor;
+  checkinDisabled: boolean;
+  transferDisabled: boolean;
+  onCheckin: () => void;
+  onTransfer: () => void;
+  /** Chép tin nhắc check-in (dán vào Zalo). */
+  onRemind: () => void;
+}) {
+  const checkedIn = bachelor.checkIn === true;
+  const details: [string, React.ReactNode][] = [
+    ['Side', bachelor.hallName || '-'],
+    ['Phiên', sessionLabel(bachelor.sessionNum)],
+    ['Phiên trong ngày', bachelor.sessionInDay ?? '-'],
+    ['Phòng', bachelor.checkinRoom || '-'],
+    ['Ghế', bachelor.chair || '-'],
+    ['Ghế PH', bachelor.chairParent || '-'],
+  ];
+  return (
+    <li
+      className={cn(
+        'rounded-lg border p-3',
+        checkedIn
+          ? 'border-green-500/50 bg-green-50 dark:bg-green-950/30'
+          : 'border-default-200',
+      )}
+    >
+      <div className='flex items-start justify-between gap-2'>
+        <div className='min-w-0'>
+          <p className='font-semibold leading-tight break-words'>
+            {bachelor.fullName}
+          </p>
+          <p className='text-sm text-muted-foreground'>
+            {bachelor.studentCode}
+          </p>
+        </div>
+        <Badge
+          className={cn(
+            'shrink-0',
+            checkedIn
+              ? 'bg-green-600 hover:bg-green-600'
+              : 'bg-slate-400 hover:bg-slate-400',
+          )}
+        >
+          {checkedIn ? 'Đã checkin' : 'Chưa checkin'}
+        </Badge>
+      </div>
+      <dl className='mt-2 grid grid-cols-3 gap-x-2 gap-y-1 text-sm'>
+        {details.map(([label, value]) => (
+          <div key={label} className='min-w-0'>
+            <dt className='text-xs text-muted-foreground'>{label}</dt>
+            <dd className='truncate font-medium'>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className='mt-3 flex gap-2'>
+        <Button
+          className='h-11 flex-1 text-base'
+          variant={checkedIn ? 'outline' : 'default'}
+          disabled={checkinDisabled}
+          onClick={onCheckin}
+        >
+          {checkedIn ? 'Hủy checkin' : 'Checkin'}
+        </Button>
+        {/* Người đã check-in thì không cần nhắc. */}
+        <IconButton
+          icon={Copy}
+          label='Copy tin nhắn nhắc check-in (dán vào Zalo)'
+          className='h-11 w-11'
+          disabled={checkedIn}
+          onClick={onRemind}
+        />
+        {SHOW_TRANSFER_COLUMN && (
+          <Button
+            className='h-11'
+            variant='outline'
+            disabled={transferDisabled}
+            onClick={onTransfer}
+          >
+            Chuyển phiên
+          </Button>
+        )}
+      </div>
+    </li>
+  );
+}
+
 export default function ManualCheckinPage() {
   const queryClient = useQueryClient();
   const showForceCode = canViewForceCode(useSession()?.roles);
+  // Cùng nhóm MN/CL được xem mã force mới được chuyển ca theo yêu cầu BTC.
+  const canTransferForOrganizer = showForceCode;
 
   const DEFAULT_PAGE_SIZE = 20;
   const [pageIndex, setPageIndex] = useState(1);
@@ -181,23 +289,84 @@ export default function ManualCheckinPage() {
         return;
       }
 
-      // Build select element for swal
-      const select = document.createElement('select');
-      select.style.width = '100%';
-      sessions.forEach((s) => {
+      // Side đích mặc định là side cũ; đổi side thì nạp lại danh sách phiên của side đó.
+      const field = (label: string, control: HTMLSelectElement) => {
+        const wrapper = document.createElement('label');
+        wrapper.style.display = 'block';
+        wrapper.style.textAlign = 'left';
+        wrapper.style.marginBottom = '12px';
+        const caption = document.createElement('div');
+        caption.textContent = label;
+        caption.style.fontWeight = '600';
+        caption.style.marginBottom = '4px';
+        control.style.width = '100%';
+        control.style.padding = '6px';
+        wrapper.append(caption, control);
+        return wrapper;
+      };
+
+      const hallSelect = document.createElement('select');
+      const halls = hallList?.length ? hallList : [{ hallId: -1, hallName }];
+      halls.forEach((h) => {
         const opt = document.createElement('option');
-        opt.value = String(s.sessionId ?? s.sessionId);
-        const label = `Phiên ${s.sessionInDay ?? ''} (Session: ${
-          s.sessionNumber ?? ''
-        }) ${s.sessionDescription ? '- ' + s.sessionDescription : ''}`;
-        opt.text = label;
-        select.appendChild(opt);
+        opt.value = String(h.hallId);
+        opt.text = h.hallName;
+        opt.dataset.name = h.hallName;
+        opt.selected = h.hallName.toLowerCase() === hallName.toLowerCase();
+        hallSelect.appendChild(opt);
       });
 
+      const select = document.createElement('select');
+      const fillSessions = (list: typeof sessions) => {
+        const previous = select.value;
+        select.replaceChildren();
+        list.forEach((s) => {
+          const opt = document.createElement('option');
+          opt.value = String(s.sessionId);
+          opt.text = `Phiên ${s.sessionInDay ?? ''} (Session: ${
+            s.sessionNumber ?? ''
+          }) ${s.sessionDescription ? '- ' + s.sessionDescription : ''}`;
+          opt.selected = opt.value === previous;
+          select.appendChild(opt);
+        });
+      };
+      fillSessions(sessions);
+      hallSelect.addEventListener('change', () => {
+        const name = hallSelect.selectedOptions[0]?.dataset.name;
+        if (!name) return;
+        select.disabled = true;
+        getSessionsByHallName(name)
+          .then((list) => fillSessions(list ?? []))
+          .catch(() =>
+            toast.error('Không lấy được danh sách phiên của side này'),
+          )
+          .finally(() => {
+            select.disabled = false;
+          });
+      });
+
+      // Lý do chuyển ca: trễ (ghi nhận trễ) hoặc BTC dời (không tính trễ, chỉ MN/CL).
+      const reasonSelect = document.createElement('select');
+      [
+        ['late', 'Đến trễ (ghi nhận trễ)'],
+        ['organizer', 'BTC dời ca (không tính trễ)'],
+      ].forEach(([value, text]) => {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.text = text;
+        reasonSelect.appendChild(opt);
+      });
+
+      const content = document.createElement('div');
+      if (canTransferForOrganizer)
+        content.appendChild(field('Lý do', reasonSelect));
+      content.appendChild(field('Side', hallSelect));
+      content.appendChild(field('Phiên mới', select));
+
       const confirm = await swal({
-        title: 'Phiên đã đóng — Chuyển phiên',
-        text: 'Chọn phiên thay thế cho tân cử nhân',
-        content: select as any,
+        title: 'Chuyển ca',
+        text: `Chuyển ca cho ${row.fullName}. Ghế được xếp tự động ngay sau người cuối cùng của phiên mới trong side đã chọn.`,
+        content: content as any,
         buttons: ['Hủy', 'Chuyển'],
       });
 
@@ -214,13 +383,20 @@ export default function ManualCheckinPage() {
         transferBachelorSession({
           studentCode: row.studentCode,
           newSessionId,
+          ...(Number(hallSelect.value) > 0
+            ? { newHallId: Number(hallSelect.value) }
+            : {}),
+          reason: canTransferForOrganizer
+            ? (reasonSelect.value as TransferReason)
+            : 'late',
         }),
         {
           loading: 'Đang chuyển phiên...',
           success: 'Chuyển phiên thành công',
-          error: 'Không thể chuyển phiên',
+          error: (err: any) =>
+            `Không thể chuyển phiên: ${err?.response?.data?.message ?? err?.message ?? ''}`,
         },
-        { position: 'top-right', duration: 3000 }
+        { position: 'top-right', duration: 3000 },
       );
 
       // Extract payload safely (some APIs wrap in data.data)
@@ -233,7 +409,7 @@ export default function ManualCheckinPage() {
 
       queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
-    [queryClient]
+    [queryClient, canTransferForOrganizer, hallList],
   );
 
   const handleCheckin = useCallback(
@@ -272,10 +448,13 @@ export default function ManualCheckinPage() {
         confirmationInput.value.trim().toLowerCase() !==
           studentCode.toLowerCase()
       ) {
-        toast.error('MSSV xác nhận không khớp. Đã giữ nguyên trạng thái checkin.', {
-          position: 'top-right',
-          duration: 4000,
-        });
+        toast.error(
+          'MSSV xác nhận không khớp. Đã giữ nguyên trạng thái checkin.',
+          {
+            position: 'top-right',
+            duration: 4000,
+          },
+        );
         return;
       }
 
@@ -302,7 +481,7 @@ export default function ManualCheckinPage() {
             {
               position: 'top-right',
               duration: 3000,
-            }
+            },
           );
         }
       } catch (err: any) {
@@ -325,7 +504,7 @@ export default function ManualCheckinPage() {
         });
       }
     },
-    [checkinAction]
+    [checkinAction],
   );
 
   // Force check-in: bỏ qua phiên mở/khóa, server kiểm tra mã khẩn cấp và khoảng cách với LED.
@@ -333,7 +512,10 @@ export default function ManualCheckinPage() {
     async (row: any) => {
       const studentCode: string = row.studentCode;
       if (row.checkIn) {
-        toast.error(`${row.fullName} đã check-in rồi.`, { position: 'top-right', duration: 3000 });
+        toast.error(`${row.fullName} đã check-in rồi.`, {
+          position: 'top-right',
+          duration: 3000,
+        });
         return;
       }
       const codeInput = document.createElement('input');
@@ -359,15 +541,24 @@ export default function ManualCheckinPage() {
 
       setProcessingIds((prev) => new Set(prev).add(studentCode));
       try {
-        const result = await forceCheckInBachelor({ studentCode, emergencyCode });
-        toast.success(`Force check-in cho ${row.fullName} thành công. Ghế: ${result?.chair ?? '-'}`, {
-          position: 'top-right',
-          duration: 4000,
+        const result = await forceCheckInBachelor({
+          studentCode,
+          emergencyCode,
         });
+        toast.success(
+          `Force check-in cho ${row.fullName} thành công. Ghế: ${result?.chair ?? '-'}`,
+          {
+            position: 'top-right',
+            duration: 4000,
+          },
+        );
         queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
       } catch (err: any) {
         const msg = err?.response?.data?.message ?? err?.message ?? '';
-        toast.error(`Không thể force check-in: ${msg}`, { position: 'top-right', duration: 5000 });
+        toast.error(`Không thể force check-in: ${msg}`, {
+          position: 'top-right',
+          duration: 5000,
+        });
       } finally {
         setProcessingIds((prev) => {
           const next = new Set(prev);
@@ -376,11 +567,14 @@ export default function ManualCheckinPage() {
         });
       }
     },
-    [queryClient]
+    [queryClient],
   );
 
   // Nhấn 1 lần: check-in thường (chờ một nhịp để phân biệt). Nhấn nhanh 4 lần: force check-in.
-  const switchHandlers = useRef({ single: handleCheckin, burst: handleForceCheckin });
+  const switchHandlers = useRef({
+    single: handleCheckin,
+    burst: handleForceCheckin,
+  });
   switchHandlers.current = { single: handleCheckin, burst: handleForceCheckin };
   const handleSwitchClick = useMemo(
     () =>
@@ -390,16 +584,13 @@ export default function ManualCheckinPage() {
         onSingle: (row) => void switchHandlers.current.single(row),
         onBurst: (row) => void switchHandlers.current.burst(row),
       }),
-    []
+    [],
   );
 
   // ---- Đăng ký session bù
   const updateBachelorMissingSession = useMutation({
     mutationFn: () => {
-      return moveBachelorToTemporarySession(
-        mssv,
-        sessionBachelor === '1'
-      );
+      return moveBachelorToTemporarySession(mssv, sessionBachelor === '1');
     },
     onSuccess: () => {
       toast.success(`Đăng kí thành công`, {
@@ -439,7 +630,7 @@ export default function ManualCheckinPage() {
         },
         error: `Không thể đăng kí`,
       },
-      { position: 'top-right', duration: 6000 }
+      { position: 'top-right', duration: 6000 },
     );
     setApplying(false);
   };
@@ -474,54 +665,45 @@ export default function ManualCheckinPage() {
     }
   }, []);
 
+  const isCheckinDisabled = useCallback(
+    (row: Bachelor) =>
+      processingIds.has(row.studentCode) ||
+      updateBachelorMissingSession.isPending ||
+      !canCheckInRoom(assignedRooms, row.checkinRoom),
+    [processingIds, updateBachelorMissingSession.isPending, assignedRooms],
+  );
+  const isTransferDisabled = useCallback(
+    (row: Bachelor) =>
+      row.checkIn === true ||
+      processingIds.has(row.studentCode) ||
+      !canCheckInRoom(assignedRooms, row.checkinRoom),
+    [processingIds, assignedRooms],
+  );
+  const transfer = useCallback(
+    (row: Bachelor) => {
+      // toast.promise đã hiện lỗi cho người dùng
+      promptTransferToAnotherSession(row).catch(() => undefined);
+    },
+    [promptTransferToAnotherSession],
+  );
+
+  // Cột thao tác đặt ngay sau tên/MSSV để không phải cuộn ngang mới thấy.
   const columns: ColumnDef<any>[] = useMemo(
     () => [
-      { accessorKey: 'id', header: 'ID' },
       { accessorKey: 'fullName', header: 'Tên' },
       { accessorKey: 'studentCode', header: 'MSSV' },
-      { accessorKey: 'mail', header: 'Mail' },
-      { accessorKey: 'hallName', header: 'Side' },
-      {
-        accessorKey: 'sessionNum',
-        header: 'Phiên tổng',
-        cell: ({ row }) => {
-          const v = row.getValue<number>('sessionNum');
-          return (
-            <p>
-              {v === 100
-                ? 'Session bù sáng'
-                : v === 111
-                ? 'Session bù chiều'
-                : v}
-            </p>
-          );
-        },
-      },
-      { accessorKey: 'sessionInDay', header: 'Phiên theo ngày' },
-      { accessorKey: 'chair', header: 'Ghế' },
-      { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
-      { accessorKey: 'checkinRoom', header: 'Phòng checkin' },
       {
         accessorKey: 'checkIn',
         header: 'Checkin',
-        meta: 'actions',
-        cell: ({ row }) => {
-          const sc = row.original.studentCode as string;
-          const isProcessing =
-            processingIds.has(sc) || updateBachelorMissingSession.isPending;
-          return (
-            <Switch
-              checked={row.getValue<boolean>('checkIn')}
-              disabled={
-                isProcessing ||
-                !canCheckInRoom(assignedRooms, row.original.checkinRoom)
-              }
-              onCheckedChange={() =>
-                handleSwitchClick(row.original.studentCode, row.original)
-              }
-            />
-          );
-        },
+        cell: ({ row }) => (
+          <Switch
+            checked={row.getValue<boolean>('checkIn')}
+            disabled={isCheckinDisabled(row.original)}
+            onCheckedChange={() =>
+              handleSwitchClick(row.original.studentCode, row.original)
+            }
+          />
+        ),
       },
       {
         id: 'reminder',
@@ -545,33 +727,42 @@ export default function ManualCheckinPage() {
               header: 'Chuyển phiên',
               meta: 'actions',
               cell: ({ row }) => (
-                <IconButton
-                  icon={ArrowRightLeft}
-                  label='Chuyển phiên'
-                  onClick={() => {
-                    // toast.promise đã hiện lỗi cho người dùng
-                    promptTransferToAnotherSession(row.original).catch(() => undefined);
-                  }}
-                  disabled={
-                    row.original.checkIn === true ||
-                    processingIds.has(row.original.studentCode) ||
-                    !canCheckInRoom(assignedRooms, row.original.checkinRoom)
-                  }
-                />
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={() => transfer(row.original)}
+                  disabled={isTransferDisabled(row.original)}
+                >
+                  Chuyển phiên
+                </Button>
               ),
             } satisfies ColumnDef<any>,
           ]
         : []),
+      { accessorKey: 'hallName', header: 'Side' },
+      {
+        accessorKey: 'sessionNum',
+        header: 'Phiên tổng',
+        cell: ({ row }) => (
+          <p>{sessionLabel(row.getValue<number>('sessionNum'))}</p>
+        ),
+      },
+      { accessorKey: 'sessionInDay', header: 'Phiên theo ngày' },
+      { accessorKey: 'chair', header: 'Ghế' },
+      { accessorKey: 'chairParent', header: 'Ghế phụ huynh' },
+      { accessorKey: 'checkinRoom', header: 'Phòng checkin' },
+      { accessorKey: 'mail', header: 'Mail' },
+      { accessorKey: 'id', header: 'ID' },
     ],
-    [
-      processingIds,
-      updateBachelorMissingSession.isPending,
-      handleSwitchClick,
-      promptTransferToAnotherSession,
-      copyReminder,
-      assignedRooms,
-    ]
+    [handleSwitchClick, isCheckinDisabled, isTransferDisabled, transfer, copyReminder],
   );
+
+  const showPagination =
+    !isLoading &&
+    !!bachelorDT?.totalItems &&
+    !!bachelorDT?.totalPages &&
+    bachelorDT.hasNextPage !== undefined &&
+    bachelorDT.hasPreviousPage !== undefined;
 
   return (
     <>
@@ -591,113 +782,170 @@ export default function ManualCheckinPage() {
         </CardContent>
       </Card>
 
-      <Card className='mt-3 animate-fade-up'>
-        <CardContent className='p-3'>
-          <MultiHallStatusDisplay />
-          {showForceCode && (
-            <div className='mt-3'>
-              <ForceCodeBadge />
+      <div className='mt-3 flex flex-col gap-3'>
+        {/* Mobile: tìm kiếm và danh sách lên trước, bảng trạng thái side xuống cuối. */}
+        <Card className='order-last lg:order-first animate-fade-up'>
+          <CardContent className='p-3'>
+            <MultiHallStatusDisplay />
+          </CardContent>
+        </Card>
+
+        <Card className='animate-fade-up'>
+          <CardContent className='p-3 space-y-3'>
+            {showForceCode && <ForceCodeBadge />}
+            {hasNoAssignedRoom && (
+              <p className='rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive'>
+                Tài khoản của bạn chưa được phân phòng checkin nên chưa thể
+                checkin. Vui lòng liên hệ quản lý.
+              </p>
+            )}
+            <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]'>
+              <Input
+                size={'md'}
+                className='sm:col-span-2 lg:col-span-1'
+                placeholder='Tìm theo tên hoặc MSSV'
+                defaultValue={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPageIndex(1);
+                }}
+              />
+              <Select onValueChange={setHall}>
+                <SelectTrigger color='primary' className='w-full'>
+                  <SelectValue color='primary' placeholder='Chọn side' />
+                </SelectTrigger>
+                <SelectContent color='primary'>
+                  <SelectGroup>
+                    <SelectLabel>Side</SelectLabel>
+                    <SelectItem value='-1' key='all'>
+                      Toàn bộ side
+                    </SelectItem>
+                    {hallList?.map((item) => (
+                      <SelectItem key={item.hallId} value={String(item.hallId)}>
+                        {item.hallName}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Select
+                value={room}
+                onValueChange={(value) => {
+                  setRoom(value);
+                  setPageIndex(1);
+                }}
+              >
+                <SelectTrigger className='w-full'>
+                  <SelectValue placeholder='Chọn phòng checkin' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Phòng checkin</SelectLabel>
+                    <SelectItem value='-1' key='all'>
+                      Toàn bộ phòng
+                    </SelectItem>
+                    {roomOptions.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <Select onValueChange={setSession}>
+                <SelectTrigger className='w-full'>
+                  <SelectValue placeholder='Chọn session' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>Session</SelectLabel>
+                    <SelectItem value='-1' key='all'>
+                      Toàn bộ session
+                    </SelectItem>
+                    {sessionList?.map((item) => (
+                      <SelectItem
+                        key={item.sessionId}
+                        value={String(item.sessionId)}
+                      >
+                        {item.session1} - {item.sessionInDay} -{' '}
+                        {item.description}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
-          )}
-          {hasNoAssignedRoom && (
-            <p className='my-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive'>
-              Tài khoản của bạn chưa được phân phòng checkin nên chưa thể checkin. Vui lòng liên hệ quản lý.
-            </p>
-          )}
-          <TableCustom
-            title='Danh sách tân cử nhân'
-            isLoading={isLoading}
-            data={bachelorList}
-            columns={columns}
-            pageIndex={pageIndex}
-            pageSize={pageSize}
-            setPageSize={setPageSize}
-            setPageIndex={setPageIndex}
-            totalItems={bachelorDT?.totalItems}
-            totalPages={bachelorDT?.totalPages}
-            hasNextPage={bachelorDT?.hasNextPage}
-            hasPreviousPage={bachelorDT?.hasPreviousPage}
-            currentPage={bachelorDT?.currentPage}
-            header={
-              <div className='flex gap-2 w-full'>
-                <Input
-                  size={'md'}
-                  placeholder='Tìm kiếm theo tên hoặc mã sinh viên'
-                  defaultValue={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <Select onValueChange={setHall}>
-                  <SelectTrigger color='primary' className='w-[300px]'>
-                    <SelectValue
-                      color='primary'
-                      placeholder='Chọn side'
+
+            <div className='flex items-baseline justify-between'>
+              <h2 className='text-base font-bold lg:text-xl'>
+                Danh sách tân cử nhân
+              </h2>
+              {bachelorDT?.totalItems ? (
+                <span className='text-sm text-muted-foreground'>
+                  {bachelorDT.totalItems} người
+                </span>
+              ) : null}
+            </div>
+
+            {/* Màn hình nhỏ: mỗi người một thẻ, nút checkin luôn nằm trong tầm nhìn. */}
+            <div className='lg:hidden'>
+              {isLoading ? (
+                <p className='py-8 text-center text-sm text-muted-foreground'>
+                  Đang tải...
+                </p>
+              ) : bachelorList.length === 0 ? (
+                <p className='py-8 text-center text-sm text-muted-foreground'>
+                  Không có dữ liệu
+                </p>
+              ) : (
+                <ul className='space-y-2'>
+                  {bachelorList.map((b) => (
+                    <BachelorCheckinCard
+                      key={b.studentCode}
+                      bachelor={b}
+                      checkinDisabled={isCheckinDisabled(b)}
+                      transferDisabled={isTransferDisabled(b)}
+                      onCheckin={() => handleSwitchClick(b.studentCode, b)}
+                      onTransfer={() => transfer(b)}
+                      onRemind={() => copyReminder(b)}
                     />
-                  </SelectTrigger>
-                  <SelectContent color='primary'>
-                    <SelectGroup>
-                      <SelectLabel>Side</SelectLabel>
-                      <SelectItem value='-1' key='all'>
-                        Toàn bộ side
-                      </SelectItem>
-                      {hallList?.map((item) => (
-                          <SelectItem key={item.hallId} value={String(item.hallId)}>
-                            {item.hallName}
-                          </SelectItem>
-                        ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={room}
-                  onValueChange={(value) => {
-                    setRoom(value);
-                    setPageIndex(1);
-                  }}
-                >
-                  <SelectTrigger className='w-[260px]'>
-                    <SelectValue placeholder='Chọn phòng checkin' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Phòng checkin</SelectLabel>
-                      <SelectItem value='-1' key='all'>
-                        Toàn bộ phòng
-                      </SelectItem>
-                      {roomOptions.map((item) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-                <Select onValueChange={setSession}>
-                  <SelectTrigger className='w-[400px]'>
-                    <SelectValue placeholder='Chọn session' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Session</SelectLabel>
-                      <SelectItem value='-1' key='all'>
-                        Toàn bộ session
-                      </SelectItem>
-                      {sessionList?.map((item) => (
-                          <SelectItem
-                            key={item.sessionId}
-                            value={String(item.sessionId)}
-                          >
-                            {item.session1} - {item.sessionInDay} -{' '}
-                            {item.description}
-                          </SelectItem>
-                        ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </div>
-            }
-          />
-        </CardContent>
-      </Card>
+                  ))}
+                </ul>
+              )}
+              {showPagination && (
+                <TablePagination
+                  hasNextPage={bachelorDT!.hasNextPage!}
+                  hasPreviousPage={bachelorDT!.hasPreviousPage!}
+                  pageIndex={pageIndex}
+                  pageSize={pageSize}
+                  setPageIndex={setPageIndex}
+                  setPageSize={setPageSize}
+                  totalItems={bachelorDT!.totalItems!}
+                  totalPages={bachelorDT!.totalPages!}
+                />
+              )}
+            </div>
+
+            <div className='hidden lg:block [&>div>div:first-child]:hidden'>
+              <TableCustom
+                title=''
+                isLoading={isLoading}
+                data={bachelorList}
+                columns={columns}
+                pageIndex={pageIndex}
+                pageSize={pageSize}
+                setPageSize={setPageSize}
+                setPageIndex={setPageIndex}
+                totalItems={bachelorDT?.totalItems}
+                totalPages={bachelorDT?.totalPages}
+                hasNextPage={bachelorDT?.hasNextPage}
+                hasPreviousPage={bachelorDT?.hasPreviousPage}
+                currentPage={bachelorDT?.currentPage}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Dialog open={applying} onOpenChange={setApplying}>
         <DialogContent className='sm:max-w-[425px]'>
@@ -774,8 +1022,16 @@ export default function ManualCheckinPage() {
                 <span>{transferResult.newSessionInDay ?? '-'}</span>
               </div>
               <div className='flex justify-between'>
-                <span className='font-medium'>Trạng thái điểm danh:</span>
-                <span>{transferResult.attendanceStatus ?? '-'}</span>
+                <span className='font-medium'>Lý do:</span>
+                <span>
+                  {transferResult.reason === 'organizer'
+                    ? 'BTC dời ca (không tính trễ)'
+                    : 'Đến trễ (ghi nhận trễ)'}
+                </span>
+              </div>
+              <div className='flex justify-between'>
+                <span className='font-medium'>Side:</span>
+                <span>{transferResult.newHall ?? '-'}</span>
               </div>
               <div className='flex justify-between'>
                 <span className='font-medium'>Số ghế:</span>

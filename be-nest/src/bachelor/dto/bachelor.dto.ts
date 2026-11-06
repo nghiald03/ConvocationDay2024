@@ -3,6 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
   IsEmail,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -10,6 +11,9 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+
+export const TRANSFER_REASONS = ['late', 'organizer'] as const;
+export type TransferReason = (typeof TRANSFER_REASONS)[number];
 
 export class BachelorDto {
   @ApiProperty({ example: '/images/users/user-1.jpg' })
@@ -99,6 +103,19 @@ export class TransferLateStudentDto {
   @IsInt()
   @ApiProperty({ example: 2 })
   newSessionId!: number;
+
+  /** Side đích; bỏ trống thì giữ side cũ. */
+  @Type(() => Number)
+  @IsOptional()
+  @IsInt()
+  @ApiPropertyOptional({ example: 1 })
+  newHallId?: number;
+
+  /** late: tân cử nhân đến trễ (ghi nhận trễ). organizer: BTC dời ca (không tính trễ, chỉ MN/CL). */
+  @IsOptional()
+  @IsIn(TRANSFER_REASONS)
+  @ApiPropertyOptional({ enum: TRANSFER_REASONS, default: 'late' })
+  reason?: TransferReason;
 }
 
 export class BachelorListItemDto extends BachelorDto {
