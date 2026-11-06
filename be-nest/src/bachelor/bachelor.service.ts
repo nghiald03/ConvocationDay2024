@@ -200,7 +200,8 @@ export class BachelorService {
         major: item.major,
         hallId: hall.id,
         sessionId: session.id,
-        sessionInDay: item.sessionInDay,
+        // The form does not send sessionInDay; follow the chosen session so an old value is not kept.
+        sessionInDay: item.sessionInDay ?? session.sessionInDay,
         chair: item.chair,
         chairParent: item.chairParent,
         checkinRoom: item.checkinRoom,

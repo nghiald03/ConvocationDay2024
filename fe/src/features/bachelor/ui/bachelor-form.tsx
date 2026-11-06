@@ -329,12 +329,13 @@ export default function AddOrUpdateBachelor({
                 <FormField
                   control={form.control}
                   name='sessionNum'
+                  defaultValue={bachelor?.sessionNum?.toString()}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Phiên trao bằng</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={bachelor?.sessionNum.toString()}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
