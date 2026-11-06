@@ -93,10 +93,10 @@ export class DatabaseController {
         details: { expected },
       });
     }
+    // Giữ tài khoản/phân quyền và thư viện media (media_asset, legacy_media_mapping): ảnh đã upload
+    // chỉ tham chiếu tới tài khoản nên cascade từ các bảng dưới không chạm tới.
     await this.pool.query(`
       truncate table
-        legacy_media_mapping,
-        media_asset,
         notification,
         bachelor,
         check_in,
