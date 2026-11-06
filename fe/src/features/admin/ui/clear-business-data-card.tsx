@@ -51,7 +51,7 @@ export default function ClearBusinessDataCard() {
       <CardContent className='space-y-4'>
         <p className='text-sm'>
           Xóa vĩnh viễn toàn bộ dữ liệu nghiệp vụ bên dưới. <strong>Giữ nguyên</strong> tài khoản người dùng, vai trò,
-          phân quyền và nhật ký thao tác. Không thể hoàn tác — hãy xuất danh sách tân cử nhân ra Excel trước nếu cần.
+          phân quyền, nhật ký thao tác và thư viện ảnh đã upload (Media). Không thể hoàn tác — hãy xuất danh sách tân cử nhân ra Excel trước nếu cần.
         </p>
 
         <div className='grid grid-cols-1 gap-x-6 gap-y-1 text-sm sm:grid-cols-2'>

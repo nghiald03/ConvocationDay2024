@@ -5,15 +5,14 @@ import { Permission } from '../auth/permissions.js';
 import { RequirePermissions } from '../common/guards/require-permissions.decorator.js';
 import { DATABASE_POOL } from './database.constants.js';
 
-// Everything except accounts, roles/permissions, migration bookkeeping and the audit trail.
+// Everything except accounts, roles/permissions, migration bookkeeping, the audit trail and the media
+// library: uploaded images (media_asset, legacy_media_mapping) only reference user accounts, so they stay.
 const businessTables = [
   'photo_queue_audit_log',
   'photo_queue_assignment',
   'photo_queue_entry',
   'photo_queue_state',
   'photo_queue_session',
-  'legacy_media_mapping',
-  'media_asset',
   'notification',
   'check_in',
   'bachelor',
