@@ -1,13 +1,18 @@
 import type { ApiResponse } from '@/lib/http/api-response';
 import { httpClient } from '@/lib/http/client';
 
+export type TransferReason = 'late' | 'organizer';
+
 export type BachelorTransferResult = {
   studentCode: string;
   fullName: string;
   newSessionId: number;
   newSession: number;
   newSessionInDay: number | null;
-  attendanceStatus: string;
+  reason: TransferReason;
+  attendanceStatus: 'Late' | 'Unchanged';
+  newHallId: number;
+  newHall: string;
   newChair: string;
   newChairParent: string;
 };
@@ -15,10 +20,12 @@ export type BachelorTransferResult = {
 export async function transferBachelorSession(input: {
   studentCode: string;
   newSessionId: number;
+  newHallId?: number;
+  reason: TransferReason;
 }) {
   const response = await httpClient.put<ApiResponse<BachelorTransferResult>>(
     '/Bachelor/TransferLateStudent',
-    input
+    input,
   );
   return response.data.data;
 }

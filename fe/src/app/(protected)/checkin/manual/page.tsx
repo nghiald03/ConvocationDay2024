@@ -48,7 +48,10 @@ import {
 } from '@/features/check-in/model/get-check-in-lock-warning';
 import { showLateCheckInNotice } from '@/features/check-in/ui/show-late-check-in-notice';
 import { moveBachelorToTemporarySession } from '@/features/bachelor/api/move-bachelor-to-temporary-session';
-import { transferBachelorSession } from '@/features/bachelor/api/transfer-bachelor-session';
+import {
+  transferBachelorSession,
+  type TransferReason,
+} from '@/features/bachelor/api/transfer-bachelor-session';
 import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
 import { sessionQueryOptions } from '@/features/session/queries/session-query-options';
 import { getSessionsByHallName } from '@/features/session/api/get-sessions-by-hall-name';
@@ -156,6 +159,8 @@ function BachelorCheckinCard({
 export default function ManualCheckinPage() {
   const queryClient = useQueryClient();
   const showForceCode = canViewForceCode(useSession()?.roles);
+  // Cùng nhóm MN/CL được xem mã force mới được chuyển ca theo yêu cầu BTC.
+  const canTransferForOrganizer = showForceCode;
 
   const DEFAULT_PAGE_SIZE = 20;
   const [pageIndex, setPageIndex] = useState(1);
@@ -266,23 +271,84 @@ export default function ManualCheckinPage() {
         return;
       }
 
-      // Build select element for swal
-      const select = document.createElement('select');
-      select.style.width = '100%';
-      sessions.forEach((s) => {
+      // Side đích mặc định là side cũ; đổi side thì nạp lại danh sách phiên của side đó.
+      const field = (label: string, control: HTMLSelectElement) => {
+        const wrapper = document.createElement('label');
+        wrapper.style.display = 'block';
+        wrapper.style.textAlign = 'left';
+        wrapper.style.marginBottom = '12px';
+        const caption = document.createElement('div');
+        caption.textContent = label;
+        caption.style.fontWeight = '600';
+        caption.style.marginBottom = '4px';
+        control.style.width = '100%';
+        control.style.padding = '6px';
+        wrapper.append(caption, control);
+        return wrapper;
+      };
+
+      const hallSelect = document.createElement('select');
+      const halls = hallList?.length ? hallList : [{ hallId: -1, hallName }];
+      halls.forEach((h) => {
         const opt = document.createElement('option');
-        opt.value = String(s.sessionId ?? s.sessionId);
-        const label = `Phiên ${s.sessionInDay ?? ''} (Session: ${
-          s.sessionNumber ?? ''
-        }) ${s.sessionDescription ? '- ' + s.sessionDescription : ''}`;
-        opt.text = label;
-        select.appendChild(opt);
+        opt.value = String(h.hallId);
+        opt.text = h.hallName;
+        opt.dataset.name = h.hallName;
+        opt.selected = h.hallName.toLowerCase() === hallName.toLowerCase();
+        hallSelect.appendChild(opt);
       });
 
+      const select = document.createElement('select');
+      const fillSessions = (list: typeof sessions) => {
+        const previous = select.value;
+        select.replaceChildren();
+        list.forEach((s) => {
+          const opt = document.createElement('option');
+          opt.value = String(s.sessionId);
+          opt.text = `Phiên ${s.sessionInDay ?? ''} (Session: ${
+            s.sessionNumber ?? ''
+          }) ${s.sessionDescription ? '- ' + s.sessionDescription : ''}`;
+          opt.selected = opt.value === previous;
+          select.appendChild(opt);
+        });
+      };
+      fillSessions(sessions);
+      hallSelect.addEventListener('change', () => {
+        const name = hallSelect.selectedOptions[0]?.dataset.name;
+        if (!name) return;
+        select.disabled = true;
+        getSessionsByHallName(name)
+          .then((list) => fillSessions(list ?? []))
+          .catch(() =>
+            toast.error('Không lấy được danh sách phiên của side này'),
+          )
+          .finally(() => {
+            select.disabled = false;
+          });
+      });
+
+      // Lý do chuyển ca: trễ (ghi nhận trễ) hoặc BTC dời (không tính trễ, chỉ MN/CL).
+      const reasonSelect = document.createElement('select');
+      [
+        ['late', 'Đến trễ (ghi nhận trễ)'],
+        ['organizer', 'BTC dời ca (không tính trễ)'],
+      ].forEach(([value, text]) => {
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.text = text;
+        reasonSelect.appendChild(opt);
+      });
+
+      const content = document.createElement('div');
+      if (canTransferForOrganizer)
+        content.appendChild(field('Lý do', reasonSelect));
+      content.appendChild(field('Side', hallSelect));
+      content.appendChild(field('Phiên mới', select));
+
       const confirm = await swal({
-        title: 'Phiên đã đóng — Chuyển phiên',
-        text: 'Chọn phiên thay thế cho tân cử nhân',
-        content: select as any,
+        title: 'Chuyển ca',
+        text: `Chuyển ca cho ${row.fullName}. Ghế được xếp tự động ngay sau người cuối cùng của phiên mới trong side đã chọn.`,
+        content: content as any,
         buttons: ['Hủy', 'Chuyển'],
       });
 
@@ -299,11 +365,18 @@ export default function ManualCheckinPage() {
         transferBachelorSession({
           studentCode: row.studentCode,
           newSessionId,
+          ...(Number(hallSelect.value) > 0
+            ? { newHallId: Number(hallSelect.value) }
+            : {}),
+          reason: canTransferForOrganizer
+            ? (reasonSelect.value as TransferReason)
+            : 'late',
         }),
         {
           loading: 'Đang chuyển phiên...',
           success: 'Chuyển phiên thành công',
-          error: 'Không thể chuyển phiên',
+          error: (err: any) =>
+            `Không thể chuyển phiên: ${err?.response?.data?.message ?? err?.message ?? ''}`,
         },
         { position: 'top-right', duration: 3000 },
       );
@@ -318,7 +391,7 @@ export default function ManualCheckinPage() {
 
       queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
-    [queryClient],
+    [queryClient, canTransferForOrganizer, hallList],
   );
 
   const handleCheckin = useCallback(
@@ -900,8 +973,16 @@ export default function ManualCheckinPage() {
                 <span>{transferResult.newSessionInDay ?? '-'}</span>
               </div>
               <div className='flex justify-between'>
-                <span className='font-medium'>Trạng thái điểm danh:</span>
-                <span>{transferResult.attendanceStatus ?? '-'}</span>
+                <span className='font-medium'>Lý do:</span>
+                <span>
+                  {transferResult.reason === 'organizer'
+                    ? 'BTC dời ca (không tính trễ)'
+                    : 'Đến trễ (ghi nhận trễ)'}
+                </span>
+              </div>
+              <div className='flex justify-between'>
+                <span className='font-medium'>Side:</span>
+                <span>{transferResult.newHall ?? '-'}</span>
               </div>
               <div className='flex justify-between'>
                 <span className='font-medium'>Số ghế:</span>
