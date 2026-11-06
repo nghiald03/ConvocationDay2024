@@ -1,10 +1,10 @@
 'use client';
 
-import { getMenuList } from '@/lib/menus';
+import { canAccessMenu, getMenuList } from '@/lib/menus';
 import { useSession } from '@/features/auth/queries/session-provider';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 
 export default function AuthorizationGuard({ children }: { children: ReactNode }) {
   const user = useSession();
@@ -13,10 +13,11 @@ export default function AuthorizationGuard({ children }: { children: ReactNode }
 
   useEffect(() => {
     if (!user?.role) return;
-    const matchingMenu = getMenuList(pathname).find((group) =>
-      group.menus.some((menu) => pathname.includes(menu.href))
+    const group = getMenuList(pathname).find((item) =>
+      item.menus.some((menu) => pathname.includes(menu.href))
     );
-    if (matchingMenu?.roleAccess && !matchingMenu.roleAccess.includes(user.role)) {
+    const menu = group?.menus.find((item) => pathname.includes(item.href));
+    if (group && menu && !canAccessMenu(group, menu, user.role)) {
       toast.error('Bạn không có quyền truy cập vào mục này!');
       router.replace('/tutorial');
     }

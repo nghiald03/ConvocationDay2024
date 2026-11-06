@@ -8,11 +8,12 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { color } from "@/lib/type";
 
 const tooltipVariants = cva(
-  "z-50 overflow-hidden  rounded-md  px-3 py-1.5 text-sm  shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ",
+  "z-50 overflow-hidden rounded-md px-2.5 py-1.5 text-xs font-medium shadow-dropdown animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ",
   {
     variants: {
       color: {
-        default: "bg-default text-default-foreground",
+        // Neutral by default (inverts automatically in dark mode); colored tooltips remain opt-in.
+        default: "bg-default-900 text-default-50",
         primary: "bg-primary text-primary-foreground",
         secondary: "bg-secondary text-secondary-foreground",
         destructive: "bg-destructive text-destructive-foreground",

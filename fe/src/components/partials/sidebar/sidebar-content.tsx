@@ -37,7 +37,7 @@ const SidebarContent = ({ children }: { children: React.ReactNode }) => {
             className={cn('fixed  z-50 w-[248px]  bg-sidebar  shadow-base    xl:block hidden ', sidebarTheme, {
                 'w-[72px]': config.collapsed && config.sidebar !== 'compact',
                 'border-b': config.skin === 'bordered',
-                'shadow-base': config.skin === 'default',
+                'shadow-base border-e border-border/60': config.skin === 'default',
                 'h-full start-0': config.layout !== 'semi-box' && config.layout !== 'compact',
                 'm-6 bottom-0 top-0  start-0   rounded-md': config.layout === 'semi-box',
                 'm-10 bottom-0 top-0  start-0   ': config.layout === 'compact',

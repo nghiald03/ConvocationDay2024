@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "react-hot-toast";
+import { toast } from '@/lib/toast';
 import { Loader2 } from "lucide-react";
 
 const DeleteConfirmationDialog = ({ open, onClose, onConfirm, defaultToast = true, toastMessage = "Successfully deleted",

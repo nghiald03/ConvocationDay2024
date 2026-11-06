@@ -13,6 +13,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { CheckCheck, Volume2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
@@ -33,7 +35,7 @@ import { useElevenLabsTTS } from '@/features/notification/ui/use-elevenlabs-tts'
 import { useRealtime } from '@/lib/realtime/use-realtime';
 import { createNotification } from '@/features/notification/api/create-notification';
 import type { CreateNotificationRequest } from '@/features/notification/model/notification';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import { InputNumber } from '@/components/ui/input-number';
 
 // ===== Types =====
@@ -791,22 +793,18 @@ export default function NotifyMockPage() {
                 {formatTime(m.createdAt)}
               </p>
               <div className='flex gap-2 pt-2'>
-                <Button
-                  variant='outline'
-                  size='sm'
+                <IconButton
+                  icon={Volume2}
+                  label='Đọc lại'
                   onClick={() => speak(humanizeMessage(m))}
-                >
-                  Đọc lại
-                </Button>
-                <Button
-                  variant='outline'
-                  size='sm'
+                />
+                <IconButton
+                  icon={CheckCheck}
+                  label='Đánh dấu đã nghe'
                   onClick={() => {
                     playedIdsRef.current.add(m.id);
                   }}
-                >
-                  Đánh dấu đã nghe
-                </Button>
+                />
               </div>
             </CardContent>
           </Card>

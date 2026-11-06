@@ -1,6 +1,6 @@
 const LATE_ROWS = ['Z', ...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ', (letter) => `Z${letter}`)];
 
-function parseRowSeat(chair: string) {
+export function parseRowSeat(chair: string) {
   const match = /^([A-Za-z]+)([0-9]+)$/.exec(chair);
   if (!match) return null;
   return { row: match[1]!.toUpperCase(), digits: match[2]!, number: Number(match[2]) };

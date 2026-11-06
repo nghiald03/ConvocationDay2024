@@ -99,6 +99,7 @@ const config = {
         },
       },
       borderRadius: {
+        xl: 'calc(var(--radius) + 4px)',
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
@@ -135,12 +136,12 @@ const config = {
         },
       },
       boxShadow: {
-        base: '0px 0px 1px rgba(40, 41, 61, 0.08), 0px 0.5px 2px rgba(96, 97, 112, 0.16)',
+        base: '0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06)',
         base2:
-          '0px 2px 4px rgba(40, 41, 61, 0.04), 0px 8px 16px rgba(96, 97, 112, 0.16)',
-        base3: '16px 10px 40px rgba(15, 23, 42, 0.22)',
-        deep: '-2px 0px 8px rgba(0, 0, 0, 0.16)',
-        dropdown: '0px 4px 8px rgba(0, 0, 0, 0.08)',
+          '0 2px 4px rgba(15, 23, 42, 0.04), 0 8px 16px rgba(15, 23, 42, 0.08)',
+        base3: '16px 10px 40px rgba(15, 23, 42, 0.18)',
+        deep: '-2px 0px 8px rgba(15, 23, 42, 0.12)',
+        dropdown: '0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06)',
 
         testi: '0px 4px 24px rgba(0, 0, 0, 0.06)',
         todo: 'rgba(235 233 241, 0.6) 0px 3px 10px 0px',

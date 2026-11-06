@@ -43,7 +43,7 @@ import { Input } from '@/components/ui/input';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import React from 'react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import swal from 'sweetalert';
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
 
@@ -301,6 +301,7 @@ export default function CheckInManagementPage() {
     {
       accessorKey: 'status',
       header: 'Action',
+      meta: 'actions',
       cell: ({ row }) => {
         const original = row.original;
         const checked = Boolean(row.getValue('status'));

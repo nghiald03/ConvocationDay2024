@@ -40,7 +40,7 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import { useDebounce } from 'use-debounce';
 
 export default function Page() {

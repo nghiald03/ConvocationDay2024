@@ -58,6 +58,7 @@ describe('BachelorService.checkInRoomScope', () => {
 describe('BachelorService bulk error messages', () => {
   test('không để lộ lỗi PostgreSQL tiếng Anh khi import thất bại', async () => {
     const database = {
+      select: () => ({ from: () => ({ where: () => Promise.resolve([]) }) }),
       transaction: () => Promise.reject(new Error('duplicate key value violates unique constraint')),
     } as unknown as AppDatabase;
     const service = new BachelorService(database);
@@ -144,9 +145,10 @@ describe('BachelorService chuyển phiên', () => {
     expect(updates[0]).toMatchObject({
       sessionId: target.id,
       chair: 'Z02',
-      chairParent: 'PHZ02',
       attendanceStatus: 2,
     });
+    // Ghế phụ huynh giữ nguyên: sơ đồ phụ huynh lấy chữ số của nó nên PHZ02 sẽ đè ghế phụ huynh số 2 thật.
+    expect(updates[0]).not.toHaveProperty('chairParent');
     expect(updates[0]).not.toHaveProperty('hallId');
   });
 
@@ -161,7 +163,8 @@ describe('BachelorService chuyển phiên', () => {
 
     await service.moveToTemporarySession('sv007', true, allRooms);
 
-    expect(updates[0]).toMatchObject({ sessionId: target.id, chair: 'Z02', chairParent: 'PHZ02' });
+    expect(updates[0]).toMatchObject({ sessionId: target.id, chair: 'Z02' });
+    expect(updates[0]).not.toHaveProperty('chairParent');
     expect(updates[0]).not.toHaveProperty('hallId');
   });
 
@@ -175,7 +178,7 @@ describe('BachelorService chuyển phiên', () => {
 
     await service.transferLateStudent('sv007', target.id, allRooms);
 
-    expect(updates[0]).toMatchObject({ chair: 'Z25', chairParent: 'PHZ25' });
+    expect(updates[0]).toMatchObject({ chair: 'Z25' });
   });
 
   test('phiên đích đánh số thường vẫn lấy ghế lớn nhất + 1', async () => {
@@ -188,6 +191,6 @@ describe('BachelorService chuyển phiên', () => {
 
     await service.transferLateStudent('sv007', target.id, allRooms);
 
-    expect(updates[0]).toMatchObject({ chair: '5', chairParent: 'PH5' });
+    expect(updates[0]).toMatchObject({ chair: '5' });
   });
 });

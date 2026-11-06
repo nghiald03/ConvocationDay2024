@@ -11,6 +11,8 @@ export type Bachelor = {
   hallName: string;
   sessionNum: number;
   chair: string;
+  /** Ghế cũ của người bị xếp xuống cuối phiên (đến trễ); null nếu chưa bị đẩy. */
+  originalChair?: string | null;
   chairParent: string;
   checkinRoom?: string | null;
   checkIn?: boolean;

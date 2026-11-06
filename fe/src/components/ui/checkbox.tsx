@@ -8,23 +8,23 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { color } from "@/lib/type"
 
 const checkboxVariants = cva(
-  "peer  group shrink-0 ring-offset-background dark:ring-offset-card  bg-default-300/70 transition-all duration-300 data-[state=checked]:outline-none data-[state=checked]:ring-2 data-[state=checked]:ring-ring data-[state=checked]:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50  rounded h-4 w-4 [&_svg]:stroke-default-foreground [&_svg]:h-3.5 [&_svg]:w-3.5",
+  "peer group shrink-0 rounded-[5px] h-4 w-4 border border-default-400 bg-background ring-offset-background transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none [&_svg]:stroke-default-foreground [&_svg]:h-3.5 [&_svg]:w-3.5",
   {
     variants: {
       color: {
         default:
-          "data-[state=checked]:border-default data-[state=checked]:bg-default data-[state=checked]:ring-default",
+          "data-[state=checked]:border-default data-[state=checked]:bg-default",
         primary:
-          "data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:ring-primary [&_svg]:stroke-white",
+          "data-[state=checked]:border-primary data-[state=checked]:bg-primary [&_svg]:stroke-primary-foreground",
         secondary:
-          "data-[state=checked]:bg-secondary data-[state=checked]:ring-secondary  [&_svg]:stroke-secondary-foreground",
+          "data-[state=checked]:border-secondary data-[state=checked]:bg-secondary [&_svg]:stroke-secondary-foreground",
         destructive:
-          "data-[state=checked]:border-destructive data-[state=checked]:bg-destructive data-[state=checked]:ring-destructive [&_svg]:stroke-destructive-foreground",
+          "data-[state=checked]:border-destructive data-[state=checked]:bg-destructive [&_svg]:stroke-destructive-foreground",
         warning:
-          "data-[state=checked]:border-warning data-[state=checked]:bg-warning data-[state=checked]:ring-warning [&_svg]:stroke-warning-foreground",
-        info: "data-[state=checked]:border-info data-[state=checked]:bg-info data-[state=checked]:ring-info [&_svg]:stroke-info-foreground",
+          "data-[state=checked]:border-warning data-[state=checked]:bg-warning [&_svg]:stroke-warning-foreground",
+        info: "data-[state=checked]:border-info data-[state=checked]:bg-info [&_svg]:stroke-info-foreground",
         success:
-          "data-[state=checked]:border-success data-[state=checked]:bg-success data-[state=checked]:ring-success [&_svg]:stroke-success-foreground",
+          "data-[state=checked]:border-success data-[state=checked]:bg-success [&_svg]:stroke-success-foreground",
       },
     },
     defaultVariants: {

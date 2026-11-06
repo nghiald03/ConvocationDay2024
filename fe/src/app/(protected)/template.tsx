@@ -1,18 +1,10 @@
-'use client';
-
-import { motion } from 'framer-motion';
-import { usePathname } from 'next/navigation';
-
+// A template re-mounts on every navigation, so only the page content below the persistent
+// layout (header + sidebar) animates. Keep it to a short opacity fade: the previous spring
+// slide (y: 20, low damping) overshot and read as a jolt on every tab change.
 export default function Template({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname() || '/';
   return (
-    <motion.div
-      key={pathname}
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-    >
+    <div className='animate-in fade-in-0 duration-150 ease-out motion-reduce:animate-none'>
       {children}
-    </motion.div>
+    </div>
   );
 }

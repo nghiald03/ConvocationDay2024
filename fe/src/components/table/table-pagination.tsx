@@ -16,7 +16,7 @@ interface DataTablePaginationProps {
   totalPages: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
-  setPageSize: (pageSize: number) => void;
+  setPageSize?: (pageSize: number) => void;
   setPageIndex: (pageIndex: number) => void;
 }
 
@@ -129,12 +129,13 @@ const TablePagination = ({
         </div>
 
         {/* Page Size Selector */}
+        {setPageSize && (
         <div className='flex h-full items-center justify-center w-full'>
           <div className='w-full flex justify-center'>
             <Select
               value={pageSize.toString()}
               onValueChange={(value) => {
-                setPageSize(Number(value));
+                setPageSize?.(Number(value));
                 setPageIndex(1);
               }}
             >
@@ -155,6 +156,7 @@ const TablePagination = ({
             </Select>
           </div>
         </div>
+        )}
       </div>
 
       {/* Pagination */}

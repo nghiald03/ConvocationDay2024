@@ -50,6 +50,13 @@
       "when": 1793881025557,
       "tag": "0006_checkin_lead_role",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793987785951,
+      "tag": "0007_lame_pete_wisdom",
+      "breakpoints": true
     }
   ]
 }

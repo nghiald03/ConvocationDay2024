@@ -6,27 +6,30 @@ import { color, shadow, rounded } from "@/lib/type"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center px-4 md:px-6 whitespace-nowrap rounded-md text-sm font-medium transition-all duration-300 hover:ring-2 hover:ring-offset-2 ring-offset-background transition-all focus-visible:outline-none focus-visible:hidden focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+  // Base: calm transitions, a visible keyboard focus ring, a tiny press response,
+  // and a larger hit area on touch screens (min 44px) without affecting mouse layouts.
+  "inline-flex items-center justify-center whitespace-nowrap select-none rounded-md px-4 text-sm font-medium ring-offset-background transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100 [@media(pointer:coarse)]:min-h-[2.75rem]",
   {
     variants: {
       color: {
-        default: "bg-default text-default-foreground hover:bg-default/90 hover:ring-default dark:disabled:bg-default-500",
-        primary: "bg-primary text-primary-foreground hover:bg-primary/90  hover:ring-primary",
-        secondary: "bg-secondary text-secondary-foreground  hover:ring-secondary",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:ring-destructive",
-        warning: "bg-warning text-warning-foreground hover:bg-warning/90 hover:ring-warning",
-        info: "bg-info text-info-foreground hover:bg-info/90 hover:ring-info",
-        success: "bg-success text-success-foreground hover:bg-success/90 hover:ring-success",
+        default: "bg-default text-default-foreground shadow-sm hover:bg-default/90",
+        primary: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+        warning: "bg-warning text-warning-foreground shadow-sm hover:bg-warning/90",
+        info: "bg-info text-info-foreground shadow-sm hover:bg-info/90",
+        success: "bg-success text-success-foreground shadow-sm hover:bg-success/90",
       },
       variant: {
         default: "",
-        outline: "border  border-default text-default bg-transparent hover:bg-default hover:text-default-foreground hover:ring-0 hover:ring-transparent",
-        soft: "text-default bg-default/10 hover:bg-default  hover:text-default-foreground",
-        ghost: "text-default bg-transparent hover:bg-default  hover:text-default-foreground hover:ring-0 hover:ring-transparent hover:ring-offset-0",
+        // Neutral outline by default; colored outlines come from compoundVariants.
+        outline: "border border-input bg-background text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground dark:bg-transparent dark:shadow-none",
+        soft: "shadow-none",
+        ghost: "bg-transparent shadow-none text-foreground/80 hover:bg-accent hover:text-accent-foreground",
         shadow: "shadow-md"
       },
       shadow: {
-        sm: "shadow",
+        sm: "shadow-sm",
         md: "shadow-md",
         lg: "shadow-lg",
         xl: "shadow-xl",
@@ -41,114 +44,39 @@ const buttonVariants = cva(
         true: "w-full",
       },
       size: {
-        default: "h-11 md:px-6  px-4 ",
-        sm: "h-7 text-xs md:px-4  px-3",
-        md: "h-9",
-        lg: "h-12  px-8 text-base md:px-10 px-7",
-        icon: "h-10 w-10 p-0 md:px-0 flex justify-center items-center",
-
+        default: "h-10 px-4",
+        sm: "h-8 px-3 text-xs",
+        md: "h-9 px-4",
+        lg: "h-11 px-6 text-base",
+        icon: "h-10 w-10 p-0 [@media(pointer:coarse)]:min-w-[2.75rem]",
       }
     },
     compoundVariants: [
-      {
-        variant: "outline",
-        color: "primary",
-        className: "text-primary border-primary hover:text-primary-foreground hover:border-primary hover:bg-primary",
-      },
-      {
-        variant: "outline",
-        color: "secondary",
-        className: "border-secondary hover:bg-secondary hover:text-secondary-foreground ",
-      },
-      {
-        variant: "outline",
-        color: "success",
-        className:
-          "text-success border-success hover:text-success-foreground hover:border-success hover:bg-success",
-      },
-      {
-        variant: "outline",
-        color: "info",
-        className:
-          "text-info border-info hover:text-info-foreground hover:border-info hover:bg-info",
-      },
-      {
-        variant: "outline",
-        color: "warning",
-        className:
-          "text-warning border-warning hover:text-warning-foreground hover:border-warning hover:bg-warning",
-      },
-      {
-        variant: "outline",
-        color: "destructive",
-        className: "text-destructive  border-destructive hover:text-destructive-foreground hover:border-destructive hover:bg-destructive",
-      },
-      {
-        variant: "outline",
-        color: "info",
-        className: "text-info hover:text-info-foreground hover:border-info hover:bg-info",
-      },
-      {
-        variant: "soft",
-        color: "primary",
-        className: "text-primary bg-primary/10 hover:bg-primary hover:text-primary-foreground"
-      },
-      {
-        variant: "soft",
-        color: "secondary",
-        className: "bg-secondary/90 hover:bg-secondary/80 hover:text-secondary-foreground"
-      },
-      {
-        variant: "soft",
-        color: "success",
-        className: "text-success bg-success/10 hover:bg-success hover:text-success-foreground"
-      },
-      {
-        variant: "soft",
-        color: "info",
-        className: "text-info bg-info/10 hover:bg-info hover:text-info-foreground"
-      },
-      {
-        variant: "soft",
-        color: "warning",
-        className: "text-warning bg-warning/10 hover:bg-warning hover:text-warning-foreground"
-      },
-      {
-        variant: "soft",
-        color: "destructive",
-        className: "text-destructive bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground"
-      },
-      {
-        variant: "ghost",
-        color: "primary",
-        className: "text-primary hover:bg-primary hover:text-primary-foreground ",
-      },
-      {
-        variant: "ghost",
-        color: "secondary",
-        className: "hover:text-secondary-foreground hover:bg-secondary  text-secondary-foreground",
-      },
-      {
-        variant: "ghost",
-        color: "success",
-        className: "text-success hover:text-success-foreground hover:bg-success",
-      },
-      {
-        variant: "ghost",
-        color: "info",
-        className: "text-info hover:text-info-foreground hover:bg-info",
-      },
-      {
-        variant: "ghost",
-        color: "warning",
-        className: "text-warning hover:text-warning-foreground hover:bg-warning",
-      },
+      // ---- outline: tinted border + text, soft fill on hover ----
+      { variant: "outline", color: "primary", className: "border-primary/40 text-primary hover:bg-primary/10 hover:text-primary" },
+      { variant: "outline", color: "success", className: "border-success/40 text-success hover:bg-success/10 hover:text-success" },
+      { variant: "outline", color: "info", className: "border-info/40 text-info hover:bg-info/10 hover:text-info" },
+      { variant: "outline", color: "warning", className: "border-warning/40 text-warning hover:bg-warning/10 hover:text-warning" },
+      { variant: "outline", color: "destructive", className: "border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive" },
+      { variant: "outline", color: "secondary", className: "border-input text-foreground hover:bg-secondary hover:text-secondary-foreground" },
 
-      {
-        variant: "ghost",
-        color: "destructive",
-        className: "text-destructive hover:text-destructive-foreground hover:bg-destructive",
-      }
+      // ---- soft: tinted background, deepens on hover ----
+      { variant: "soft", color: "default", className: "bg-default/10 text-default hover:bg-default/20" },
+      { variant: "soft", color: "primary", className: "bg-primary/10 text-primary hover:bg-primary/20" },
+      { variant: "soft", color: "secondary", className: "bg-secondary text-secondary-foreground hover:bg-secondary/80" },
+      { variant: "soft", color: "success", className: "bg-success/10 text-success hover:bg-success/20" },
+      { variant: "soft", color: "info", className: "bg-info/10 text-info hover:bg-info/20" },
+      { variant: "soft", color: "warning", className: "bg-warning/10 text-warning hover:bg-warning/20" },
+      { variant: "soft", color: "destructive", className: "bg-destructive/10 text-destructive hover:bg-destructive/20" },
+
+      // ---- ghost: transparent, soft fill on hover ----
+      { variant: "ghost", color: "primary", className: "text-primary hover:bg-primary/10 hover:text-primary" },
+      { variant: "ghost", color: "success", className: "text-success hover:bg-success/10 hover:text-success" },
+      { variant: "ghost", color: "info", className: "text-info hover:bg-info/10 hover:text-info" },
+      { variant: "ghost", color: "warning", className: "text-warning hover:bg-warning/10 hover:text-warning" },
+      { variant: "ghost", color: "destructive", className: "text-destructive hover:bg-destructive/10 hover:text-destructive" },
+      // Sidebar menus rely on secondary tokens so themed (colored) sidebars keep working.
+      { variant: "ghost", color: "secondary", className: "text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground" },
     ],
     defaultVariants: {
       variant: "default",

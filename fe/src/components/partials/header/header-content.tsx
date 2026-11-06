@@ -16,7 +16,7 @@ const HeaderContent = ({ children }: { children: React.ReactNode }) => {
           'border-b': config.skin === 'bordered' && config.layout !== 'semi-box',
           'xl:ms-0': config.menuHidden || config.layout === "horizontal",
           'border': config.skin === 'bordered' && config.layout === 'semi-box',
-          'shadow-base': config.skin === 'default',
+          'shadow-base border-b border-border/60': config.skin === 'default',
           'rounded-md': config.navbar === 'floating'
 
 
@@ -39,7 +39,7 @@ const HeaderContent = ({ children }: { children: React.ReactNode }) => {
         'xl:ms-[72px]': config.collapsed,
         'border-b': config.skin === 'bordered' && config.layout !== 'semi-box',
         'border': config.skin === 'bordered' && config.layout === 'semi-box',
-        'shadow-base': config.skin === 'default',
+        'shadow-base border-b border-border/60': config.skin === 'default',
         'xl:ms-0': config.menuHidden || config.layout === "horizontal",
         'top-6 rounded-md': config.layout === 'semi-box',
         'xl:ms-28': config.sidebar === 'compact' && config.layout !== 'horizontal',

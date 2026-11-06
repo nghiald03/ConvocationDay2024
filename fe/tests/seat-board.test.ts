@@ -6,6 +6,9 @@ import {
   givenName,
   sideOfChair,
   parseGridChair,
+  findCalling,
+  SEAT_STATE_LABEL,
+  seatEmphasis,
   seatState,
 } from '../src/features/led/model/seat-board';
 
@@ -75,5 +78,101 @@ describe('attendanceLabel', () => {
     expect(attendanceLabel(3)).toBe('Absent');
     expect(attendanceLabel(0)).toBe('');
     expect(attendanceLabel(null)).toBe('');
+  });
+});
+
+describe('sơ đồ ghế trực tiếp: ghế cũ và đang gọi', () => {
+  const lateMoved = {
+    studentCode: 'late1',
+    fullName: 'Đỗ Trần Lâm',
+    chair: 'Z1',
+    originalChair: 'C10',
+    checkIn: true,
+    attendanceStatus: 2,
+    hallName: 'Right',
+  };
+
+  test('mặc định (sơ đồ đầu giờ) vẫn để người bị đẩy cuối ở danh sách ngoài lưới', () => {
+    const board = buildSeatBoard([lateMoved]);
+
+    expect(board.seats.has('C10')).toBe(false);
+    expect(board.outside.map((seat) => seat.chair)).toEqual(['Z1']);
+  });
+
+  test('useOriginalSeat: người bị đẩy cuối hiện ở ô ghế cũ với trạng thái trễ, không còn ngoài lưới', () => {
+    const board = buildSeatBoard([lateMoved], { useOriginalSeat: true });
+
+    expect(board.seats.get('C10')).toMatchObject({ studentCode: 'late1', state: 'late' });
+    expect(board.outside).toHaveLength(0);
+    expect(board.summary.Right.late).toBe(1);
+  });
+
+  test('useOriginalSeat: người không có ghế cũ giữ ghế hiện tại, ghế cũ hỏng thì dùng ghế hiện tại', () => {
+    const board = buildSeatBoard(
+      [
+        { studentCode: 'a', fullName: '', chair: 'D1', checkIn: true, attendanceStatus: 2 },
+        { studentCode: 'b', fullName: '', chair: 'E2', originalChair: 'khong-hop-le', checkIn: true, attendanceStatus: 1 },
+      ],
+      { useOriginalSeat: true },
+    );
+
+    expect(board.seats.get('D1')?.studentCode).toBe('a');
+    expect(board.seats.get('E2')?.studentCode).toBe('b');
+  });
+
+  test('seatEmphasis: Current là đang gọi, Next là sắp gọi, còn lại không nhấn mạnh', () => {
+    expect(seatEmphasis({ statusBaChelor: 'Current' })).toBe('current');
+    expect(seatEmphasis({ statusBaChelor: 'Next' })).toBe('next');
+    expect(seatEmphasis({ statusBaChelor: 'Back' })).toBeNull();
+    expect(seatEmphasis({ statusBaChelor: null })).toBeNull();
+    expect(seatEmphasis({})).toBeNull();
+  });
+
+  test('ô của người đang gọi mang dấu nhấn mạnh trong sơ đồ', () => {
+    const board = buildSeatBoard(
+      [{ ...lateMoved, statusBaChelor: 'Current' }],
+      { useOriginalSeat: true, showCalling: true },
+    );
+
+    expect(board.seats.get('C10')?.emphasis).toBe('current');
+  });
+
+  test('mặc định không đánh dấu LED: sơ đồ check-in đầu giờ chỉ cho biết ai đã check-in', () => {
+    const board = buildSeatBoard([
+      { studentCode: 'a', fullName: '', chair: 'A1', checkIn: true, attendanceStatus: 1, statusBaChelor: 'Current' },
+      { studentCode: 'b', fullName: '', chair: 'A2', checkIn: true, attendanceStatus: 1, statusBaChelor: 'Next' },
+    ]);
+
+    expect(board.seats.get('A1')?.emphasis).toBeNull();
+    expect(board.seats.get('A2')?.emphasis).toBeNull();
+  });
+});
+
+describe('findCalling', () => {
+  const people = [
+    { studentCode: 'r', fullName: 'Bên phải', chair: 'A5', statusBaChelor: 'Current', attendanceStatus: 1 },
+    { studentCode: 'l', fullName: 'Bên trái', chair: 'Z25', originalChair: 'C30', statusBaChelor: 'Current', attendanceStatus: 2 },
+    { studentCode: 'x', fullName: 'Chờ', chair: 'A6', statusBaChelor: 'Next', attendanceStatus: 1 },
+  ];
+
+  test('mỗi bên có người đang gọi riêng, lấy ghế thật sự ngồi', () => {
+    expect(findCalling(people, 'Right')).toMatchObject({ studentCode: 'r', seat: 'A5', late: false });
+    expect(findCalling(people, 'Left')).toMatchObject({ studentCode: 'l', seat: 'C30', ledChair: 'Z25', late: true });
+  });
+
+  test('chưa ai được gọi ở bên đó thì null', () => {
+    expect(findCalling([people[2]!], 'Right')).toBeNull();
+    expect(findCalling([], 'Left')).toBeNull();
+  });
+});
+
+describe('SEAT_STATE_LABEL', () => {
+  test('có nhãn tiếng Việt cho mọi trạng thái điểm danh', () => {
+    expect(SEAT_STATE_LABEL).toEqual({
+      present: 'Đúng giờ',
+      late: 'Đến trễ',
+      waiting: 'Chưa check-in',
+      absent: 'Vắng',
+    });
   });
 });

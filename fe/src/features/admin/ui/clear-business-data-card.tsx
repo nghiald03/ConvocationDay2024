@@ -8,7 +8,7 @@ import { clearBusinessData, getBusinessData } from '@/features/admin/api/busines
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 
 const tableLabels: Record<string, string> = {
   bachelor: 'Tân cử nhân',

@@ -4,10 +4,12 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { useDebounce } from 'use-debounce';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import { Icon } from '@iconify/react/dist/iconify.js';
 import TableCustom from '@/components/table/table';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { Volume2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -27,6 +29,7 @@ import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
 import { sessionQueryOptions } from '@/features/session/queries/session-query-options';
 import { createNotification } from '@/features/notification/api/create-notification';
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
+import { fallbackInterval } from '@/lib/realtime/realtime-status';
 
 const ALL = '-1';
 const EXPORT_PAGE_SIZE = 5000;
@@ -53,7 +56,7 @@ export default function BachelorListNotCheckin() {
 
   const { data, isLoading, isError } = useQuery({
     ...bachelorListQueryOptions(params),
-    refetchInterval: 10000,
+    refetchInterval: fallbackInterval(10000),
   });
   const { data: hallList } = useQuery(hallQueryOptions);
   const { data: sessionList } = useQuery(sessionQueryOptions);
@@ -120,16 +123,14 @@ export default function BachelorListNotCheckin() {
     {
       id: 'action',
       header: 'Thông báo',
+      meta: 'actions',
       cell: ({ row }) => (
-        <Button
-          size='sm'
-          variant='outline'
+        <IconButton
+          icon={Volume2}
+          label='Gọi tân cử nhân'
           disabled={notify.isPending && notify.variables?.studentCode === row.original.studentCode}
           onClick={() => notify.mutate(row.original)}
-        >
-          <Icon icon='heroicons-outline:speaker-wave' className='h-4 w-4 me-1' />
-          Gọi TCN
-        </Button>
+        />
       ),
     },
   ];

@@ -14,10 +14,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Sparkles } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
 import { sessionsByHallQueryOptions } from '@/features/session/queries/session-query-options';
 import type { HallSession } from '@/features/session/model/session';
+import { keepSessionIfAvailable } from '@/features/session/model/keep-session';
 
 
 type PickerValue = {
@@ -84,9 +85,19 @@ export default function HallSessionPicker({
     if (sessionsErr) toast.error('Lỗi lấy danh sách session');
   }, [hallErr, sessionsErr]);
 
+  // Đổi side: giữ session nếu side mới cũng có, không thì bỏ chọn. Chạy sau khi danh sách session của side mới tải xong,
+  // và cũng đúng khi khôi phục từ localStorage (session đã lưu vẫn nằm trong danh sách của side đã lưu).
+  useEffect(() => {
+    if (!hall || sessionsLoading) return;
+    setSession((current) => keepSessionIfAvailable(current, sessionsByHall));
+  }, [hall, sessionsLoading, sessionsByHall]);
+
   // Bắn onChange + lưu localStorage khi đủ 2 select
   useEffect(() => {
     if (!hall || !session) return;
+    // Chờ danh sách session của side hiện tại; session không thuộc side này thì chưa báo, effect trên sẽ bỏ chọn nó.
+    if (sessionsLoading) return;
+    if (sessionsByHall && !sessions.some((s) => String(s.sessionId) === String(session))) return;
 
     const hallObj = halls.find((h) => String(h.hallId) === String(hall));
     const sesObj = sessions.find(
@@ -111,14 +122,9 @@ export default function HallSessionPicker({
     }
 
     onChange?.(value);
-  }, [hall, session, halls, sessions, onChange, storageKey]);
+  }, [hall, session, halls, sessions, sessionsByHall, sessionsLoading, onChange, storageKey]);
 
   const disabled = hallsLoading || sessionsLoading;
-
-  // Clear session when hall changes
-  useEffect(() => {
-    setSession('');
-  }, [hall]);
 
   return (
     <Card className='relative shadow-lg border-0 overflow-hidden'>
@@ -150,7 +156,7 @@ export default function HallSessionPicker({
                 className='w-full h-11 border-2 hover:border-orange-400 focus:ring-orange-500'
                 aria-label='Chọn side'
               >
-                <SelectValue placeholder='🏛️ Chọn side' />
+                <SelectValue placeholder='Chọn side' />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -181,7 +187,7 @@ export default function HallSessionPicker({
                 className='w-full h-11 border-2 hover:border-orange-400 focus:ring-orange-500'
                 aria-label='Chọn session'
               >
-                <SelectValue placeholder='📅 Chọn session' />
+                <SelectValue placeholder='Chọn session' />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>

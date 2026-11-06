@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import toast from "react-hot-toast";
+import toast from '@/lib/toast';
 import { Bachelor } from "@/features/bachelor/model/bachelor";
 import {
   Maximize2,
@@ -36,6 +36,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import HallSessionPicker from "@/features/session/ui/hall-session-picker";
+import { fallbackInterval } from '@/lib/realtime/realtime-status';
 
 /* =========================
    1) Layout + Marker + BLOCK CONFIG
@@ -578,7 +579,7 @@ export default function SeatMapPage() {
         session,
       }),
     enabled,
-    refetchInterval: 3000,
+    refetchInterval: fallbackInterval(3000),
     refetchOnWindowFocus: false,
   });
 

@@ -12,7 +12,7 @@ import {
   Ticket,
   UserRound,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,

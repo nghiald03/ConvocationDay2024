@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Headers,
+  HttpCode,
   Param,
   ParseArrayPipe,
   ParseIntPipe,
@@ -20,6 +21,7 @@ import type { ActorContext } from '../common/guards/actor-context.js';
 import { CurrentActor } from '../common/guards/current-actor.decorator.js';
 import { RequirePermissions } from '../common/guards/require-permissions.decorator.js';
 import { RequireRoles } from '../common/guards/require-roles.decorator.js';
+import { BachelorImportService } from './bachelor-import.service.js';
 import { BachelorService } from './bachelor.service.js';
 import {
   BachelorDto,
@@ -72,7 +74,10 @@ class BachelorListQuery {
 @ApiTags('bachelor')
 @Controller('Bachelor')
 export class BachelorController {
-  constructor(private readonly bachelors: BachelorService) {}
+  constructor(
+    private readonly bachelors: BachelorService,
+    private readonly imports: BachelorImportService,
+  ) {}
 
   @Get('search')
   @RequireRoles('MN', 'CK', 'CL', 'US')
@@ -110,6 +115,31 @@ export class BachelorController {
       });
     }
     return { status: 200, message: 'Thêm danh sách tân cử nhân thành công!', data: input };
+  }
+
+  /** Import chạy nền: trả về ngay mã lần import, tiến độ lấy qua GET Import/:jobId. */
+  @Post('Import')
+  @HttpCode(202)
+  @RequirePermissions(Permission.ManageBachelors)
+  startImport(@Body(new ParseArrayPipe({ items: BachelorDto })) input: BachelorDto[]) {
+    return {
+      status: 202,
+      message: 'Đã bắt đầu import, theo dõi tiến độ theo mã lần import.',
+      data: this.imports.start(input),
+    };
+  }
+
+  /** Lần import mới nhất (đang chạy hoặc vừa xong), null nếu chưa có. */
+  @Get('Import')
+  @RequirePermissions(Permission.ManageBachelors)
+  latestImport() {
+    return { status: 200, message: 'Lấy tiến độ import thành công!', data: this.imports.latest() };
+  }
+
+  @Get('Import/:jobId')
+  @RequirePermissions(Permission.ManageBachelors)
+  importProgress(@Param('jobId') jobId: string) {
+    return { status: 200, message: 'Lấy tiến độ import thành công!', data: this.imports.get(jobId) };
   }
 
   @Put('Update')

@@ -36,15 +36,15 @@ import {
   Clock,
   CheckCircle2,
 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 // Reuse existing SeatMapPage without modifying it
 import SeatMapPage from '@/app/(protected)/seatingArrangement/seat-map/page';
+import { fallbackInterval } from '@/lib/realtime/realtime-status';
 
 export default function HallOverviewPage() {
   const { data: halls = [], isLoading, isError } = useQuery({
     ...activeHallSummaryQueryOptions,
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    refetchInterval: fallbackInterval(5000),
   });
 
   const totalHalls = new Set(halls.map((hall) => hall.hallId)).size;

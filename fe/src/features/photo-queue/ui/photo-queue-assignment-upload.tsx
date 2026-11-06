@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { uploadPhotoQueueAssignments } from '../api/photo-queue-api';
 import type { PhotoQueueAssignmentInput } from '../model/photo-queue';
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 
 export function PhotoQueueAssignmentUpload({ photoSessionId }: { photoSessionId: string }) {
   const inputRef = useRef<HTMLInputElement | null>(null);

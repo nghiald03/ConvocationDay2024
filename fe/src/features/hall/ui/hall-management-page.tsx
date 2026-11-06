@@ -1,6 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -25,7 +27,7 @@ import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import swal from 'sweetalert';
 
 type Editing = { hall: Hall | null; name: string } | null;
@@ -80,7 +82,7 @@ export default function HallManagementPage() {
             <TableRow>
               <TableHead className='w-24'>ID</TableHead>
               <TableHead>Tên side</TableHead>
-              <TableHead className='w-48 text-right'>Thao tác</TableHead>
+              <TableHead className='w-28 text-right'>Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -88,22 +90,19 @@ export default function HallManagementPage() {
               <TableRow key={hall.hallId}>
                 <TableCell>{hall.hallId}</TableCell>
                 <TableCell className='font-medium'>{hall.hallName}</TableCell>
-                <TableCell className='space-x-2 text-right'>
-                  <Button
-                    size='sm'
-                    variant='outline'
+                <TableCell className='space-x-1.5 text-right'>
+                  <IconButton
+                    icon={Pencil}
+                    label='Sửa hội trường'
                     onClick={() => setEditing({ hall, name: hall.hallName })}
-                  >
-                    Sửa
-                  </Button>
-                  <Button
-                    size='sm'
+                  />
+                  <IconButton
+                    icon={Trash2}
+                    label='Xóa hội trường'
                     color='destructive'
                     disabled={remove.isPending}
                     onClick={() => void confirmDelete(hall)}
-                  >
-                    Xóa
-                  </Button>
+                  />
                 </TableCell>
               </TableRow>
             ))}

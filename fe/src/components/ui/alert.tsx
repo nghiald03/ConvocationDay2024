@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { color, rounded, shadow } from "@/lib/type";
 
 const alertVariants = cva(
-  "relative w-full py-[18px] px-6 font-normal text-sm rounded-md flex md:items-center items-start gap-4",
+  "relative w-full py-3.5 px-4 md:px-5 font-normal text-sm rounded-lg flex md:items-center items-start gap-3",
   {
     variants: {
       color: {
@@ -121,7 +121,7 @@ const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
       >
         {children}
         {dismissible && (
-          <button onClick={handleDismiss} className="grow-0">
+          <button onClick={handleDismiss} aria-label="Đóng" className="grow-0 rounded-md p-1 opacity-80 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current">
             <Icon icon="heroicons:x-mark" className="w-5 h-5" />
           </button>
         )}
@@ -135,7 +135,7 @@ const AlertTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTM
   ({ className, ...props }, ref) => (
     <h5
       ref={ref}
-      className={cn("mb-2 font-medium leading-none tracking-tight grow text-lg", className)}
+      className={cn("mb-1.5 font-semibold leading-none tracking-tight grow text-base", className)}
       {...props}
     />
   )

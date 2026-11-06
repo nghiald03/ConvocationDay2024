@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Ellipsis, LogOut } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { getMenuList } from '@/lib/menus';
+import { canAccessMenu, getMenuList } from '@/lib/menus';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Tooltip,
@@ -88,7 +88,7 @@ export function MenuClassic({}) {
             {userRole &&
               menuList
                 ?.filter((item) => item.roleAccess?.includes(userRole))
-                .map(({ groupLabel, menus }, index) => (
+                .map(({ groupLabel, menus, roleAccess }, index) => (
                   <li
                     className={cn('w-full', groupLabel ? '' : '')}
                     key={index}
@@ -114,7 +114,9 @@ export function MenuClassic({}) {
                       </TooltipProvider>
                     ) : null}
 
-                    {menus.map(
+                    {menus
+                      .filter((menu) => canAccessMenu({ roleAccess }, menu, userRole))
+                      .map(
                       ({ href, label, icon, active, id, submenus }, index) =>
                         submenus.length === 0 ? (
                           <div className='w-full mb-2 last:mb-0' key={index}>

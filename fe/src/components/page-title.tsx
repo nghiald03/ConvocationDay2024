@@ -22,7 +22,7 @@ const PageTitle = ({
         className
       )}
     >
-      <div className='text-2xl font-medium text-default-800 capitalize'>
+      <div className='text-2xl font-semibold tracking-tight text-default-900 capitalize'>
         {title ? title : name ? name : null}
       </div>
       <DateRangePicker />

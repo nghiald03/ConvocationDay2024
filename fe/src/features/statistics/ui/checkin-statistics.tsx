@@ -17,6 +17,7 @@ import {
 import { hallOverviewQueryOptions } from '@/features/statistics/queries/hall-overview-query-options';
 import CheckinRoomSummary from '@/features/statistics/ui/checkin-room-summary';
 import { cn } from '@/lib/utils';
+import { fallbackInterval } from '@/lib/realtime/realtime-status';
 
 type Counts = { total: number; checked: number };
 
@@ -55,7 +56,7 @@ function SummaryCard({
 export default function CheckinStatistics() {
   const { data: halls = [], isLoading, isError, dataUpdatedAt } = useQuery({
     ...hallOverviewQueryOptions,
-    refetchInterval: 10000,
+    refetchInterval: fallbackInterval(10000),
   });
 
   const { overall, rows } = useMemo(() => {

@@ -31,19 +31,47 @@ import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
 import { sessionQueryOptions } from '@/features/session/queries/session-query-options';
 import { Bachelor } from '@/features/bachelor/model/bachelor';
 import type { LedBachelorWindow } from '@/features/led/model/led-bachelors';
+import { describeLateBanner, isFirstLateNext, isLateBachelor } from '@/features/led/model/late-highlight';
+import {
+  FONT_SCALE_DEFAULT,
+  FONT_SCALE_MAX,
+  FONT_SCALE_MIN,
+  readStoredNumber,
+  scaledRem,
+  SPLIT_DEFAULT,
+  SPLIT_KEY_STEP,
+  SPLIT_MAX,
+  SPLIT_MIN,
+  clampSplit,
+  splitFromPointer,
+  stepFontScale,
+} from '@/features/led/model/mc-layout';
 import { Icon } from '@iconify/react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { toast } from 'react-hot-toast';
+import { toast } from '@/lib/toast';
+import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
+import { jumpLedQueue } from '@/features/led/api/get-led-queue';
+import { InlineModal } from '@/features/led/ui/inline-modal';
+import { LedJumpPanel } from '@/features/led/ui/led-jump-panel';
 import {
+  ArrowLeftRight,
+  ChevronsLeft,
+  Clock,
+  Search,
   GraduationCap,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
   Maximize,
   Minimize,
 } from 'lucide-react';
+
+/** Viền vàng quanh cả khung (kể cả toàn màn hình) khi người đang chiếu đến trễ. */
+const LATE_FRAME = 'border-4 border-amber-500 dark:border-amber-500';
+/** Viền vàng của thẻ "Tiếp theo" khi đó là người đến trễ đầu tiên (hover không được đổi lại màu cam). */
+const NEXT_LATE_BORDER =
+  'border-4 border-amber-500 dark:border-amber-500 hover:border-amber-500 dark:hover:border-amber-500';
 
 // ====== Helpers cho ảnh ======
 const isValidImageSrc = (src?: string | null) => {
@@ -119,6 +147,26 @@ export default function McControllerPage() {
     const stored = window.localStorage.getItem('showPrevious');
     return stored === null ? true : stored === 'true';
   });
+
+  // Đổi chỗ hai thẻ cho tiện nhìn: "Hiện tại" sang trái, "Tiếp theo" sang phải. Chỉ đổi cách bày, không đổi dữ liệu.
+  const [swapCurrentNext, setSwapCurrentNext] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('swapCurrentNext') === 'true';
+  });
+
+  // Cỡ chữ thông tin tân cử nhân và tỉ lệ bề rộng hai thẻ (kéo thanh giữa), đều được nhớ trong trình duyệt.
+  const [fontScale, setFontScale] = useState<number>(() => {
+    if (typeof window === 'undefined') return FONT_SCALE_DEFAULT;
+    return readStoredNumber(window.localStorage.getItem('mcFontScale'), FONT_SCALE_DEFAULT, FONT_SCALE_MIN, FONT_SCALE_MAX);
+  });
+  const [split, setSplit] = useState<number>(() => {
+    if (typeof window === 'undefined') return SPLIT_DEFAULT;
+    return readStoredNumber(window.localStorage.getItem('mcSplit'), SPLIT_DEFAULT, SPLIT_MIN, SPLIT_MAX);
+  });
+  const [isDraggingSplit, setIsDraggingSplit] = useState(false);
+  // Khung nổi đang mở: chọn người để chuyển tới, hoặc xác nhận về đầu.
+  const [panel, setPanel] = useState<'jump' | 'first' | null>(null);
+  const pairRef = React.useRef<HTMLDivElement>(null);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const controlRef = React.useRef<HTMLDivElement>(null);
@@ -196,6 +244,22 @@ export default function McControllerPage() {
   }, [showPrevious]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('swapCurrentNext', String(swapCurrentNext));
+  }, [swapCurrentNext]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('mcFontScale', String(fontScale));
+  }, [fontScale]);
+
+  useEffect(() => {
+    // Chỉ lưu khi thả chuột, không ghi liên tục lúc đang kéo.
+    if (typeof window === 'undefined' || isDraggingSplit) return;
+    window.localStorage.setItem('mcSplit', String(split));
+  }, [split, isDraggingSplit]);
+
+  useEffect(() => {
     if (navigationCooldown <= 0) return;
 
     const intervalId = window.setInterval(() => {
@@ -220,13 +284,16 @@ export default function McControllerPage() {
   }, [sessionList, session]);
 
   // ---- Fullscreen handlers
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement && controlRef.current) {
-      controlRef.current.requestFullscreen();
-      setIsFullscreen(true);
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+  const toggleFullscreen = async () => {
+    // isFullscreen do listener 'fullscreenchange' cập nhật, nên nếu trình duyệt từ chối thì giao diện không bị lệch.
+    try {
+      if (!document.fullscreenElement && controlRef.current) {
+        await controlRef.current.requestFullscreen();
+      } else if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+    } catch {
+      toast.error('Trình duyệt không cho vào chế độ toàn màn hình', { duration: 3000 });
     }
   };
 
@@ -327,6 +394,21 @@ export default function McControllerPage() {
     },
   });
 
+  // MC nhảy tới một người trong hàng đợi (về đầu hoặc theo MSSV); chỉ khi LED đã bắt đầu.
+  const jumpLed = useMutation({
+    mutationFn: (target: 'first' | { studentCode: string }) => {
+      if (!hall || !session) throw new Error('Chưa chọn side hoặc session');
+      return jumpLedQueue(Number(hall), Number(session), target);
+    },
+    onSuccess: () => {
+      setPanel(null);
+      getBachelorCurrent.mutate();
+    },
+    onError: (error: unknown) => {
+      toast.error(getHttpErrorMessage(error, 'Không chuyển được LED'), { duration: 4000 });
+    },
+  });
+
   // ---- Tự gọi lần đầu khi đã chọn đủ hall/session
   useEffect(() => {
     if (!hall || !session) {
@@ -341,6 +423,15 @@ export default function McControllerPage() {
     navigationCooldown > 0 ||
     getBachelorBack.isPending ||
     getBachelorNext.isPending;
+
+  // Người đang chiếu đến trễ: dải "Đến trễ: Tên" trên cùng, viền vàng quanh khung và quanh thẻ Hiện tại.
+  const currentLate = isLateBachelor(bachelorCurrent);
+  const lateBanner = describeLateBanner(bachelorCurrent);
+  const firstLateNext = isFirstLateNext(bachelorCurrent, bachelorNext);
+  const pairStyle = {
+    '--mc-left': `calc(${split}% - 12px)`,
+    '--mc-right': `calc(${100 - split}% - 12px)`,
+  } as React.CSSProperties;
 
   return (
     <div className='min-h-screen p-4'>
@@ -392,6 +483,15 @@ export default function McControllerPage() {
               }}
             />
 
+            {hall && session && getBachelorCurrent.isSuccess && !bachelorCurrent && (
+              <Alert variant='soft' color='warning'>
+                <AlertDescription>
+                  LED chưa bắt đầu chiếu (hoặc chưa có ai check-in). Manager bấm &quot;Bắt đầu&quot; ở trang Hàng đợi
+                  LED thì nút chuyển mới hoạt động.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className='flex items-center justify-between gap-4 p-4 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-800'>
               <div className='flex items-center gap-3'>
                 <Switch
@@ -407,11 +507,24 @@ export default function McControllerPage() {
                 </Label>
               </div>
 
+              <div className='flex items-center gap-3'>
               <Button
-                onClick={toggleFullscreen}
+                onClick={() => setSwapCurrentNext((value) => !value)}
                 variant='outline'
                 size='lg'
-                className='border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300'
+                aria-pressed={swapCurrentNext}
+                className='border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-300'
+              >
+                <ArrowLeftRight className='w-5 h-5 mr-2' />
+                Đổi vị trí Hiện tại / Tiếp theo
+              </Button>
+
+              <Button
+                onClick={() => void toggleFullscreen()}
+                disabled={!hall || !session}
+                variant='outline'
+                size='lg'
+                className='border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-300'
               >
                 {isFullscreen ? (
                   <>
@@ -425,6 +538,40 @@ export default function McControllerPage() {
                   </>
                 )}
               </Button>
+
+              <div className='flex items-center gap-1' role='group' aria-label='Cỡ chữ'>
+                <Button
+                  onClick={() => setFontScale((value) => stepFontScale(value, -1))}
+                  disabled={fontScale <= FONT_SCALE_MIN}
+                  variant='outline'
+                  size='lg'
+                  aria-label='Giảm cỡ chữ'
+                  className='border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-300 px-4'
+                >
+                  A−
+                </Button>
+                <Button
+                  onClick={() => setFontScale(FONT_SCALE_DEFAULT)}
+                  variant='outline'
+                  size='lg'
+                  aria-label='Đặt lại cỡ chữ'
+                  title='Bấm để về 100%'
+                  className='min-w-[4.5rem] border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-300 px-3 tabular-nums'
+                >
+                  {Math.round(fontScale * 100)}%
+                </Button>
+                <Button
+                  onClick={() => setFontScale((value) => stepFontScale(value, 1))}
+                  disabled={fontScale >= FONT_SCALE_MAX}
+                  variant='outline'
+                  size='lg'
+                  aria-label='Tăng cỡ chữ'
+                  className='border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-300 px-4'
+                >
+                  A+
+                </Button>
+              </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -434,8 +581,17 @@ export default function McControllerPage() {
             <Card
               className={`shadow-2xl border-2 border-orange-200/50 dark:border-orange-900/50 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm ${
                 isFullscreen ? 'h-screen flex flex-col' : ''
-              }`}
+              } ${currentLate ? LATE_FRAME : ''}`}
             >
+              {lateBanner && (
+                <div
+                  role='alert'
+                  className='flex items-center justify-center gap-3 bg-amber-500 px-6 py-3 text-center text-xl font-bold text-white'
+                >
+                  <Clock className='h-6 w-6 shrink-0' aria-hidden='true' />
+                  {lateBanner}
+                </div>
+              )}
               <CardContent
                 className={`p-6 ${
                   isFullscreen ? 'flex-1 flex items-center' : ''
@@ -450,7 +606,7 @@ export default function McControllerPage() {
                 >
                   {/* BACK - Side Card */}
                   {showPrevious && (
-                    <Card className='shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-60 hover:opacity-90 bg-white dark:bg-slate-900 self-center'>
+                    <Card className='shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-60 hover:opacity-90 bg-white dark:bg-slate-900 self-center order-1'>
                       <CardTitle className='pt-3 px-3'>
                         <div className='flex items-center justify-center gap-2 text-sm text-orange-600 dark:text-orange-400'>
                           <ChevronLeft className='w-4 h-4' />
@@ -470,13 +626,22 @@ export default function McControllerPage() {
                       </CardContent>
                       {bachelorBack ? (
                         <CardDescription className='pb-3 px-3 space-y-1'>
-                          <p className='text-center font-semibold text-sm line-clamp-1 text-orange-900 dark:text-orange-100'>
+                          <p
+                            className='text-center font-semibold leading-tight line-clamp-1 text-orange-900 dark:text-orange-100'
+                            style={{ fontSize: scaledRem(0.875, fontScale) }}
+                          >
                             {bachelorBack.fullName}
                           </p>
-                          <p className='text-center text-sm text-orange-600 dark:text-orange-400'>
+                          <p
+                            className='text-center leading-tight text-orange-600 dark:text-orange-400'
+                            style={{ fontSize: scaledRem(0.875, fontScale) }}
+                          >
                             {bachelorBack.studentCode}
                           </p>
-                          <p className='text-center text-xs text-muted-foreground line-clamp-2'>
+                          <p
+                            className='text-center leading-tight text-muted-foreground line-clamp-2'
+                            style={{ fontSize: scaledRem(0.75, fontScale) }}
+                          >
                             {bachelorBack.major}
                           </p>
                         </CardDescription>
@@ -488,8 +653,18 @@ export default function McControllerPage() {
                     </Card>
                   )}
 
+                  {/* Khung chứa thẻ Hiện tại và Tiếp theo, ở giữa có thanh kéo đổi bề rộng hai bên */}
+                  <div
+                    ref={pairRef}
+                    style={pairStyle}
+                    className='order-2 flex min-w-0 flex-col gap-6 lg:col-span-2 lg:flex-row lg:items-center lg:gap-0'
+                  >
                   {/* NEXT - Side Card */}
-                  <Card className='shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-90 hover:opacity-90 bg-white dark:bg-slate-900 self-center'>
+                  <Card
+                    className={`shadow-md border-2 border-orange-100 dark:border-orange-900/30 hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 opacity-90 hover:opacity-90 bg-white dark:bg-slate-900 self-center lg:flex-none ${
+                      swapCurrentNext ? 'order-3 lg:w-[var(--mc-right)]' : 'order-1 lg:w-[var(--mc-left)]'
+                    } ${firstLateNext ? NEXT_LATE_BORDER : ''}`}
+                  >
                     <CardTitle className='pt-3 px-3'>
                       <div className='flex items-center justify-center gap-2 text-sm text-orange-600 dark:text-orange-400'>
                         <span>Tiếp theo</span>
@@ -509,13 +684,22 @@ export default function McControllerPage() {
                     </CardContent>
                     {bachelorNext ? (
                       <CardDescription className='pb-3 px-3 space-y-1'>
-                        <p className='text-center font-semibold text-sm line-clamp-1 text-orange-900 dark:text-orange-100'>
+                        <p
+                          className='text-center font-bold leading-tight line-clamp-1 text-orange-900 dark:text-orange-100'
+                          style={{ fontSize: scaledRem(1.5, fontScale) }}
+                        >
                           {bachelorNext.fullName}
                         </p>
-                        <p className='text-center text-sm text-orange-600 dark:text-orange-400'>
+                        <p
+                          className='text-center font-semibold leading-tight text-orange-600 dark:text-orange-400'
+                          style={{ fontSize: scaledRem(1.25, fontScale) }}
+                        >
                           {bachelorNext.studentCode}
                         </p>
-                        <p className='text-center text-xs text-muted-foreground line-clamp-2'>
+                        <p
+                          className='text-center leading-tight text-muted-foreground line-clamp-2'
+                          style={{ fontSize: scaledRem(1.125, fontScale) }}
+                        >
                           {bachelorNext.major}
                         </p>
                       </CardDescription>
@@ -527,17 +711,35 @@ export default function McControllerPage() {
                   </Card>
 
                   {/* CURRENT - Featured Card */}
-                  <Card className='relative shadow-2xl border-4 border-orange-500 dark:border-orange-600 scale-100 lg:scale-100 z-10 bg-white dark:bg-slate-900'>
-                    {/* Gradient Border Effect */}
-                    <div className='absolute -inset-1 bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 rounded-xl opacity-75 blur animate-pulse'></div>
+                  <Card
+                    className={`relative shadow-2xl border-4 scale-100 lg:scale-100 z-10 bg-white dark:bg-slate-900 lg:flex-none ${
+                      swapCurrentNext ? 'order-1 lg:w-[var(--mc-left)]' : 'order-3 lg:w-[var(--mc-right)]'
+                    } ${
+                      currentLate
+                        ? 'border-amber-500 dark:border-amber-500'
+                        : 'border-orange-500 dark:border-orange-600'
+                    }`}
+                  >
+                    {/* Gradient Border Effect: vàng khi người đang chiếu đến trễ */}
+                    <div
+                      className={`absolute -inset-1 bg-gradient-to-r rounded-xl opacity-75 blur animate-pulse ${
+                        currentLate
+                          ? 'from-amber-500 via-amber-500 to-amber-500'
+                          : 'from-orange-400 via-orange-500 to-orange-600'
+                      }`}
+                    ></div>
 
                     <div className='relative bg-white dark:bg-slate-900 rounded-lg'>
                       {/* Badge */}
                       <div className='absolute -top-3 left-1/2 -translate-x-1/2 z-20'>
-                        <Badge className='bg-gradient-to-r from-orange-500 to-orange-600 text-white px-10 py-3 shadow-lg flex items-center gap-2 text-xl'>
-                          <Sparkles className='w-12 h-7' />
-                          <span className='font-bold'>HIỆN TẠI</span>
-                          <Sparkles className='w-12 h-7' />
+                        <Badge
+                          className={`text-white px-10 py-3 shadow-lg flex items-center gap-2 text-xl ${
+                            currentLate
+                              ? 'bg-amber-500'
+                              : 'bg-gradient-to-r from-orange-500 to-orange-600'
+                          }`}
+                        >
+                          <span className='font-bold'>HIỆN TẠI TRÊN LED</span>
                         </Badge>
                       </div>
 
@@ -558,13 +760,22 @@ export default function McControllerPage() {
                       {bachelorCurrent ? (
                         <CardDescription className='pb-6 px-6 space-y-4'>
                           <div className='bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-950/30 dark:to-orange-900/30 rounded-lg p-6 space-y-3 border border-orange-200 dark:border-orange-800'>
-                            <p className='text-center font-bold text-3xl text-orange-900 dark:text-orange-100'>
+                            <p
+                              className='text-center font-bold leading-tight text-orange-900 dark:text-orange-100'
+                              style={{ fontSize: scaledRem(1.875, fontScale) }}
+                            >
                               {bachelorCurrent.fullName}
                             </p>
-                            <p className='text-center font-semibold text-3xl text-orange-600 dark:text-orange-400'>
+                            <p
+                              className='text-center font-semibold leading-tight text-orange-600 dark:text-orange-400'
+                              style={{ fontSize: scaledRem(1.875, fontScale) }}
+                            >
                               {bachelorCurrent.studentCode}
                             </p>
-                            <p className='text-center font-bold text-3xl text-orange-700 dark:text-orange-300 line-clamp-2'>
+                            <p
+                              className='text-center font-bold leading-tight text-orange-700 dark:text-orange-300 line-clamp-2'
+                              style={{ fontSize: scaledRem(1.875, fontScale) }}
+                            >
                               {bachelorCurrent.major}
                             </p>
                           </div>
@@ -576,8 +787,74 @@ export default function McControllerPage() {
                       )}
                     </div>
                   </Card>
+
+                  {/* Thanh kéo giữa hai thẻ: chỉ hiện khi rê chuột vào; kéo trái phải để đổi bề rộng, bấm đúp để về 50/50 */}
+                  <div
+                    role='separator'
+                    aria-orientation='vertical'
+                    aria-label='Kéo để đổi bề rộng hai thẻ'
+                    aria-valuemin={SPLIT_MIN}
+                    aria-valuemax={SPLIT_MAX}
+                    aria-valuenow={Math.round(split)}
+                    tabIndex={0}
+                    onPointerDown={(event) => {
+                      event.currentTarget.setPointerCapture(event.pointerId);
+                      setIsDraggingSplit(true);
+                    }}
+                    onPointerMove={(event) => {
+                      if (!isDraggingSplit || !pairRef.current) return;
+                      const rect = pairRef.current.getBoundingClientRect();
+                      setSplit(splitFromPointer(event.clientX, rect.left, rect.width));
+                    }}
+                    onPointerUp={() => setIsDraggingSplit(false)}
+                    onPointerCancel={() => setIsDraggingSplit(false)}
+                    onDoubleClick={() => setSplit(SPLIT_DEFAULT)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowLeft') setSplit((value) => clampSplit(value - SPLIT_KEY_STEP));
+                      else if (event.key === 'ArrowRight') setSplit((value) => clampSplit(value + SPLIT_KEY_STEP));
+                      else return;
+                      event.preventDefault();
+                    }}
+                    className='group order-2 hidden w-6 shrink-0 cursor-col-resize touch-none select-none items-center justify-center self-stretch outline-none lg:flex'
+                  >
+                    <div
+                      className={`h-24 w-1.5 rounded-full bg-orange-400 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 ${
+                        isDraggingSplit ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    />
+                  </div>
+                  </div>
                 </div>
               </CardContent>
+
+              {/* Chuyển nhanh: nhóm nút nhỏ sát trái, ngay trên thanh Quay lại / Tiếp theo */}
+              <div className='flex items-center px-6 pb-3 pt-1'>
+                <div
+                  role='group'
+                  aria-label='Chuyển nhanh'
+                  className='inline-flex items-center overflow-hidden rounded-full border border-orange-300/60 bg-orange-500/5 dark:border-orange-700/60'
+                >
+                  <button
+                    type='button'
+                    disabled={!bachelorCurrent || isNavigationLocked || jumpLed.isPending}
+                    onClick={() => setPanel('first')}
+                    className='inline-flex h-9 items-center gap-1.5 px-4 text-sm font-medium text-orange-700 transition-colors hover:bg-orange-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent dark:text-orange-300'
+                  >
+                    <ChevronsLeft className='h-4 w-4' aria-hidden='true' />
+                    Về đầu
+                  </button>
+                  <span className='h-5 w-px bg-orange-300/60 dark:bg-orange-700/60' aria-hidden='true' />
+                  <button
+                    type='button'
+                    disabled={!bachelorCurrent || isNavigationLocked || jumpLed.isPending}
+                    onClick={() => setPanel('jump')}
+                    className='inline-flex h-9 items-center gap-1.5 px-4 text-sm font-medium text-orange-700 transition-colors hover:bg-orange-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent dark:text-orange-300'
+                  >
+                    <Search className='h-4 w-4' aria-hidden='true' />
+                    Đến MSSV…
+                  </button>
+                </div>
+              </div>
 
               {/* Control Buttons */}
               <CardFooter
@@ -594,7 +871,7 @@ export default function McControllerPage() {
                     startNavigationCooldown();
                     getBachelorBack.mutate();
                   }}
-                  className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 px-6 py-6 text-base'
+                  className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-300 px-6 py-6 text-base'
                 >
                   <ChevronLeft className='w-6 h-6 mr-2' />
                   {navigationCooldown > 0 && (
@@ -618,7 +895,7 @@ export default function McControllerPage() {
                     getBachelorNext.mutate();
                   }}
                   disabled={!bachelorNext || isNavigationLocked}
-                  className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 px-6 py-6 text-base'
+                  className='shadow-md hover:shadow-lg transition-all border-2 border-orange-300 dark:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30 text-orange-700 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-300 px-6 py-6 text-base'
                 >
                   Tiếp theo
                   {navigationCooldown > 0 && (
@@ -628,6 +905,32 @@ export default function McControllerPage() {
                 </Button>
               </CardFooter>
             </Card>
+
+            {/* Khung nổi nằm trong vùng toàn màn hình nên vẫn hiện khi đang trình chiếu */}
+            {panel === 'first' && (
+              <InlineModal title='Về tân cử nhân đầu tiên?' onClose={() => setPanel(null)}>
+                <p className='text-base text-muted-foreground'>
+                  LED đang chiếu {bachelorCurrent?.fullName ?? '-'}. Về đầu sẽ chuyển LED về người đầu tiên của hàng đợi.
+                </p>
+                <div className='flex justify-end gap-3'>
+                  <Button variant='outline' onClick={() => setPanel(null)}>
+                    Hủy
+                  </Button>
+                  <Button color='primary' disabled={jumpLed.isPending} onClick={() => jumpLed.mutate('first')}>
+                    {jumpLed.isPending ? 'Đang chuyển…' : 'Về đầu'}
+                  </Button>
+                </div>
+              </InlineModal>
+            )}
+            {panel === 'jump' && (
+              <LedJumpPanel
+                hall={Number(hall)}
+                session={Number(session)}
+                busy={jumpLed.isPending}
+                onJump={(studentCode) => jumpLed.mutate({ studentCode })}
+                onClose={() => setPanel(null)}
+              />
+            )}
           </div>
         )}
       </div>

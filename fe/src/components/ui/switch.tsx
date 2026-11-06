@@ -7,7 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { color, size } from "@/lib/type";
 
 const switchVariants = cva(
-  "peer relative  inline-flex items-center  [&_.content-box>svg]:h-3  [&_.content-box>svg]:w-3  [&_.content-box]:text-primary-foreground [&_.content-box]:text-[10px] justify-start group  flex-shrink-0  cursor-pointer rounded-full  transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=unchecked]:bg-default-300",
+  "peer relative  inline-flex items-center  [&_.content-box>svg]:h-3  [&_.content-box>svg]:w-3  [&_.content-box]:text-primary-foreground [&_.content-box]:text-[10px] justify-start group  flex-shrink-0  cursor-pointer rounded-full  transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[state=unchecked]:bg-default-400",
   {
     variants: {
       color: {
@@ -58,7 +58,7 @@ const Switch = React.forwardRef<
     )}
     <SwitchPrimitives.Thumb
       className={cn(
-        "pointer-events-none block h-4 w-4 rounded-full bg-background data-[state=unchecked]:dark:bg-default-900 shadow-lg ring-0 transition-transform data-[state=checked]:translate-x-[19px] data-[state=unchecked]:translate-x-[2px]",
+        "pointer-events-none block h-4 w-4 rounded-full bg-background data-[state=unchecked]:dark:bg-default-900 shadow-md ring-0 transition-transform motion-reduce:transition-none data-[state=checked]:translate-x-[19px] data-[state=unchecked]:translate-x-[2px]",
         {
           "h-3.5 w-3.5 data-[state=checked]:translate-x-3.5 ": size === "sm",
           "h-5 w-5 data-[state=checked]:translate-x-6 ": size === "md",

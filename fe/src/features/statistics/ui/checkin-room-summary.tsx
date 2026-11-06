@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/table';
 import type { ApiResponse } from '@/lib/http/api-response';
 import { httpClient } from '@/lib/http/client';
+import { fallbackInterval } from '@/lib/realtime/realtime-status';
 
 type CheckinRoomSummaryRow = {
   room: string | null;
@@ -36,7 +37,7 @@ export default function CheckinRoomSummary() {
   const { data: rows = [], isLoading, isError } = useQuery({
     queryKey: ['statistics', 'checkin-room-summary'],
     queryFn: getCheckinRoomSummary,
-    refetchInterval: 10000,
+    refetchInterval: fallbackInterval(10000),
   });
 
   if (isLoading) return <Skeleton className='h-40' />;

@@ -24,10 +24,25 @@ export const SEAT_BLOCKS: SeatBlock[] = [
 
 export type SeatState = 'present' | 'late' | 'waiting' | 'absent';
 
+/** Tên trạng thái điểm danh để hiển thị. */
+export const SEAT_STATE_LABEL: Record<SeatState, string> = {
+  present: 'Đúng giờ',
+  late: 'Đến trễ',
+  waiting: 'Chưa check-in',
+  absent: 'Vắng',
+};
+
+/** Nhấn mạnh cho điều phối: người LED đang gọi và người kế tiếp. Không thay trạng thái điểm danh của ô. */
+export type SeatEmphasis = 'current' | 'next';
+
 export type SeatOccupant = {
   studentCode: string;
   fullName: string;
   chair: string | null | undefined;
+  /** Ghế cũ của người bị xếp xuống cuối phiên; họ vẫn ngồi ở đó. */
+  originalChair?: string | null;
+  /** Trạng thái LED của người này: Current, Next, Back hoặc rỗng. */
+  statusBaChelor?: string | null;
   checkIn?: boolean | null;
   attendanceStatus?: number | null;
   hallName?: string | null;
@@ -56,11 +71,26 @@ export function seatState(occupant: SeatOccupant): SeatState {
   return occupant.attendanceStatus === 3 ? 'absent' : 'waiting';
 }
 
+/** Người đang được LED gọi (Current) hoặc sắp gọi (Next); còn lại không nhấn mạnh. */
+export function seatEmphasis(occupant: Pick<SeatOccupant, 'statusBaChelor'>): SeatEmphasis | null {
+  if (occupant.statusBaChelor === 'Current') return 'current';
+  if (occupant.statusBaChelor === 'Next') return 'next';
+  return null;
+}
+
+export type BuildSeatBoardOptions = {
+  /** Đặt người bị xếp xuống cuối vào ô ghế cũ của họ thay vì danh sách "ngoài lưới". */
+  useOriginalSeat?: boolean;
+  /** Đánh dấu người LED đang gọi / sắp gọi. Mặc định tắt: sơ đồ check-in đầu giờ chỉ cho biết ai đã check-in. */
+  showCalling?: boolean;
+};
+
 export type SideSummary = { total: number; checkedIn: number; late: number; hallName: string | null };
 
-export function buildSeatBoard(occupants: SeatOccupant[]) {
-  const seats = new Map<string, SeatOccupant & { state: SeatState }>();
-  const outside: (SeatOccupant & { state: SeatState })[] = [];
+export function buildSeatBoard(occupants: SeatOccupant[], options: BuildSeatBoardOptions = {}) {
+  type Entry = SeatOccupant & { state: SeatState; emphasis: SeatEmphasis | null };
+  const seats = new Map<string, Entry>();
+  const outside: Entry[] = [];
   const summary: Record<SeatSide, SideSummary> = {
     Left: { total: 0, checkedIn: 0, late: 0, hallName: null },
     Right: { total: 0, checkedIn: 0, late: 0, hallName: null },
@@ -68,8 +98,9 @@ export function buildSeatBoard(occupants: SeatOccupant[]) {
 
   for (const occupant of occupants) {
     const state = seatState(occupant);
-    const entry = { ...occupant, state };
-    const grid = parseGridChair(occupant.chair);
+    const entry: Entry = { ...occupant, state, emphasis: options.showCalling ? seatEmphasis(occupant) : null };
+    const grid =
+      (options.useOriginalSeat ? parseGridChair(occupant.originalChair) : null) ?? parseGridChair(occupant.chair);
     if (grid) seats.set(seatKey(grid.row, grid.number), entry);
     else outside.push(entry);
 
@@ -100,4 +131,20 @@ export function sideOfChair(chair: string | null | undefined): SeatSide | null {
 
 export function formatSeatNumber(number: number) {
   return String(number).padStart(2, '0');
+}
+
+/** Người LED đang gọi ở một bên, kèm chỗ họ thật sự ngồi (ghế cũ nếu bị xếp xuống cuối phiên). */
+export function findCalling(occupants: SeatOccupant[], side: SeatSide) {
+  const current = occupants.find(
+    (occupant) =>
+      occupant.statusBaChelor === 'Current' && sideOfChair(occupant.originalChair ?? occupant.chair) === side,
+  );
+  if (!current) return null;
+  return {
+    fullName: current.fullName,
+    studentCode: current.studentCode,
+    seat: current.originalChair ?? current.chair ?? null,
+    ledChair: current.chair ?? null,
+    late: current.attendanceStatus === 2,
+  };
 }

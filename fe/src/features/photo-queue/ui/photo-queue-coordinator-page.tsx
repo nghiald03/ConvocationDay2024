@@ -3,8 +3,9 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowUpDown, ChevronLeft, ChevronRight, ListChecks, RotateCcw, Search } from 'lucide-react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -360,36 +361,34 @@ export function PhotoQueueCoordinatorPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className='mt-6 max-h-[360px] overflow-auto rounded-lg border'>
-            <table className='w-full text-left text-sm'>
-              <thead className='bg-muted text-muted-foreground'>
-                <tr>
+          <div className='mt-6 max-h-[360px] overflow-y-auto'>
+            <Table>
+              <TableHeader>
+                <TableRow className='hover:bg-transparent'>
                   <StatsSortHeader label='Số' field='queueNumber' onSort={changeStatsSort} />
                   <StatsSortHeader label='MSSV' field='studentCode' onSort={changeStatsSort} />
                   <StatsSortHeader label='Họ tên' field='fullName' onSort={changeStatsSort} />
                   <StatsSortHeader label='Tình trạng' field='photoStatus' onSort={changeStatsSort} />
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {statsView.entries.map((entry) => (
-                  <tr key={entry.queueNumber} className='border-t'>
-                    <td className='p-3 font-bold'>{entry.queueNumber}</td>
-                    <td className='p-3'>{entry.studentCode}</td>
-                    <td className='p-3'>{entry.fullName}</td>
-                    <td className='p-3'>
-                      {getPhotoStatusLabel(entry.photoStatus)}
-                    </td>
-                  </tr>
+                  <TableRow key={entry.queueNumber}>
+                    <TableCell className='font-semibold'>{entry.queueNumber}</TableCell>
+                    <TableCell>{entry.studentCode}</TableCell>
+                    <TableCell>{entry.fullName}</TableCell>
+                    <TableCell>{getPhotoStatusLabel(entry.photoStatus)}</TableCell>
+                  </TableRow>
                 ))}
                 {statsView.entries.length === 0 && (
-                  <tr className='border-t'>
-                    <td colSpan={4} className='p-6 text-center text-muted-foreground'>
+                  <TableRow>
+                    <TableCell colSpan={4} className='text-center text-muted-foreground'>
                       Không tìm thấy dữ liệu phù hợp.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           <div className='mt-4 flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between'>
             <p className='text-muted-foreground'>
@@ -603,18 +602,16 @@ function StatsSortHeader({
   onSort: (field: PhotoQueueStatsSortField) => void;
 }) {
   return (
-    <th className='p-1'>
-      <Button
+    <TableHead>
+      <button
         type='button'
-        variant='ghost'
-        size='sm'
-        className='w-full justify-start px-2'
+        className='inline-flex items-center gap-1 uppercase transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
         onClick={() => onSort(field)}
       >
         {label}
-        <ArrowUpDown className='ml-2 h-4 w-4' />
-      </Button>
-    </th>
+        <ArrowUpDown className='h-3.5 w-3.5' />
+      </button>
+    </TableHead>
   );
 }
 

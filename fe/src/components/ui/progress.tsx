@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { color, size } from "@/lib/type";
 
 const progressVariants = cva(
-  "relative overflow-hidden rounded-full bg-default-200 dark:bg-default-300",
+  "relative overflow-hidden rounded-full bg-default-200 dark:bg-default-300/70",
   {
     variants: {
       color: {
@@ -68,7 +68,7 @@ const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root
     >
       <ProgressPrimitive.Indicator
         className={cn(
-          "flex-1 transition-all h-full w-full flex items-center justify-center",
+          "flex-1 transition-all duration-500 ease-out motion-reduce:transition-none h-full w-full flex items-center justify-center rounded-full",
           className,
           {
             "animate-stripes": isAnimate,

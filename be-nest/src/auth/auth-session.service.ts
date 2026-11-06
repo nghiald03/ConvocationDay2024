@@ -22,6 +22,13 @@ export class AuthSessionService {
   }
 
   async resolve(headers: IncomingHttpHeaders): Promise<ActorContext | null> {
+    return (await this.resolveWithExpiry(headers))?.actor ?? null;
+  }
+
+  /** Như `resolve` nhưng kèm thời điểm phiên hết hạn, để kết nối realtime hẹn giờ kiểm tra lại. */
+  async resolveWithExpiry(
+    headers: IncomingHttpHeaders,
+  ): Promise<{ actor: ActorContext; expiresAt: Date } | null> {
     const result = await this.auth.api.getSession({
       headers: fromNodeHeaders(headers),
       query: { disableCookieCache: true },
@@ -46,11 +53,14 @@ export class AuthSessionService {
       .where(eq(userRoles.userId, user.id));
     const roles = roleRows.map(({ role }) => role);
     return {
-      userId: user.id,
-      email: user.email,
-      fullName: user.name,
-      roles,
-      permissions: expandPermissions(roles),
+      actor: {
+        userId: user.id,
+        email: user.email,
+        fullName: user.name,
+        roles,
+        permissions: expandPermissions(roles),
+      },
+      expiresAt: new Date(result.session.expiresAt),
     };
   }
 

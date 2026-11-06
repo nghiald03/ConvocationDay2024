@@ -22,20 +22,24 @@ const ProfileInfo = () => {
   return (
     <div className='md:block hidden'>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild className=' cursor-pointer'>
-          <div className=' flex items-center gap-2  text-default-800 '>
-            <div className='text-sm font-bold'>
+        <DropdownMenuTrigger asChild>
+          <button
+            type='button'
+            aria-label='Menu người dùng'
+            className='flex items-center gap-2 rounded-md px-2 py-1.5 text-default-800 transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+          >
+            <div className='text-sm font-semibold'>
               Hi. {user?.fullName}
-              <Badge className='h-full ml-2' color='primary'>
+              <Badge className='h-full ml-2' color='primary' variant='soft'>
                 {user?.role}{' '}
               </Badge>
             </div>
 
             <div className='text-sm font-medium  capitalize lg:block hidden  '></div>
-            <span className='text-base  me-2 lg:inline-block hidden'>
+            <span className='text-base lg:inline-block hidden text-muted-foreground'>
               <Icon icon='heroicons-outline:chevron-down'></Icon>
             </span>
-          </div>
+          </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className='w-56 p-0' align='end'>
           <DropdownMenuSeparator className='mb-0 dark:bg-background' />

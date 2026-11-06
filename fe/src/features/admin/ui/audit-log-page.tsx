@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import TablePagination from '@/components/table/table-pagination';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -179,22 +180,15 @@ export default function AuditLogPage() {
             )}
           </TableBody>
         </Table>
-        <div className='flex items-center justify-end gap-2'>
-          <Button variant='outline' size='sm' disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>
-            Trang trước
-          </Button>
-          <span className='text-sm'>
-            Trang {page} / {pageCount}
-          </span>
-          <Button
-            variant='outline'
-            size='sm'
-            disabled={page >= pageCount}
-            onClick={() => setPage((value) => value + 1)}
-          >
-            Trang sau
-          </Button>
-        </div>
+        <TablePagination
+          pageIndex={page}
+          pageSize={PAGE_SIZE}
+          totalItems={data?.total ?? 0}
+          totalPages={pageCount}
+          hasPreviousPage={page > 1}
+          hasNextPage={page < pageCount}
+          setPageIndex={setPage}
+        />
       </CardContent>
     </Card>
   );

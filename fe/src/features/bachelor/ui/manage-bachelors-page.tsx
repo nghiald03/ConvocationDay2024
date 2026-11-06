@@ -10,6 +10,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { deleteBachelor as deleteBachelorRequest } from '@/features/bachelor/api/delete-bachelor';
 import { hallQueryOptions } from '@/features/hall/queries/hall-query-options';
@@ -41,7 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import AddOrUpdateBachelor from '@/features/bachelor/ui/bachelor-form';
 import swal from 'sweetalert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -220,6 +222,7 @@ export default function ManageBachelorsPage() {
     {
       id: 'action',
       header: 'Hành động',
+      meta: 'actions',
 
       cell: ({ row }) => (
         <div className='flex gap-1'>
@@ -228,22 +231,16 @@ export default function ManageBachelorsPage() {
             sessionList={sessionList ?? []}
             bachelor={row.original}
           >
-            <Button variant='outline' color='primary' className='' size='icon'>
-              <Icon icon='line-md:edit-filled'></Icon>
-            </Button>
+            <IconButton icon={Pencil} label='Sửa tân cử nhân' color='primary' />
           </AddOrUpdateBachelor>
-          <Button
-            variant='outline'
+          <IconButton
+            icon={Trash2}
+            label='Xóa tân cử nhân'
             color='destructive'
-            size='icon'
             onClick={() => {
               handleDeleteBachelor(row.getValue('studentCode'));
-              // console.log(row.getValue('studentCode'));
             }}
-            className=''
-          >
-            <Icon icon='material-symbols:delete-outline'></Icon>
-          </Button>
+          />
         </div>
       ),
     },
@@ -291,27 +288,18 @@ export default function ManageBachelorsPage() {
             onValueChange={setTabsSelect}
           >
             <TabsList>
-              <TabsTrigger
-                value='bachelorList'
-                className='relative before:absolute before:top-full before:left-0 before:h-px before:w-full data-[state=active]:before:bg-primary'
-              >
+              <TabsTrigger value='bachelorList'>
                 <Icon
                   icon='icon-park-solid:bachelor-cap-one'
                   className='h-4 w-4 me-1'
                 />
                 Danh sách tân cử nhân
               </TabsTrigger>
-              <TabsTrigger
-                value='bachelorListNotCheckin'
-                className='relative before:absolute before:top-full before:left-0 before:h-px before:w-full data-[state=active]:before:bg-primary'
-              >
+              <TabsTrigger value='bachelorListNotCheckin'>
                 <Icon icon='mynaui:user-x' className='h-4 w-4 me-1' />
                 Danh sách tân cử nhân chưa checkin
               </TabsTrigger>
-              <TabsTrigger
-                value='checkinList'
-                className='relative before:absolute before:top-full before:left-0 before:h-px before:w-full data-[state=active]:before:bg-primary'
-              >
+              <TabsTrigger value='checkinList'>
                 <Icon
                   icon='icon-park-outline:market-analysis'
                   className='h-4 w-4 me-1'

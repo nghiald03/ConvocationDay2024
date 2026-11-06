@@ -1,5 +1,5 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, ilike, isNotNull, ne, or, sql, type SQL } from 'drizzle-orm';
+import { BadRequestException, Inject, Injectable, Optional } from '@nestjs/common';
+import { and, asc, count, eq, ilike, inArray, isNotNull, ne, or, sql, type SQL } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { Permission } from '../auth/permissions.js';
@@ -8,9 +8,24 @@ import { userCheckinRooms } from '../database/schema/authorization-schema.js';
 import { bachelors, checkIns, halls, sessions } from '../database/schema/domain-schema.js';
 import { assertCheckInRoomAllowed, type CheckInRoomScope } from './checkin-room-scope.js';
 import type { BachelorDto, BachelorListItemDto } from './dto/bachelor.dto.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 import { nextChairAtEnd } from './next-chair-at-end.js';
 
-class BachelorImportError extends Error {}
+/** Số tân cử nhân ghi trong một câu lệnh INSERT; đủ lớn để ít vòng mạng, đủ nhỏ để không chạm giới hạn tham số. */
+export const IMPORT_BATCH_SIZE = 200;
+const EXISTING_CODE_LOOKUP_SIZE = 1000;
+
+export type ImportProgress = {
+  total: number;
+  /** Số dòng đã xử lý xong, dù thành công hay lỗi. */
+  processed: number;
+  added: number;
+  failed: number;
+};
+
+function placementKey(item: Pick<BachelorDto, 'hallName' | 'sessionNum'>) {
+  return `${item.hallName.toLowerCase()}|${item.sessionNum}`;
+}
 
 function pageResult<T>(items: T[], totalItems: number, currentPage: number, pageSize: number) {
   const totalPages = Math.ceil(totalItems / pageSize);
@@ -27,7 +42,15 @@ function pageResult<T>(items: T[], totalItems: number, currentPage: number, page
 
 @Injectable()
 export class BachelorService {
-  constructor(@Inject(DATABASE) private readonly database: AppDatabase) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: AppDatabase,
+    @Optional() private readonly realtime?: RealtimeService,
+  ) {}
+
+  /** Báo cho các màn đang mở tải lại danh sách tân cử nhân (gọi sau khi đã ghi xong). */
+  private changed(hallId?: number | null, sessionId?: number | null) {
+    this.realtime?.dataChanged('bachelor', { hallId, sessionId });
+  }
 
   async list(options: {
     pageIndex: number;
@@ -73,6 +96,8 @@ export class BachelorService {
         sessionInDay: sql<number | null>`coalesce(${bachelors.sessionInDay}, ${sessions.sessionInDay})`,
         description: sessions.description,
         chair: bachelors.chair,
+        /** Ghế cũ của người bị xếp xuống cuối phiên (họ vẫn ngồi ở đó); null nếu chưa bị đẩy. */
+        originalChair: bachelors.originalChair,
         chairParent: bachelors.chairParent,
         checkinRoom: bachelors.checkinRoom,
         checkIn: bachelors.checkIn,
@@ -123,53 +148,134 @@ export class BachelorService {
     };
   }
 
-  async addMany(input: BachelorDto[]) {
+  /**
+   * Thêm danh sách tân cử nhân và trả về các lỗi theo từng dòng (rỗng nếu thành công hết).
+   * Làm theo lô: tra trùng một lần, tìm hoặc tạo side và phiên một lần cho mỗi cặp, rồi INSERT mỗi lô một câu lệnh.
+   * Lô nào lỗi thì thử lại từng dòng để biết chính xác dòng nào hỏng. `onProgress` được gọi sau mỗi bước.
+   */
+  async addMany(input: BachelorDto[], onProgress?: (progress: ImportProgress) => void): Promise<string[]> {
     const errors: string[] = [];
+    let processed = 0;
+    let added = 0;
+    const report = () => onProgress?.({ total: input.length, processed, added, failed: errors.length });
+    const fail = (item: BachelorDto, message = `Không thể thêm tân cử nhân ${item.studentCode}.`) => {
+      errors.push(message);
+      processed += 1;
+    };
+    report();
+
+    const existing = await this.existingStudentCodes(input.map((item) => item.studentCode));
+    const seen = new Set<string>();
+    const candidates: BachelorDto[] = [];
     for (const item of input) {
+      const key = item.studentCode.toLowerCase();
+      if (existing.has(key) || seen.has(key)) {
+        fail(item, `Tân cử nhân ${item.studentCode} đã tồn tại!`);
+        continue;
+      }
+      seen.add(key);
+      candidates.push(item);
+    }
+    report();
+
+    const placements = await this.resolveImportPlacements(candidates);
+    const ready: { item: BachelorDto; row: typeof bachelors.$inferInsert }[] = [];
+    for (const item of candidates) {
+      const placement = placements.get(placementKey(item));
+      if (!placement) {
+        fail(item);
+        continue;
+      }
+      ready.push({
+        item,
+        row: {
+          image: item.image,
+          fullName: item.fullName,
+          studentCode: item.studentCode,
+          mail: item.mail,
+          faculty: item.faculty,
+          major: item.major,
+          hallId: placement.hallId,
+          sessionId: placement.sessionId,
+          sessionInDay: item.sessionInDay,
+          chair: item.chair,
+          chairParent: item.chairParent,
+          checkinRoom: item.checkinRoom,
+          checkIn: false,
+        },
+      });
+    }
+    report();
+
+    for (let index = 0; index < ready.length; index += IMPORT_BATCH_SIZE) {
+      const chunk = ready.slice(index, index + IMPORT_BATCH_SIZE);
       try {
         await this.database.transaction(async (transaction) => {
-          const [duplicate] = await transaction
-            .select({ id: bachelors.id })
-            .from(bachelors)
-            .where(sql`lower(${bachelors.studentCode}) = ${item.studentCode.toLowerCase()}`)
-            .limit(1);
-          if (duplicate) throw new BachelorImportError(`Tân cử nhân ${item.studentCode} đã tồn tại!`);
-
-          const hall = await this.findOrCreateHall(transaction, item.hallName);
-          const session = await this.findOrCreateSession(
-            transaction,
-            item.sessionNum,
-            item.sessionInDay,
-          );
-          await transaction
-            .insert(checkIns)
-            .values({ hallId: hall.id, sessionId: session.id })
-            .onConflictDoNothing();
-          await transaction.insert(bachelors).values({
-            image: item.image,
-            fullName: item.fullName,
-            studentCode: item.studentCode,
-            mail: item.mail,
-            faculty: item.faculty,
-            major: item.major,
-            hallId: hall.id,
-            sessionId: session.id,
-            sessionInDay: item.sessionInDay,
-            chair: item.chair,
-            chairParent: item.chairParent,
-            checkinRoom: item.checkinRoom,
-            checkIn: false,
-          });
+          await transaction.insert(bachelors).values(chunk.map(({ row }) => row));
         });
-      } catch (error) {
-        errors.push(
-          error instanceof BachelorImportError
-            ? error.message
-            : `Không thể thêm tân cử nhân ${item.studentCode}.`,
-        );
+        added += chunk.length;
+        processed += chunk.length;
+      } catch {
+        for (const { item, row } of chunk) {
+          try {
+            await this.database.transaction(async (transaction) => {
+              await transaction.insert(bachelors).values(row);
+            });
+            added += 1;
+            processed += 1;
+          } catch {
+            fail(item);
+          }
+        }
+      }
+      report();
+    }
+    if (added > 0) this.changed();
+    return errors;
+  }
+
+  /** Mã tân cử nhân (chữ thường) đã có trong DB trong số các mã đưa vào. */
+  private async existingStudentCodes(codes: string[]): Promise<Set<string>> {
+    const unique = [...new Set(codes.map((code) => code.toLowerCase()))];
+    const found = new Set<string>();
+    for (let index = 0; index < unique.length; index += EXISTING_CODE_LOOKUP_SIZE) {
+      const rows = await this.database
+        .select({ code: sql<string>`lower(${bachelors.studentCode})` })
+        .from(bachelors)
+        .where(inArray(sql`lower(${bachelors.studentCode})`, unique.slice(index, index + EXISTING_CODE_LOOKUP_SIZE)));
+      for (const { code } of rows) found.add(code);
+    }
+    return found;
+  }
+
+  /** Tìm hoặc tạo side, phiên và dòng check-in cho mỗi cặp (side, phiên) khác nhau, mỗi cặp một lần duy nhất. */
+  private async resolveImportPlacements(items: BachelorDto[]) {
+    const placements = new Map<string, { hallId: number; sessionId: number }>();
+    const failed = new Set<string>();
+    const halls = new Map<string, number>();
+    const sessionIds = new Map<number, number>();
+    for (const item of items) {
+      const key = placementKey(item);
+      if (placements.has(key) || failed.has(key)) continue;
+      const hallKey = item.hallName.toLowerCase();
+      try {
+        const resolved = await this.database.transaction(async (transaction) => {
+          const hallId = halls.get(hallKey) ?? (await this.findOrCreateHall(transaction, item.hallName)).id;
+          const sessionId =
+            sessionIds.get(item.sessionNum) ??
+            (await this.findOrCreateSession(transaction, item.sessionNum, item.sessionInDay)).id;
+          await transaction.insert(checkIns).values({ hallId, sessionId }).onConflictDoNothing();
+          return { hallId, sessionId };
+        });
+        // Chỉ nhớ sau khi transaction đã thành công, tránh nhớ side hay phiên vừa bị rollback.
+        halls.set(hallKey, resolved.hallId);
+        sessionIds.set(item.sessionNum, resolved.sessionId);
+        placements.set(key, resolved);
+      } catch {
+        failed.add(key);
       }
     }
-    return errors;
+    return placements;
   }
 
   async update(item: BachelorDto) {
@@ -207,6 +313,7 @@ export class BachelorService {
       })
       .where(sql`lower(${bachelors.studentCode}) = ${item.studentCode.toLowerCase()}`)
       .returning();
+    if (updated) this.changed(hall.id, session.id);
     return updated
       ? {
           id: updated.id,
@@ -250,26 +357,44 @@ export class BachelorService {
         if (!rows.length) errors.push(`Tân cử nhân ${item.studentCode} không tồn tại!`);
       }
     });
+    this.changed(hallId, sessionId);
     return errors;
   }
 
   async delete(studentCode: string): Promise<boolean> {
-    return (
-      await this.database
-        .delete(bachelors)
-        .where(sql`lower(${bachelors.studentCode}) = ${studentCode.toLowerCase()}`)
-        .returning()
-    ).length > 0;
+    const deleted =
+      (
+        await this.database
+          .delete(bachelors)
+          .where(sql`lower(${bachelors.studentCode}) = ${studentCode.toLowerCase()}`)
+          .returning()
+      ).length > 0;
+    if (deleted) this.changed();
+    return deleted;
   }
 
   async deleteAll(): Promise<number> {
-    return (await this.database.delete(bachelors).returning({ id: bachelors.id })).length;
+    const deleted = (await this.database.delete(bachelors).returning({ id: bachelors.id })).length;
+    this.changed();
+    return deleted;
   }
 
   async resetStatus(): Promise<void> {
     await this.database
       .update(bachelors)
-      .set({ bachelorStatus: null, status: false, checkIn: false, timeCheckIn: null });
+      .set({
+        bachelorStatus: null,
+        status: false,
+        checkIn: false,
+        timeCheckIn: null,
+        attendanceStatus: 0,
+        // Người từng bị đẩy xuống hàng Z trở về ghế gốc.
+        chair: sql`coalesce(${bachelors.originalChair}, ${bachelors.chair})`,
+        originalChair: null,
+      });
+    // Reset toàn bộ điểm danh: ảnh hưởng mọi side và phiên, và xóa cả trạng thái LED.
+    this.realtime?.dataChanged('checkin');
+    this.realtime?.dataChanged('led');
   }
 
   async byHallSession(hallId: number, sessionId: number) {
@@ -308,7 +433,7 @@ export class BachelorService {
   }
 
   async moveToTemporarySession(studentCode: string, isMorning: boolean, scope: CheckInRoomScope) {
-    return this.database.transaction(async (transaction) => {
+    const result = await this.database.transaction(async (transaction) => {
       const [bachelor] = await transaction
         .select()
         .from(bachelors)
@@ -332,16 +457,18 @@ export class BachelorService {
       const chair = await this.chairAtEndOfSession(transaction, hallId, session.id, bachelor.id);
       const [updated] = await transaction
         .update(bachelors)
-        .set({ sessionId: session.id, sessionInDay: session.sessionInDay, chair, chairParent: `PH${chair}` })
+        .set({ sessionId: session.id, sessionInDay: session.sessionInDay, chair })
         .where(eq(bachelors.id, bachelor.id))
         .returning();
       const [hall] = await transaction.select().from(halls).where(eq(halls.id, hallId));
       return { bachelor: updated!, session, hall: hall! };
     });
+    this.changed(result.hall.id, result.session.id);
+    return result;
   }
 
   async transferLateStudent(studentCode: string, newSessionId: number, scope: CheckInRoomScope) {
-    return this.database.transaction(async (transaction) => {
+    const result = await this.database.transaction(async (transaction) => {
       const [bachelor] = await transaction
         .select()
         .from(bachelors)
@@ -373,12 +500,13 @@ export class BachelorService {
           sessionInDay: session.sessionInDay,
           attendanceStatus: 2,
           chair,
-          chairParent: `PH${chair}`,
         })
         .where(eq(bachelors.id, bachelor.id))
         .returning();
       return { bachelor: updated!, session };
     });
+    this.changed(result.bachelor.hallId, result.session.id);
+    return result;
   }
 
   private async chairAtEndOfSession(

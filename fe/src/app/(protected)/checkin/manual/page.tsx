@@ -10,6 +10,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { ArrowRightLeft, Copy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
@@ -32,14 +34,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { checkInBachelor, forceCheckInBachelor } from '@/features/check-in/api/check-in-bachelor';
+import {
+  checkInBachelor,
+  forceCheckInBachelor,
+  getCheckInPreview,
+} from '@/features/check-in/api/check-in-bachelor';
 import { createClickBurst } from '@/features/check-in/model/click-burst';
 import { canCheckInRoom } from '@/features/check-in/model/check-in-room';
 import { checkInRoomsQueryOptions } from '@/features/check-in/queries/check-in-rooms-query-options';
-import {
-  CHECK_IN_LOCK_UNKNOWN_WARNING,
-  getCheckInLockWarning,
-} from '@/features/check-in/model/get-check-in-lock-warning';
+import { describeCheckInPreview } from '@/features/check-in/model/describe-check-in-preview';
 import { showLateCheckInNotice } from '@/features/check-in/ui/show-late-check-in-notice';
 import { moveBachelorToTemporarySession } from '@/features/bachelor/api/move-bachelor-to-temporary-session';
 import { transferBachelorSession } from '@/features/bachelor/api/transfer-bachelor-session';
@@ -52,13 +55,18 @@ import type { BachelorListParams } from '@/features/bachelor/model/bachelor-page
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ColumnDef } from '@tanstack/react-table';
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
+import { copyRichText } from '@/features/check-in/lib/copy-rich-text';
+import { buildCheckInReminder } from '@/features/check-in/model/check-in-reminder';
 import swal from 'sweetalert';
 import { useDebounce } from 'use-debounce';
 import { MultiHallStatusDisplay } from '@/features/led/ui/multi-hall-status-display';
 import { useSession } from '@/features/auth/queries/session-provider';
 import { canViewForceCode } from '@/features/check-in/model/force-code';
 import { ForceCodeBadge } from '@/features/check-in/ui/force-code-badge';
+
+/** Hiện cột "Chuyển phiên" trong bảng check-in. Đang ẩn theo yêu cầu vận hành. */
+const SHOW_TRANSFER_COLUMN = false;
 
 export default function ManualCheckinPage() {
   const queryClient = useQueryClient();
@@ -238,27 +246,23 @@ export default function ManualCheckinPage() {
       confirmationInput.placeholder = studentCode;
       confirmationInput.autocomplete = 'off';
 
-      // Đọc trạng thái mới nhất ngay trước khi hỏi vì phiên có thể vừa bị khóa.
-      const lockWarning = nextStatus
-        ? await getSessionsByHallName(row.hallName)
-            .then((sessions) => getCheckInLockWarning(sessions, row.sessionNum))
-            .catch(() => CHECK_IN_LOCK_UNKNOWN_WARNING)
+      // Xem trước kết quả thật ngay trước khi hỏi: phiên có thể vừa bị khóa, LED có thể vừa chuyển người.
+      const dialog = nextStatus
+        ? describeCheckInPreview(
+            await getCheckInPreview(studentCode).catch(() => null),
+            row.fullName
+          )
         : null;
 
       const confirm = await swal({
         title: nextStatus ? 'Checkin' : 'Hủy checkin',
-        text: nextStatus
-          ? [
-              `Bạn có muốn checkin cho tân cử nhân ${row.fullName} không?`,
-              lockWarning,
-            ]
-              .filter(Boolean)
-              .join('\n\n')
+        text: dialog
+          ? dialog.text
           : `Nhập đúng MSSV ${studentCode} để xác nhận hủy checkin cho ${row.fullName}.`,
-        icon: 'warning',
+        icon: dialog?.icon ?? 'warning',
         content: nextStatus ? undefined : (confirmationInput as any),
         buttons: nextStatus ? ['Không', 'Checkin'] : ['Không', 'Hủy checkin'],
-        dangerMode: !nextStatus || lockWarning !== null,
+        dangerMode: !nextStatus || dialog?.danger === true,
       });
 
       if (!confirm) return;
@@ -456,6 +460,20 @@ export default function ManualCheckinPage() {
     }
   }, [error]);
 
+  /** Chép tin nhắc check-in (có định dạng màu cho Zalo) của một tân cử nhân, điền sẵn họ tên, MSSV và phòng. */
+  const copyReminder = useCallback((bachelor: { fullName: string; studentCode: string; checkinRoom?: string | null }) => {
+    const reminder = buildCheckInReminder({
+      fullName: bachelor.fullName,
+      studentCode: bachelor.studentCode,
+      room: bachelor.checkinRoom,
+    });
+    if (copyRichText(reminder)) {
+      toast.success(`Đã copy tin nhắc check-in của ${bachelor.fullName}`, { duration: 2500, position: 'top-right' });
+    } else {
+      toast.error('Không copy được, vui lòng thử lại hoặc chép thủ công.', { duration: 4000, position: 'top-right' });
+    }
+  }, []);
+
   const columns: ColumnDef<any>[] = useMemo(
     () => [
       { accessorKey: 'id', header: 'ID' },
@@ -486,6 +504,7 @@ export default function ManualCheckinPage() {
       {
         accessorKey: 'checkIn',
         header: 'Checkin',
+        meta: 'actions',
         cell: ({ row }) => {
           const sc = row.original.studentCode as string;
           const isProcessing =
@@ -505,32 +524,51 @@ export default function ManualCheckinPage() {
         },
       },
       {
-        id: 'transfer',
-        header: 'Chuyển phiên',
+        id: 'reminder',
+        header: 'Nhắc check-in',
+        meta: 'actions',
         cell: ({ row }) => (
-          <Button
-            size='sm'
-            variant='outline'
-            onClick={() => {
-              // toast.promise đã hiện lỗi cho người dùng
-              promptTransferToAnotherSession(row.original).catch(() => undefined);
-            }}
-            disabled={
-              row.original.checkIn === true ||
-              processingIds.has(row.original.studentCode) ||
-              !canCheckInRoom(assignedRooms, row.original.checkinRoom)
-            }
-          >
-            Chuyển phiên
-          </Button>
+          <IconButton
+            icon={Copy}
+            label='Copy tin nhắn nhắc check-in (dán vào Zalo)'
+            onClick={() => copyReminder(row.original)}
+            // Người đã check-in thì không cần nhắc.
+            disabled={row.original.checkIn === true}
+          />
         ),
       },
+      // Cột "Chuyển phiên" đang ẩn (SHOW_TRANSFER_COLUMN = false); đặt true để hiện lại.
+      ...(SHOW_TRANSFER_COLUMN
+        ? [
+            {
+              id: 'transfer',
+              header: 'Chuyển phiên',
+              meta: 'actions',
+              cell: ({ row }) => (
+                <IconButton
+                  icon={ArrowRightLeft}
+                  label='Chuyển phiên'
+                  onClick={() => {
+                    // toast.promise đã hiện lỗi cho người dùng
+                    promptTransferToAnotherSession(row.original).catch(() => undefined);
+                  }}
+                  disabled={
+                    row.original.checkIn === true ||
+                    processingIds.has(row.original.studentCode) ||
+                    !canCheckInRoom(assignedRooms, row.original.checkinRoom)
+                  }
+                />
+              ),
+            } satisfies ColumnDef<any>,
+          ]
+        : []),
     ],
     [
       processingIds,
       updateBachelorMissingSession.isPending,
       handleSwitchClick,
       promptTransferToAnotherSession,
+      copyReminder,
       assignedRooms,
     ]
   );

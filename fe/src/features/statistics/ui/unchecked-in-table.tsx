@@ -5,7 +5,8 @@ import type { CreateNotificationRequest } from '@/features/notification/model/no
 import { Bachelor } from '@/features/bachelor/model/bachelor';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { BellRing, Loader2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -14,7 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
+import { fallbackInterval } from '@/lib/realtime/realtime-status';
 
 export default function UncheckedInTable({
   hallId,
@@ -26,8 +28,7 @@ export default function UncheckedInTable({
   const { data, isLoading, isError } = useQuery({
     queryKey: ['bachelors-by-session', hallId, sessionId],
     queryFn: () => getBachelorsByHallSession(hallId, sessionId),
-    refetchInterval: 5000,
-    refetchIntervalInBackground: true,
+    refetchInterval: fallbackInterval(5000),
   });
 
   const extractList = (raw: any): any[] => {
@@ -123,14 +124,13 @@ export default function UncheckedInTable({
                     {b.chairParent}
                   </TableCell>
                   <TableCell className='whitespace-nowrap'>
-                    <Button
-                      size='sm'
-                      variant='outline'
+                    <IconButton
+                      icon={sendNotifyMutation.isPending ? Loader2 : BellRing}
+                      label={sendNotifyMutation.isPending ? 'Đang gửi...' : 'Gửi thông báo'}
+                      className={sendNotifyMutation.isPending ? '[&>svg]:animate-spin' : undefined}
                       onClick={() => handleSendNotify(b)}
                       disabled={sendNotifyMutation.isPending}
-                    >
-                      {sendNotifyMutation.isPending ? 'Đang gửi...' : 'Gửi thông báo'}
-                    </Button>
+                    />
                   </TableCell>
                 </TableRow>
               ))}

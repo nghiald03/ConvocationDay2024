@@ -10,11 +10,12 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
     <div
       ref={ref}
       className={cn(
-        "rounded-lg  bg-card text-card-foreground ",
-        className, {
-        'border': config?.skin === 'bordered',
-        'shadow-base': config?.skin === 'default'
-      }
+        "rounded-xl bg-card text-card-foreground",
+        {
+          'border border-border': config?.skin === 'bordered',
+          'border border-border/60 shadow-base': config?.skin === 'default'
+        },
+        className
       )}
       {...props}
     />
@@ -43,7 +44,7 @@ const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-2xl font-semibold leading-none tracking-tight",
+      "text-lg font-semibold leading-snug tracking-tight text-card-foreground",
       className
     )}
     {...props}

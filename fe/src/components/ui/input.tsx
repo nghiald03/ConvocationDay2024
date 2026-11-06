@@ -5,30 +5,30 @@ import { cn } from '@/lib/utils';
 import { InputColor } from '@/lib/type';
 
 export const inputVariants = cva(
-  ' w-full  bg-background  rounded py-2 px-3 h-9 border text-sm font-normal border border-solid border-default-200 outline-none focus:outline-none  file:border-0 file:bg-transparent file:text-sm file:font-medium read-only:bg-default-200 disabled:cursor-not-allowed disabled:opacity-50  transition-all duration-300 ',
+  'flex w-full rounded-md border bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-[border-color,box-shadow] duration-200 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground read-only:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60 motion-reduce:transition-none',
   {
     variants: {
       color: {
         default:
-          'border-default-200 text-default-500 focus:outline-none focus:border-default dark:focus:border-default-500 disabled:bg-default-200  dark:disabled:bg-default-500  placeholder:text-accent-foreground/50',
+          'border-input hover:border-default-400 focus-visible:border-ring focus-visible:ring-ring/25',
         primary:
-          'border-primary/50 text-primary focus:border-primary disabled:bg-primary/30 disabled:placeholder:text-primary  placeholder:text-primary/70',
+          'border-primary/50 focus-visible:border-primary focus-visible:ring-primary/25',
         secondary:
-          'border-default-300 text-default-700  focus:border-secondary  disabled:bg-secondary/30 disabled:placeholder:text-secondary  placeholder:text-default-600',
-        info: 'border-info/50 text-info focus:border-info  disabled:bg-info/30 disabled:placeholder:text-info  placeholder:text-info/70',
+          'border-default-300 focus-visible:border-default-500 focus-visible:ring-default-500/25',
+        info: 'border-info/50 focus-visible:border-info focus-visible:ring-info/25',
         warning:
-          'border-warning/50 text-warning  focus:border-warning disabled:bg-warning/30 disabled:placeholder:text-info  placeholder:text-warning/70',
+          'border-warning/50 focus-visible:border-warning focus-visible:ring-warning/25',
         success:
-          'border-success/50 text-success focus:border-success   disabled:bg-success/30 disabled:placeholder:text-info  placeholder:text-success/70',
+          'border-success/50 focus-visible:border-success focus-visible:ring-success/25',
         destructive:
-          'border-destructive/50 text-destructive focus:border-destructive  disabled:bg-destructive/30 disabled:placeholder:text-destructive  placeholder:text-destructive/70',
+          'border-destructive/60 focus-visible:border-destructive focus-visible:ring-destructive/25',
       },
 
       size: {
-        sm: 'h-8 text-xs read-only:leading-8',
-        default: 'h-9 text-xs read-only:leading-none',
-        md: 'h-10 text-sm read-only:leading-10',
-        lg: 'h-12  text-sm read-only:leading-[48px]',
+        sm: 'h-8 text-xs',
+        default: 'h-10',
+        md: 'h-10',
+        lg: 'h-12',
       },
     },
 
@@ -79,11 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         type={type}
-        className={cn(
-          inputVariants({ color, size }),
-          className,
-          'flex  w-full rounded-md border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm'
-        )}
+        className={cn(inputVariants({ color, size }), className)}
         ref={ref}
         onChange={handleNumberInput}
         {...props}

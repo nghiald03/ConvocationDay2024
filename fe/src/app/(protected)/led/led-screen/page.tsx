@@ -173,7 +173,8 @@ export default function LedScreen() {
     return () => document.removeEventListener('fullscreenchange', onFull);
   }, []);
 
-  const handleDoubleClick = async () => {
+  // Dùng chung cho nút "Toàn màn hình" và double-click vào hình.
+  const toggleFullscreen = async () => {
     // Nếu không có ảnh thì không làm gì
     if (!bachelorCurrent?.image) {
       // giữ im lặng hoặc thông báo tuỳ ý; theo yêu cầu em bỏ toast để "vào full màn luôn"
@@ -245,8 +246,9 @@ export default function LedScreen() {
               {bachelorCurrent ? (
                 <>
                   {' '}
-                  Để vào chế độ fullscreen, hãy double-click vào hình ảnh bên
-                  dưới ! (sẽ mở chế độ fullscreen của trình duyệt)
+                  Để vào chế độ fullscreen, bấm nút &quot;Toàn màn hình&quot; hoặc
+                  double-click vào hình ảnh bên dưới ! (sẽ mở chế độ fullscreen
+                  của trình duyệt)
                 </>
               ) : (
                 <>
@@ -258,15 +260,27 @@ export default function LedScreen() {
             </AlertDescription>
           </Alert>
 
-          <div className='flex items-center gap-3'>
-            <Switch
-              id='led-show-identity'
-              checked={showIdentity}
-              onCheckedChange={setShowIdentity}
-            />
-            <Label htmlFor='led-show-identity' className='cursor-pointer'>
-              Hiển thị bảng thông tin (tên, MSSV, ghế) ở góc ảnh
-            </Label>
+          <div className='flex flex-wrap items-center justify-between gap-3'>
+            <div className='flex items-center gap-3'>
+              <Switch
+                id='led-show-identity'
+                checked={showIdentity}
+                onCheckedChange={setShowIdentity}
+              />
+              <Label htmlFor='led-show-identity' className='cursor-pointer'>
+                Hiển thị bảng thông tin (tên, MSSV, ghế) ở góc ảnh
+              </Label>
+            </div>
+            <Button
+              type='button'
+              variant='outline'
+              className='gap-2'
+              onClick={() => void toggleFullscreen()}
+              disabled={!bachelorCurrent?.image}
+            >
+              <Icon icon='gridicons:fullscreen' className='w-4 h-4' />
+              Toàn màn hình
+            </Button>
           </div>
 
           <div className='text-sm text-muted-foreground'>
@@ -277,7 +291,7 @@ export default function LedScreen() {
       </Card>
 
       {/* Fullscreen: sử dụng Fullscreen API trên containerRef */}
-      <div ref={containerRef} onDoubleClick={handleDoubleClick}>
+      <div ref={containerRef} onDoubleClick={toggleFullscreen}>
         {isFullscreen ? (
           // Khi document ở chế độ fullscreen, hiển thị toàn màn như trước
           <div className='absolute inset-0 z-[999999999] bg-black flex items-center justify-center'>
@@ -298,11 +312,8 @@ export default function LedScreen() {
             </Card>
           </div>
         ) : bachelorCurrent?.image ? (
-          <Card
-            className='mt-3 animate-fade-up animate-duration-1000'
-            // vẫn cho phép double click ở vùng này
-            onDoubleClick={handleDoubleClick}
-          >
+          // Double-click đã được xử lý ở container bên ngoài; gắn thêm ở đây sẽ gọi hai lần.
+          <Card className='mt-3 animate-fade-up animate-duration-1000'>
             <CardContent className='relative p-3'>
               <LedCrossfadeImage
                 item={bachelorCurrent}

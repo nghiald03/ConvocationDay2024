@@ -1,9 +1,16 @@
+import axios from 'axios';
 import { httpClient } from '@/lib/http/client';
 import { normalizeSessionUser, type SessionUserPayload } from '../model/normalize-session-user';
 
+/** Phiên hiện tại; `null` khi đã hết phiên (401/403) để giao diện biết mà đưa về đăng nhập. Lỗi khác (mạng, server) vẫn ném ra. */
 export async function getSession() {
-  const response = await httpClient.get<SessionUserPayload>('/auth/me');
-  return normalizeSessionUser(response.data);
+  try {
+    const response = await httpClient.get<SessionUserPayload>('/auth/me');
+    return normalizeSessionUser(response.data);
+  } catch (error) {
+    if (axios.isAxiosError(error) && (error.response?.status === 401 || error.response?.status === 403)) return null;
+    throw error;
+  }
 }
 
 export async function login(credentials: {

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { color, rounded } from "@/lib/type";
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border py-1 px-2 text-xs  capitalize font-semibold  transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center rounded-md border py-0.5 px-2 text-xs capitalize font-medium leading-5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   {
     variants: {
       color: {
@@ -22,12 +22,27 @@ const badgeVariants = cva(
         md: "rounded-md",
         lg: "rounded-lg",
         full: "rounded-full",
-      }
+      },
+      // "solid" keeps the original filled look; "soft" is the quieter tinted chip.
+      variant: {
+        solid: "",
+        soft: "",
+      },
     },
+    compoundVariants: [
+      { variant: "soft", color: "default", className: "border-default/20 bg-default/10 text-default" },
+      { variant: "soft", color: "primary", className: "border-primary/20 bg-primary/10 text-primary" },
+      { variant: "soft", color: "secondary", className: "border-border bg-secondary text-secondary-foreground" },
+      { variant: "soft", color: "destructive", className: "border-destructive/20 bg-destructive/10 text-destructive" },
+      { variant: "soft", color: "success", className: "border-success/20 bg-success/10 text-success" },
+      { variant: "soft", color: "info", className: "border-info/20 bg-info/10 text-info" },
+      { variant: "soft", color: "warning", className: "border-warning/20 bg-warning/10 text-warning" },
+    ],
 
     defaultVariants: {
       color: "default",
       rounded: "md",
+      variant: "solid",
     },
   }
 );
@@ -40,10 +55,10 @@ export interface BadgeProps
 }
 
 
-function Badge({ className, color, rounded, ...props }: BadgeProps) {
+function Badge({ className, color, rounded, variant, ...props }: BadgeProps) {
   return (
     <div
-      className={cn(badgeVariants({ color, rounded }), className)}
+      className={cn(badgeVariants({ color, rounded, variant }), className)}
       {...props}
     />
   );

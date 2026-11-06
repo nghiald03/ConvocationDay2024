@@ -49,7 +49,10 @@ export const defaultConfig: Config = {
 }
 
 
-const configAtom = atomWithStorage<Config>("config", defaultConfig)
+// getOnInit: read the saved layout (collapsed sidebar, skin, ...) on the very first read
+// instead of one render later, so the sidebar/content don't visibly resize after mount.
+// Safe because the whole tree only renders client-side after MountedProvider mounts.
+const configAtom = atomWithStorage<Config>("config", defaultConfig, undefined, { getOnInit: true })
 
 export function useConfig() {
   

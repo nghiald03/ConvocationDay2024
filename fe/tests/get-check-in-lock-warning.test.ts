@@ -27,3 +27,16 @@ describe('getCheckInLockWarning', () => {
     );
   });
 });
+
+describe('nội dung cảnh báo phiên đã khóa', () => {
+  test('nói đúng luật: đi trễ, xuống cuối chỉ khi gần hàng LED, còn lại giữ ghế', () => {
+    expect(CHECK_IN_LOCKED_WARNING).toContain('đi trễ');
+    expect(CHECK_IN_LOCKED_WARNING).toContain('dưới 3 hàng');
+    expect(CHECK_IN_LOCKED_WARNING).toContain('giữ nguyên ghế');
+  });
+
+  test('không còn khẳng định mọi người đều bị đổi ghế xuống cuối', () => {
+    expect(CHECK_IN_LOCKED_WARNING).not.toContain('sẽ bị đổi ghế xuống cuối phiên');
+    expect(CHECK_IN_LOCK_UNKNOWN_WARNING).not.toContain('sẽ bị đổi ghế xuống cuối phiên');
+  });
+});

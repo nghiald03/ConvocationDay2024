@@ -1,0 +1,1 @@
+ALTER TABLE "bachelor" ADD COLUMN "original_chair" varchar(50);

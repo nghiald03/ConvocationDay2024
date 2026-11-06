@@ -16,13 +16,21 @@ import { Separator } from '@/components/ui/separator';
 import { Bachelor } from '@/features/bachelor/model/bachelor';
 import { cn } from '@/lib/utils';
 import { ColumnDef } from '@tanstack/react-table';
-import React, { useRef, useState } from 'react';
-import toast from 'react-hot-toast';
+import axios from 'axios';
+import React, { useEffect, useRef, useState } from 'react';
+import toast from '@/lib/toast';
 
-import { createBachelors } from '@/features/bachelor/api/create-bachelors';
-import { bachelorKeys } from '@/features/bachelor/queries/bachelor-query-options';
+import { getLatestBachelorImport, startBachelorImport } from '@/features/bachelor/api/bachelor-import';
+import { isImportFinished } from '@/features/bachelor/model/bachelor-import';
+import {
+  bachelorImportKeys,
+  bachelorImportQueryOptions,
+  bachelorKeys,
+  latestBachelorImportQueryOptions,
+} from '@/features/bachelor/queries/bachelor-query-options';
+import { ImportProgress } from '@/features/bachelor/ui/import-progress';
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as XLSX from 'xlsx';
 import { Loader2 } from 'lucide-react';
 
@@ -73,6 +81,9 @@ export default function AddBachelorFromFile({
   onOpenChange,
 }: AddBachelorFromFileDialogProps) {
   const [excelData, setExcelData] = useState<Bachelor[] | null>(null);
+  // Mã lần import đang theo dõi; còn giữ khi đóng hộp thoại để mở lại vẫn thấy tiến độ.
+  const [jobId, setJobId] = useState<string | null>(null);
+  const notifiedJobRef = useRef<string | null>(null);
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -246,6 +257,31 @@ export default function AddBachelorFromFile({
     reader.readAsArrayBuffer(file);
   };
 
+  // Mở lại hộp thoại (hoặc tải lại trang) khi có lần import đang chạy thì theo dõi tiếp.
+  const { data: latestJob } = useQuery(latestBachelorImportQueryOptions(open && jobId === null));
+  useEffect(() => {
+    if (latestJob?.status === 'running' && notifiedJobRef.current !== latestJob.id) setJobId(latestJob.id);
+  }, [latestJob]);
+
+  const { data: job } = useQuery(bachelorImportQueryOptions(jobId));
+
+  // Báo một lần khi lần import kết thúc, kể cả khi hộp thoại đang đóng.
+  useEffect(() => {
+    if (!job || !isImportFinished(job) || notifiedJobRef.current === job.id) return;
+    notifiedJobRef.current = job.id;
+    queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
+    if (job.status === 'failed') {
+      toast.error(job.message ?? 'Import thất bại', { duration: 8000, position: 'top-right' });
+    } else if (job.failed > 0) {
+      toast.error(`Import xong: ${job.added} thành công, ${job.failed} dòng lỗi`, {
+        duration: 8000,
+        position: 'top-right',
+      });
+    } else {
+      toast.success(`Import xong ${job.added} tân cử nhân`, { duration: 5000, position: 'top-right' });
+    }
+  }, [job, queryClient]);
+
   type AddBachelorFromFileProps = {
     data: Bachelor[];
   };
@@ -265,106 +301,139 @@ export default function AddBachelorFromFile({
         chairParent: item.chairParent?.toString(),
         checkinRoom: item.checkinRoom,
       }));
-      return createBachelors(dataUpload);
+      return startBachelorImport(dataUpload);
     },
-    onSuccess: () => {
-      toast.success('Thêm thành công', {
-        duration: 5000,
-        position: 'top-right',
-      });
-      onOpenChange(false);
+    onSuccess: (started) => {
+      setJobId(started.id);
       setExcelData([]);
       if (inputRef.current) inputRef.current.value = '';
-      queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
-    onError: (error: unknown) => {
+    onError: async (error: unknown) => {
+      // 409: đang có lần import khác chạy; theo dõi lần đó thay vì báo lỗi.
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        const running = await getLatestBachelorImport().catch(() => null);
+        if (running?.status === 'running') {
+          setJobId(running.id);
+          toast.error('Đang có một lần import khác chạy, đang hiển thị tiến độ của lần đó.', {
+            duration: 6000,
+            position: 'top-right',
+          });
+          return;
+        }
+      }
       const msg = getHttpErrorMessage(error, 'Không rõ lỗi');
-      toast.error('Thêm thất bại: ' + msg, {
+      toast.error('Không bắt đầu được import: ' + msg, {
         duration: 5000,
         position: 'top-right',
       });
-      console.log('Error:', error);
       setExcelData([]);
       if (inputRef.current) inputRef.current.value = '';
     },
   });
 
+  const importFinished = isImportFinished(job);
+  const closeAndReset = () => {
+    if (importFinished) {
+      setJobId(null);
+      // Bỏ dữ liệu "đang chạy" cũ để lần mở sau không bắt nhầm lại lần import đã xong.
+      queryClient.removeQueries({ queryKey: bachelorImportKeys.latest() });
+    }
+    setExcelData(null);
+    onOpenChange(false);
+  };
+
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        // Dialog không còn unmount theo menu, nên phải tự xoá preview của lần trước.
-        if (!nextOpen) setExcelData(null);
-        onOpenChange(nextOpen);
+        if (nextOpen) {
+          onOpenChange(true);
+          return;
+        }
+        // Đang import thì chỉ đóng hộp thoại, giữ lại mã để mở lại vẫn thấy tiến độ.
+        closeAndReset();
       }}
     >
       <DialogContent size='lg'>
         <DialogHeader>
-          <DialogTitle>Thêm tân cử nhân từ file</DialogTitle>
+          <DialogTitle>{jobId ? 'Tiến độ import tân cử nhân' : 'Thêm tân cử nhân từ file'}</DialogTitle>
         </DialogHeader>
 
-        <div className='grid grid-cols-4 h-full'>
-          <div
-            className={cn(
-              'flex-col w-full items-center gap-1.5',
-              excelData && excelData.length > 0 ? 'col-span-1' : 'col-span-4'
-            )}
-          >
-            <Label htmlFor='file'>Tải lên danh sách TCN</Label>
-            <Input
-              ref={inputRef}
-              id='file'
-              type='file'
-              accept='.xlsx,.xls'
-              onChange={handleFileChange}
-            />
-          </div>
-
-          {excelData && excelData.length > 0 && (
-            <div className='col-span-3 flex max-h-[85vh] overflow-scroll'>
-              <Separator className='mx-3' orientation='vertical' />
-              <TableCustom
-                columns={columnsFileUpload}
-                title='Preview file tải lên'
-                overflow
-                data={excelData}
+        {jobId ? (
+          job ? (
+            <ImportProgress job={job} />
+          ) : (
+            <p className='flex items-center gap-2 text-sm text-muted-foreground'>
+              <Loader2 className='h-4 w-4 animate-spin' aria-hidden='true' />
+              Đang lấy tiến độ…
+            </p>
+          )
+        ) : (
+          <div className='grid grid-cols-4 h-full'>
+            <div
+              className={cn(
+                'flex-col w-full items-center gap-1.5',
+                excelData && excelData.length > 0 ? 'col-span-1' : 'col-span-4'
+              )}
+            >
+              <Label htmlFor='file'>Tải lên danh sách TCN</Label>
+              <Input
+                ref={inputRef}
+                id='file'
+                type='file'
+                accept='.xlsx,.xls'
+                onChange={handleFileChange}
               />
             </div>
-          )}
-        </div>
+
+            {excelData && excelData.length > 0 && (
+              <div className='col-span-3 flex max-h-[85vh] overflow-scroll'>
+                <Separator className='mx-3' orientation='vertical' />
+                <TableCustom
+                  columns={columnsFileUpload}
+                  title='Preview file tải lên'
+                  overflow
+                  data={excelData}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         <DialogFooter>
-          <DialogClose asChild>
-            <Button
-              variant='outline'
-              color='warning'
-              onClick={() => {
-                if (inputRef.current) inputRef.current.value = '';
-                setExcelData([]);
-              }}
-            >
-              Hủy
+          {jobId ? (
+            <Button color='primary' onClick={closeAndReset}>
+              {importFinished ? 'Xong' : 'Đóng (import vẫn chạy)'}
             </Button>
-          </DialogClose>
+          ) : (
+            <>
+              <DialogClose asChild>
+                <Button
+                  variant='outline'
+                  color='warning'
+                  onClick={() => {
+                    if (inputRef.current) inputRef.current.value = '';
+                    setExcelData([]);
+                  }}
+                >
+                  Hủy
+                </Button>
+              </DialogClose>
 
-          <Button
-            disabled={!excelData || addBachelorFromFile.isPending}
-            onClick={() => {
-              if (
-                excelData &&
-                Array.isArray(excelData) &&
-                excelData.length > 0
-              ) {
-                addBachelorFromFile.mutate({ data: excelData });
-              }
-            }}
-            color='primary'
-          >
-            {addBachelorFromFile.isPending && (
-              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-            )}
-            {addBachelorFromFile.isPending ? 'Đang thêm...' : 'Tải lên'}
-          </Button>
+              <Button
+                disabled={!excelData || excelData.length === 0 || addBachelorFromFile.isPending}
+                onClick={() => {
+                  if (excelData && Array.isArray(excelData) && excelData.length > 0) {
+                    addBachelorFromFile.mutate({ data: excelData });
+                  }
+                }}
+                color='primary'
+              >
+                {addBachelorFromFile.isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
+                {addBachelorFromFile.isPending ? 'Đang gửi...' : 'Tải lên'}
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -55,16 +55,28 @@ class CheckInListQuery {
   keySearch?: string;
 }
 
-function checkInResponse({ bachelor, late }: Awaited<ReturnType<CheckInService['checkInBachelor']>>) {
+/** `late`: check-in khi phiên đã đóng. `movedToEnd`: bị đẩy xuống hàng Z; không thì giữ nguyên ghế. */
+function checkInResponse({
+  bachelor,
+  late,
+  movedToEnd,
+}: Awaited<ReturnType<CheckInService['checkInBachelor']>>) {
+  const message = movedToEnd
+    ? 'Phiên đã khóa: đã check-in và xếp xuống cuối phiên.'
+    : late
+      ? 'Phiên đã khóa: đã check-in trễ và giữ nguyên ghế.'
+      : 'Check-in thành công!';
   return {
     status: 200,
-    message: late ? 'Phiên đã khóa: đã check-in và xếp xuống cuối phiên.' : 'Check-in thành công!',
+    message,
     data: {
       studentCode: bachelor.studentCode,
       fullName: bachelor.fullName,
       chair: bachelor.chair,
       chairParent: bachelor.chairParent,
+      originalChair: bachelor.originalChair,
       late,
+      movedToEnd,
     },
   };
 }
@@ -104,6 +116,17 @@ export class CheckInController {
         input.cancellationConfirmation,
       ),
     );
+  }
+
+  /** Kết quả dự kiến nếu check-in lúc này (giữ ghế hay xuống cuối), không ghi gì. */
+  @Get('Preview')
+  @RequirePermissions(Permission.CheckIn)
+  async preview(@Query('studentCode') studentCode: string, @CurrentActor() actor: ActorContext) {
+    return {
+      status: 200,
+      message: 'Xem trước check-in thành công!',
+      data: await this.checkIns.previewCheckIn(studentCode, await this.bachelors.checkInRoomScope(actor)),
+    };
   }
 
   @Get('ForceCode')

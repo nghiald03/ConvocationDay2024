@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { hashPassword } from 'better-auth/crypto';
 import { and, asc, eq, inArray, ne, sql } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
 import { authAccount, authSession, authUser } from '../database/schema/auth-schema.js';
 import { roles, userCheckinRooms, userRoles } from '../database/schema/authorization-schema.js';
+import { RealtimeService } from '../realtime/realtime.service.js';
 
 const MANAGER_ROLE = 'MN';
 
@@ -24,7 +25,10 @@ type Transaction = Parameters<Parameters<AppDatabase['transaction']>[0]>[0];
 
 @Injectable()
 export class UsersService {
-  constructor(@Inject(DATABASE) private readonly database: AppDatabase) {}
+  constructor(
+    @Inject(DATABASE) private readonly database: AppDatabase,
+    @Optional() private readonly realtime?: RealtimeService,
+  ) {}
 
   async listRoles() {
     return this.database.select({ code: roles.code, name: roles.name }).from(roles).orderBy(asc(roles.code));
@@ -124,6 +128,8 @@ export class UsersService {
         await transaction.delete(authSession).where(eq(authSession.userId, userId));
       }
     });
+    // Phiên đã bị xóa; ngắt luôn kết nối realtime đang mở để không còn nhận tin theo vai trò cũ.
+    if (input.roles || input.disabled) this.realtime?.disconnectUser(userId);
     return this.get(userId);
   }
 
@@ -152,6 +158,7 @@ export class UsersService {
         .where(eq(authUser.id, userId));
       await transaction.delete(authSession).where(eq(authSession.userId, userId));
     });
+    this.realtime?.disconnectUser(userId);
   }
 
   async delete(actorId: string, userId: string) {
@@ -163,6 +170,7 @@ export class UsersService {
       if (current.roles.includes(MANAGER_ROLE)) await this.assertAnotherManager(transaction, userId);
       await transaction.delete(authUser).where(eq(authUser.id, userId));
     });
+    this.realtime?.disconnectUser(userId);
   }
 
   private async get(userId: string): Promise<UserSummary> {

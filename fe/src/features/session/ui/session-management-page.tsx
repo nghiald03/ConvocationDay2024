@@ -1,6 +1,8 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -26,7 +28,7 @@ import { sessionQueryOptions } from '@/features/session/queries/session-query-op
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import swal from 'sweetalert';
 
 type Form = { session: Session | null; sessionNum: string; sessionInDay: string; description: string };
@@ -102,7 +104,7 @@ export default function SessionManagementPage() {
               <TableHead className='w-28'>Số phiên</TableHead>
               <TableHead className='w-32'>Buổi trong ngày</TableHead>
               <TableHead>Mô tả</TableHead>
-              <TableHead className='w-48 text-right'>Thao tác</TableHead>
+              <TableHead className='w-28 text-right'>Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -112,10 +114,10 @@ export default function SessionManagementPage() {
                 <TableCell className='font-medium'>{session.session1 ?? '—'}</TableCell>
                 <TableCell>{session.sessionInDay ?? '—'}</TableCell>
                 <TableCell>{session.description || '—'}</TableCell>
-                <TableCell className='space-x-2 text-right'>
-                  <Button
-                    size='sm'
-                    variant='outline'
+                <TableCell className='space-x-1.5 text-right'>
+                  <IconButton
+                    icon={Pencil}
+                    label='Sửa phiên'
                     onClick={() =>
                       setForm({
                         session,
@@ -124,17 +126,14 @@ export default function SessionManagementPage() {
                         description: session.description ?? '',
                       })
                     }
-                  >
-                    Sửa
-                  </Button>
-                  <Button
-                    size='sm'
+                  />
+                  <IconButton
+                    icon={Trash2}
+                    label='Xóa phiên'
                     color='destructive'
                     disabled={remove.isPending}
                     onClick={() => void confirmDelete(session)}
-                  >
-                    Xóa
-                  </Button>
+                  />
                 </TableCell>
               </TableRow>
             ))}

@@ -70,7 +70,7 @@ const MenuItem = ({
         color={active ? 'default' : 'secondary'}
         fullWidth
         className={cn('', {
-          'justify-start text-sm font-medium capitalize group hover:md:px-8 h-auto py-3 md:px-3 px-3':
+          'justify-start text-sm font-medium capitalize group hover:md:px-8 h-auto py-2.5 md:px-3 px-3':
             !collapsed,
           'hover:ring-transparent hover:ring-offset-0': !active,
         })}
@@ -133,7 +133,7 @@ const MenuItem = ({
       fullWidth
       color={active ? 'default' : 'secondary'}
       className={cn('', {
-        'justify-start text-sm font-medium capitalize h-auto py-3 md:px-3 px-3':
+        'justify-start text-sm font-medium capitalize h-auto py-2.5 md:px-3 px-3':
           !collapsed || hovered,
         'hover:ring-transparent hover:ring-offset-0': !active,
       })}
@@ -155,4 +155,5 @@ const MenuItem = ({
   );
 };
 
-export default MenuItem;
+// Memoized: on a route change only the items whose `active` flag flips re-render.
+export default React.memo(MenuItem);

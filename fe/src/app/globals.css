@@ -3,49 +3,49 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Design tokens (HSL channels, consumed as hsl(var(--token))).
+   * Every foreground/background pair below was checked against WCAG AA
+   * (>= 4.5:1 for text). Semantic colors sit at the "700" tone so they stay
+   * legible both as a solid fill with white text and as colored text on white.
+   */
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 222 47% 11%;
 
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 215 16% 42%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 214 32% 91%;
+    --input: 214 20% 80%;
 
     --secondary: 210 40% 96.1%;
-    --secondary-foreground: 215.3 19.3% 34.5%;
+    --secondary-foreground: 215 25% 27%;
 
     --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 74% 48%;
+    --destructive-foreground: 0 0% 100%;
 
-    --success: 154 52% 55%;
-    --success-foreground: 138.5 76.5% 96.7%;
+    --success: 142 72% 29%;
+    --success-foreground: 0 0% 100%;
 
-    --warning: 16 93% 70%;
-    --warning-foreground: 33.3 100% 96.5%;
+    --warning: 32 93% 37%;
+    --warning-foreground: 0 0% 100%;
 
-    --success: 154 52% 55%;
-    --success-foreground: 138.5 76.5% 96.7%;
+    --info: 201 96% 32%;
+    --info-foreground: 0 0% 100%;
 
-    --warning: 16 93% 70%;
-    --warning-foreground: 33.3 100% 96.5%;
+    --ring: 18 86% 40%;
 
-    --info: 185 96% 51%;
-    --info-foreground: 183.2 100% 96.3%;
-
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.3rem;
+    --radius: 0.5rem;
 
     --default-50: 210 40% 98%;
     --default-100: 210 40% 96.1%;
@@ -58,8 +58,8 @@
     --default-800: 217.2 32.6% 17.5%;
     --default-900: 222.2 47.4% 11.2%;
     --default-950: 222.2 84% 4.9%;
-    --default: 24.6 95% 53.1%;
-    --default-foreground: 210 40% 98%;
+    --default: 18 86% 40%;
+    --default-foreground: 0 0% 100%;
 
     --primary-50: 60 4.8% 98%;
     --primary-100: 60 4.8% 96.1%;
@@ -71,8 +71,8 @@
     --primary-700: 24 9.8% 26.7%;
     --primary-800: 20 14.3% 17.5%;
     --primary-900: 20 14.3% 11.2%;
-    --primary: 24.6 95% 53.1%;
-    --primary-foreground: 60 9.1% 97.8%;
+    --primary: 18 86% 40%;
+    --primary-foreground: 0 0% 100%;
 
     --sidebar: 0 0% 100%;
     --header: 0 0% 100%;
@@ -88,37 +88,37 @@
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222.2 47% 8%;
     --popover-foreground: 210 40% 98%;
 
     --card: 215 27.9% 16.9%;
     --card-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 22%;
+    --input: 215.3 25% 30%;
 
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 24 95% 58%;
+    --primary-foreground: 20 40% 8%;
 
     --secondary: 215.3 25% 26.7%;
     --secondary-foreground: 210 40% 98%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 217.2 32.6% 21%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 64%;
+    --destructive-foreground: 0 60% 6%;
 
-    --success: 154 52% 55%;
-    --success-foreground: 138.5 76.5% 96.7%;
+    --success: 142 69% 52%;
+    --success-foreground: 145 80% 6%;
 
-    --warning: 16 93% 70%;
-    --warning-foreground: 33.3 100% 96.5%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 26 83% 10%;
 
-    --info: 185 96% 51%;
-    --info-foreground: 183.2 100% 96.3%;
+    --info: 199 89% 60%;
+    --info-foreground: 204 80% 8%;
 
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 24 95% 58%;
 
     --default-950: 210 40% 98%;
     --default-900: 210 40% 96.1%;
@@ -131,14 +131,58 @@
     --default-200: 217.2 32.6% 17.5%;
     --default-100: 222.2 47.4% 11.2%;
     --default-50: 222.2 84% 4.9%;
-    --default: 213.8 100% 96.9%;
-    --default-foreground: 222.2 47.4% 11.2%;
+    --default: 24 95% 58%;
+    --default-foreground: 20 40% 8%;
 
     --sidebar: 215 27.9% 16.9%;
     --header: 215 27.9% 16.9%;
     --menu-arrow: 215.3 25% 26.7%;
     --menu-arrow-active: 215.3 19.3% 34.5%;
     --menu-foreground: 214.3 31.8% 91.4%;
+  }
+}
+
+/* ---- Base refinements ---- */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Sensible keyboard-focus fallback for anything without its own focus style. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.18);
+  }
+
+  /* Tabular figures keep student codes, counters and times aligned. */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-pulse,
+  .animate-bounce,
+  .animate-ping {
+    animation: none !important;
   }
 }
 

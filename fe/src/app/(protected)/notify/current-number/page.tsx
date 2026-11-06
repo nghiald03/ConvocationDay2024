@@ -15,7 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { InputNumber } from '@/components/ui/input-number';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 
 import { createNotification } from '@/features/notification/api/create-notification';
 import type { CreateNotificationRequest } from '@/features/notification/model/notification';

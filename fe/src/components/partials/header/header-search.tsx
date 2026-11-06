@@ -24,7 +24,6 @@ const HeaderSearch = () => {
     queryKey: ['server-connectivity'],
     queryFn: getApiHealth,
     refetchInterval: 60_000,
-    refetchIntervalInBackground: true,
     refetchOnWindowFocus: false,
     retry: 0, // không tự retry, để người dùng ấn "Thử lại"
     staleTime: 30_000,

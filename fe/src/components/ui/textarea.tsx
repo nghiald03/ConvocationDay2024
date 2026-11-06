@@ -6,23 +6,23 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { InputColor, radius } from "@/lib/type";
 
 export const textareaVariants = cva(
-  "flex flex-1 bg-background w-full min-h-[80px] rounded-md border border-solid   px-3 py-[10px] text-sm  file:border-0 file:bg-transparent file:text-sm file:font-medium  read-only:bg-background read-only:text-default-500 disabled:cursor-not-allowed disabled:opacity-50  transition duration-300 ",
+  "flex flex-1 w-full min-h-[80px] rounded-md border bg-background px-3 py-2.5 text-sm text-foreground shadow-sm outline-none transition-[border-color,box-shadow] duration-200 placeholder:text-muted-foreground read-only:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60 motion-reduce:transition-none",
   {
     variants: {
       color: {
         default:
-          "border-default-200 text-default focus:outline-none focus:border-default disabled:bg-default-200  placeholder:text-accent-foreground/50",
+          "border-input hover:border-default-400 focus-visible:border-ring focus-visible:ring-ring/25",
         primary:
-          "border-primary text-primary focus:outline-none focus:border-primary-700 disabled:bg-primary/30 disabled:placeholder:text-primary  placeholder:text-primary/70",
+          "border-primary/50 focus-visible:border-primary focus-visible:ring-primary/25",
         secondary:
-          "border-secondary text-secondary focus:outline-none focus:border-secondary-700 disabled:bg-secondary/30 disabled:placeholder:text-secondary  placeholder:text-secondary/70",
-        info: "border-info/50 text-info focus:outline-none focus:border-info-700 disabled:bg-info/30 disabled:placeholder:text-info  placeholder:text-info/70",
+          "border-default-300 focus-visible:border-default-500 focus-visible:ring-default-500/25",
+        info: "border-info/50 focus-visible:border-info focus-visible:ring-info/25",
         warning:
-          "border-warning/50 text-warning focus:outline-none focus:border-warning-700 disabled:bg-warning/30 disabled:placeholder:text-info  placeholder:text-warning/70",
+          "border-warning/50 focus-visible:border-warning focus-visible:ring-warning/25",
         success:
-          "border-success/50 text-success focus:outline-none focus:border-success-700 disabled:bg-success/30 disabled:placeholder:text-info  placeholder:text-success/70",
+          "border-success/50 focus-visible:border-success focus-visible:ring-success/25",
         destructive:
-          "border-destructive/50 text-destructive focus:outline-none focus:border-destructive-700 disabled:bg-destructive/30 disabled:placeholder:text-destructive  placeholder:text-destructive/70",
+          "border-destructive/60 focus-visible:border-destructive focus-visible:ring-destructive/25",
       },
 
     },
@@ -60,4 +60,3 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 Textarea.displayName = "Textarea";
 
 export { Textarea };
-

@@ -53,6 +53,8 @@ export const bachelors = pgTable(
     sessionId: integer('session_id').references(() => sessions.id, { onDelete: 'restrict' }),
     chair: varchar('chair', { length: 50 }),
     chairParent: varchar('chair_parent', { length: 50 }),
+    /** Ghế lưới A–J trước khi bị đẩy xuống hàng Z do đến trễ; NULL nếu chưa bị đẩy. */
+    originalChair: varchar('original_chair', { length: 50 }),
     checkinRoom: varchar('checkin_room', { length: 50 }),
     sessionInDay: integer('session_in_day'),
     checkIn: boolean('check_in'),

@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 
 import { useMutation } from '@tanstack/react-query';
 import { login } from '@/features/auth/api/session';
+import { pathAfterLogin } from '@/features/auth/model/login-redirect';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -128,10 +129,6 @@ function showErrorToast(payload: {
   toast.error(payload.title, {
     position: 'top-right',
     description: payload.desc,
-    style: {
-      color: '#FFFFFF',
-      backgroundColor: '#F87171',
-    },
   });
 }
 
@@ -167,7 +164,8 @@ const LoginForm = () => {
     },
     onSuccess: (user) => {
       toast.success('Đăng nhập thành công', { position: 'top-right' });
-      router.push(user.role === 'NO' ? '/notify' : '/tutorial');
+      const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+      router.push(pathAfterLogin(returnTo, user.role));
       router.refresh();
     },
     onError: (error: any) => {
@@ -199,7 +197,7 @@ const LoginForm = () => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className='mt-5 2xl:mt-7 space-y-6'>
       <div className='space-y-2'>
-        <Label htmlFor='email' className='font-medium text-default-600'>
+        <Label htmlFor='email' className='font-medium'>
           Email
         </Label>
         <Input
@@ -208,17 +206,18 @@ const LoginForm = () => {
           {...register('email')}
           type='email'
           id='email'
+          aria-invalid={!!errors.email}
           className={cn('', { 'border-destructive': !!errors.email })}
         />
       </div>
       {errors.email && (
-        <div className='text-destructive mt-2 text-sm'>
+        <div role='alert' className='text-destructive mt-2 text-sm'>
           {errors.email.message}
         </div>
       )}
 
       <div className='mt-3.5 space-y-2'>
-        <Label htmlFor='password' className='mb-2 font-medium text-default-600'>
+        <Label htmlFor='password' className='mb-2 font-medium'>
           Mật khẩu
         </Label>
         <div className='relative'>
@@ -228,26 +227,29 @@ const LoginForm = () => {
             {...register('password')}
             type={passwordType}
             id='password'
-            className={cn('', { 'border-destructive': !!errors.password })}
+            aria-invalid={!!errors.password}
+            className={cn('pe-11', { 'border-destructive': !!errors.password })}
             placeholder=' '
           />
-          <div
-            className='absolute top-1/2 -translate-y-1/2 ltr:right-4 rtl:left-4 cursor-pointer'
+          <button
+            type='button'
+            aria-label={
+              passwordType === 'password' ? 'Hiện mật khẩu' : 'Ẩn mật khẩu'
+            }
+            aria-pressed={passwordType === 'text'}
+            className='absolute top-1/2 -translate-y-1/2 ltr:right-3 rtl:left-3 rounded-md p-1.5 text-default-500 transition-colors hover:text-default-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             onClick={togglePasswordType}
           >
             {passwordType === 'password' ? (
-              <Icon icon='heroicons:eye' className='w-5 h-5 text-default-400' />
+              <Icon icon='heroicons:eye' className='w-5 h-5' />
             ) : (
-              <Icon
-                icon='heroicons:eye-slash'
-                className='w-5 h-5 text-default-400'
-              />
+              <Icon icon='heroicons:eye-slash' className='w-5 h-5' />
             )}
-          </div>
+          </button>
         </div>
       </div>
       {errors.password && (
-        <div className='text-destructive mt-2 text-sm'>
+        <div role='alert' className='text-destructive mt-2 text-sm'>
           {errors.password.message}
         </div>
       )}
@@ -267,7 +269,7 @@ const LoginForm = () => {
         />
         <Label
           htmlFor='rememberMe'
-          className='cursor-pointer text-sm font-medium text-default-600'
+          className='cursor-pointer text-sm font-medium'
         >
           Ghi nhớ đăng nhập
         </Label>

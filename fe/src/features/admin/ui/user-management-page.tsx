@@ -2,6 +2,8 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ui/icon-button';
+import { KeyRound, Lock, LockOpen, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -37,7 +39,7 @@ import { checkInRoomsQueryOptions } from '@/features/check-in/queries/check-in-r
 import { getHttpErrorMessage } from '@/lib/http/get-http-error-message';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
-import toast from 'react-hot-toast';
+import toast from '@/lib/toast';
 import swal from 'sweetalert';
 
 const usersKey = ['admin', 'users'] as const;
@@ -223,38 +225,31 @@ export default function UserManagementPage() {
                     )}
                   </TableCell>
                   <TableCell className='whitespace-nowrap text-right'>
-                    <div className='inline-flex flex-wrap justify-end gap-2'>
-                      <Button
-                        size='sm'
-                        variant='outline'
+                    <div className='inline-flex justify-end gap-1.5'>
+                      <IconButton
+                        icon={Pencil}
+                        label='Sửa tài khoản'
                         onClick={() => setForm({ user, email: user.email, name: user.name, password: '', roles: user.roles, checkinRooms: user.checkinRooms })}
-                      >
-                        Sửa
-                      </Button>
-                      <Button
-                        size='sm'
-                        variant='outline'
+                      />
+                      <IconButton
+                        icon={KeyRound}
+                        label='Đặt mật khẩu'
                         onClick={() => setPasswordFor({ user, password: generatePassword() })}
-                      >
-                        Đặt mật khẩu
-                      </Button>
-                      <Button
-                        size='sm'
-                        variant='outline'
+                      />
+                      <IconButton
+                        icon={user.disabled ? LockOpen : Lock}
+                        label={user.disabled ? 'Mở khóa' : 'Khóa tài khoản'}
                         color={user.disabled ? 'success' : 'warning'}
                         disabled={isSelf || toggleDisabled.isPending}
                         onClick={() => toggleDisabled.mutate(user)}
-                      >
-                        {user.disabled ? 'Mở khóa' : 'Khóa'}
-                      </Button>
-                      <Button
-                        size='sm'
+                      />
+                      <IconButton
+                        icon={Trash2}
+                        label='Xóa tài khoản'
                         color='destructive'
                         disabled={isSelf || remove.isPending}
                         onClick={() => void confirmDelete(user)}
-                      >
-                        Xóa
-                      </Button>
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

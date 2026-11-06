@@ -8,8 +8,8 @@ import AuthenticationGuard from '@/features/auth/ui/authentication-guard';
 import AuthorizationGuard from '@/features/auth/ui/authorization-guard';
 import { getServerSession } from '@/features/auth/api/server-session';
 import { SessionProvider } from '@/features/auth/queries/session-provider';
+import { DataSignals } from '@/features/realtime/data-signals';
 import { redirect } from 'next/navigation';
-import { Toaster } from 'react-hot-toast';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -22,6 +22,7 @@ const layout = async ({ children }: { children: React.ReactNode }) => {
   if (!session) redirect('/');
   return (
     <SessionProvider initialSession={session}>
+    <DataSignals />
     <LayoutShell>
       <DashCodeHeader />
       <DashCodeSidebar />
@@ -33,7 +34,6 @@ const layout = async ({ children }: { children: React.ReactNode }) => {
         </AuthorizationGuard>
       </LayoutContentProvider>
       <DashCodeFooter />
-      <Toaster />
     </LayoutShell>
     </SessionProvider>
   );

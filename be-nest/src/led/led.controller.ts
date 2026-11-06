@@ -1,7 +1,7 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ApiError } from '../common/errors/api-error.js';
 import { RequireRoles } from '../common/guards/require-roles.decorator.js';
 import { LedService } from './led.service.js';
@@ -15,6 +15,30 @@ class LedWindowQuery {
   @IsInt()
   session!: number;
 }
+
+class LedStartBody extends LedWindowQuery {
+  /** true: quay về người đầu tiên dù LED đã bắt đầu. */
+  @IsOptional()
+  @IsBoolean()
+  restart?: boolean;
+}
+
+class LedJumpBody extends LedWindowQuery {
+  /** MSSV của người cần nhảy tới. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  studentCode?: string;
+
+  /** true: nhảy về người đầu tiên của hàng đợi. */
+  @IsOptional()
+  @IsBoolean()
+  toFirst?: boolean;
+}
+
+type LedWindowResult =
+  | Awaited<ReturnType<LedService['first']>>
+  | Awaited<ReturnType<LedService['current']>>;
 
 @ApiTags('led')
 @Controller('Mc')
@@ -54,9 +78,57 @@ export class LedController {
     };
   }
 
+  @Get('GetQueue')
+  async queue(@Query() query: LedWindowQuery) {
+    return {
+      status: 200,
+      message: 'Lấy hàng đợi LED thành công.',
+      data: await this.led.queue(query.hall, query.session),
+    };
+  }
+
+  /** Manager bắt đầu chiếu: đặt người đang chiếu vào người đầu hàng đợi. Từ chối nếu LED đã bắt đầu, trừ khi `restart`. */
+  @Post('Start')
+  @HttpCode(200)
+  @RequireRoles('MN')
+  async start(@Body() body: LedStartBody) {
+    const result = await this.led.start(body.hall, body.session, body.restart === true);
+    if (!result) {
+      throw new ApiError(400, 'led/empty-queue', 'Chưa có ai check-in trong hàng đợi này nên chưa thể bắt đầu.');
+    }
+    return this.windowResponse(result, 'Đã bắt đầu chiếu từ tân cử nhân đầu tiên.');
+  }
+
+  /**
+   * MC nhảy tới một người trong hàng đợi: về đầu (`toFirst`) hoặc theo `studentCode`. Chỉ khi LED đã bắt đầu;
+   * bắt đầu lần đầu là việc của Manager (`Start`).
+   */
+  @Post('Jump')
+  @HttpCode(200)
+  @RequireRoles('MN', 'MC')
+  async jump(@Body() body: LedJumpBody) {
+    const code = body.studentCode?.trim();
+    if (body.toFirst === true && code) {
+      throw new BadRequestException('Chỉ chọn một: về đầu hoặc theo MSSV.');
+    }
+    if (body.toFirst !== true && !code) {
+      throw new BadRequestException('Thiếu MSSV hoặc yêu cầu về đầu.');
+    }
+    const result = await this.led.jump(body.hall, body.session, code ? { studentCode: code } : 'first');
+    return this.windowResponse(
+      result,
+      code ? `Đã chuyển tới ${code}.` : 'Đã về tân cử nhân đầu tiên.',
+    );
+  }
+
+  /** Về người đầu tiên (luôn bắt đầu lại). Chỉ Manager, vì MC không được tự bắt đầu. */
   @Get('GetBachelor1st')
+  @RequireRoles('MN')
   async first(@Query() query: LedWindowQuery) {
-    return this.windowResponse(await this.led.first(query.hall, query.session), 'Đã chọn tân cử nhân đầu tiên.');
+    return this.windowResponse(
+      await this.led.start(query.hall, query.session, true),
+      'Đã chọn tân cử nhân đầu tiên.',
+    );
   }
 
   @Get('GetBachelorNext')
@@ -74,11 +146,15 @@ export class LedController {
     return this.windowResponse(await this.led.current(query.hall, query.session), 'Đã tải lại tân cử nhân hiện tại.');
   }
 
-  private windowResponse(
-    result: Awaited<ReturnType<LedService['current']>>,
-    message: string,
-  ) {
+  private windowResponse(result: LedWindowResult, message: string) {
     if (!result) throw new ApiError(404, 'bachelor/not-found', 'Không có tân cử nhân đang hoạt động.');
+    if ('notStarted' in result) {
+      return {
+        status: 200,
+        message: 'LED chưa bắt đầu. Manager bắt đầu ở trang Hàng đợi LED.',
+        data: '',
+      };
+    }
     if ('boundary' in result) {
       return {
         status: 200,
