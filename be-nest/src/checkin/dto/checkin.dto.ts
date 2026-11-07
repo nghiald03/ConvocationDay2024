@@ -16,6 +16,12 @@ export class CheckInBachelorDto {
   @IsString()
   @ApiProperty({ example: 'TEST260001', required: false })
   cancellationConfirmation?: string;
+
+  /** Bắt buộc với nhân viên check-in khi phiên đã khóa (check-in trễ). */
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ example: 'AB23', required: false, description: 'Mã khẩn cấp, cần khi check-in trễ' })
+  emergencyCode?: string;
 }
 
 export class ForceCheckInDto {

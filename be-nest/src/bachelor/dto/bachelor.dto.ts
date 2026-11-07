@@ -92,6 +92,12 @@ export class MoveToTemporarySessionDto {
   @ApiProperty({ example: true })
   @IsBoolean()
   isMorning!: boolean;
+
+  /** Bắt buộc với nhân viên check-in; Check-in Lead và Manager không cần. */
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ example: 'AB23', description: 'Mã khẩn cấp' })
+  emergencyCode?: string;
 }
 
 export class TransferLateStudentDto {
@@ -116,6 +122,12 @@ export class TransferLateStudentDto {
   @IsIn(TRANSFER_REASONS)
   @ApiPropertyOptional({ enum: TRANSFER_REASONS, default: 'late' })
   reason?: TransferReason;
+
+  /** Bắt buộc với nhân viên check-in; Check-in Lead và Manager không cần. */
+  @IsOptional()
+  @IsString()
+  @ApiPropertyOptional({ example: 'AB23', description: 'Mã khẩn cấp' })
+  emergencyCode?: string;
 }
 
 export class BachelorListItemDto extends BachelorDto {

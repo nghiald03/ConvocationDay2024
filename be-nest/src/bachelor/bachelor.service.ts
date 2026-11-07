@@ -511,9 +511,11 @@ export class BachelorService {
         .limit(1);
       if (!hall) throw new BadRequestException('Không tìm thấy side đích!');
       const hallId = hall.id;
+      // Phiên đích chưa có dòng check-in thì nó chưa mở lần nào: tạo ở trạng thái chưa mở (null), không phải đã khóa,
+      // để người check-in sau đó không bị tính trễ.
       await transaction
         .insert(checkIns)
-        .values({ hallId, sessionId: session.id, status: false })
+        .values({ hallId, sessionId: session.id })
         .onConflictDoNothing();
       const chair = await this.chairForTransfer(transaction, hallId, session.id, bachelor.id);
       const [updated] = await transaction

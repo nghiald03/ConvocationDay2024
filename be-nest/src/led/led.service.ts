@@ -2,14 +2,18 @@ import { BadRequestException, ConflictException, Inject, Injectable } from '@nes
 import { and, eq } from 'drizzle-orm';
 import { DATABASE } from '../database/database.constants.js';
 import type { AppDatabase } from '../database/database.types.js';
-import { bachelors } from '../database/schema/domain-schema.js';
+import { bachelors, halls, sessions } from '../database/schema/domain-schema.js';
 import { RealtimeService } from '../realtime/realtime.service.js';
 import { chairOrder } from './chair-order.js';
 import { isGridChair } from '../checkin/late-seat-rule.js';
 import { loadLedQueue } from './led-queue.js';
+import { pickActiveSessions } from './active-session.js';
 
 @Injectable()
 export class LedService {
+  /** Phiên MC vừa thao tác của mỗi side (hallId -> sessionId), để biết phiên nào đang chiếu. */
+  private readonly lastMoved = new Map<number, number>();
+
   constructor(
     @Inject(DATABASE) private readonly database: AppDatabase,
     private readonly realtime: RealtimeService,
@@ -63,6 +67,31 @@ export class LedService {
       lastRegularChair: lastRegular?.chair ?? null,
       items,
     };
+  }
+
+  /** Phiên đang chiếu LED của mỗi side; side chưa chiếu ai thì không có trong danh sách. */
+  async active() {
+    const rows = await this.database
+      .selectDistinct({
+        hallId: bachelors.hallId,
+        hallName: halls.name,
+        sessionId: bachelors.sessionId,
+        sessionNumber: sessions.sessionNumber,
+        sessionInDay: sessions.sessionInDay,
+        description: sessions.description,
+      })
+      .from(bachelors)
+      .innerJoin(halls, eq(halls.id, bachelors.hallId))
+      .innerJoin(sessions, eq(sessions.id, bachelors.sessionId))
+      .where(eq(bachelors.bachelorStatus, 'Current'));
+    return pickActiveSessions(
+      rows.flatMap((row) =>
+        row.hallId === null || row.sessionId === null
+          ? []
+          : [{ ...row, hallId: row.hallId, sessionId: row.sessionId }],
+      ),
+      this.lastMoved,
+    );
   }
 
   first(hallId: number, sessionId: number) {
@@ -173,6 +202,7 @@ export class LedService {
     });
 
     if (result && 'selected' in result) {
+      this.lastMoved.set(hallId, sessionId);
       this.realtime.emitAll('SendMessage', `CurrentBachelor ${this.legacyJson(result.selected)}`);
       // Các trang xem hàng đợi và sơ đồ nghe sự kiện chung này để tải lại, thay vì hỏi liên tục.
       this.realtime.dataChanged('led', { hallId, sessionId });

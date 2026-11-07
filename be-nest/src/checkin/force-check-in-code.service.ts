@@ -1,12 +1,19 @@
 import { BadRequestException, HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import type { ActorContext } from '../common/guards/actor-context.js';
 
 /** 32 ký tự (bỏ I, O, 0, 1 dễ nhầm): 256 chia hết cho 32 nên lấy byte % 32 không lệch. */
 export const FORCE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const FORCE_CODE_LENGTH = 4;
 export const FORCE_CODE_WINDOW_MS = 5 * 60 * 1000;
 export const FORCE_CODE_MAX_FAILURES = 5;
+/** Vai trò xem được mã (Check-in Lead, Manager) nên không phải nhập mã cho các thao tác ngoài luồng. */
+export const FORCE_CODE_HOLDER_ROLES = ['CL', 'MN'];
+
+export function holdsForceCode(actor: Pick<ActorContext, 'roles'>): boolean {
+  return actor.roles.some((role) => FORCE_CODE_HOLDER_ROLES.includes(role.toUpperCase()));
+}
 
 /**
  * Mã force check-in đổi sau mỗi 5 phút, tính từ khóa bí mật của server nên không cần lưu ở đâu.
@@ -36,6 +43,21 @@ export class ForceCheckInCodeService {
       code: this.codeFor(window),
       expiresInMs: (window + 1) * FORCE_CODE_WINDOW_MS - now,
     };
+  }
+
+  /**
+   * Thao tác ngoài luồng (check-in trễ, chuyển ca, chuyển phiên tạm): nhân viên check-in phải nhập mã khẩn cấp;
+   * Check-in Lead và Manager giữ mã nên được làm trực tiếp.
+   */
+  requireFor(actor: Pick<ActorContext, 'userId' | 'roles'>, input: string | undefined, action: string): void {
+    if (holdsForceCode(actor)) return;
+    if (!input?.trim()) {
+      throw new BadRequestException({
+        code: 'checkin/emergency-code-required',
+        message: `${action} cần mã khẩn cấp. Hỏi Check-in Lead hoặc Manager để lấy mã 4 ký tự.`,
+      });
+    }
+    this.assertValid(actor.userId, input);
   }
 
   assertValid(actorId: string, input: string): void {

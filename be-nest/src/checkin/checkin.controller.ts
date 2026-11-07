@@ -114,6 +114,7 @@ export class CheckInController {
         input.status,
         await this.bachelors.checkInRoomScope(actor),
         input.cancellationConfirmation,
+        () => this.forceCodes.requireFor(actor, input.emergencyCode, 'Phiên đã khóa: check-in trễ'),
       ),
     );
   }
@@ -154,12 +155,15 @@ export class CheckInController {
   async checkInByStudentCode(
     @Query('studentCode') studentCode: string,
     @CurrentActor() actor: ActorContext,
+    @Query('emergencyCode') emergencyCode?: string,
   ) {
     return checkInResponse(
       await this.checkIns.checkInBachelor(
         studentCode,
         true,
         await this.bachelors.checkInRoomScope(actor),
+        undefined,
+        () => this.forceCodes.requireFor(actor, emergencyCode, 'Phiên đã khóa: check-in trễ'),
       ),
     );
   }

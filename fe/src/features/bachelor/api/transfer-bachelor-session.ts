@@ -22,6 +22,8 @@ export async function transferBachelorSession(input: {
   newSessionId: number;
   newHallId?: number;
   reason: TransferReason;
+  /** Mã khẩn cấp; bắt buộc với nhân viên check-in, CL/MN không cần. */
+  emergencyCode?: string;
 }) {
   const response = await httpClient.put<ApiResponse<BachelorTransferResult>>(
     '/Bachelor/TransferLateStudent',

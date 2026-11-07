@@ -102,3 +102,21 @@ describe('ForceCheckInCodeService', () => {
     expect(errorOf(() => service.assertValid('user-1', service.current().code))).toBeNull();
   });
 });
+
+describe('ForceCheckInCodeService.requireFor', () => {
+  const ck = { userId: 'ck-1', roles: ['CK'] };
+
+  test('CL và MN không cần nhập mã', () => {
+    const { service } = createService();
+    expect(errorOf(() => service.requireFor({ userId: 'cl', roles: ['CL'] }, undefined, 'Chuyển ca'))).toBeNull();
+    expect(errorOf(() => service.requireFor({ userId: 'mn', roles: ['mn'] }, '', 'Chuyển ca'))).toBeNull();
+  });
+
+  test('nhân viên check-in thiếu mã thì bị chặn, sai mã thì bị chặn, đúng mã thì qua', () => {
+    const { service } = createService();
+    expect(errorOf(() => service.requireFor(ck, undefined, 'Chuyển ca'))?.message).toContain('cần mã khẩn cấp');
+    expect(errorOf(() => service.requireFor(ck, '  ', 'Chuyển ca'))?.message).toContain('cần mã khẩn cấp');
+    expect(errorOf(() => service.requireFor(ck, 'ZZZZ' === service.current().code ? 'YYYY' : 'ZZZZ', 'Chuyển ca'))).not.toBeNull();
+    expect(errorOf(() => service.requireFor(ck, service.current().code.toLowerCase(), 'Chuyển ca'))).toBeNull();
+  });
+});

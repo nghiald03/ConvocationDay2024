@@ -21,6 +21,7 @@ import type { ActorContext } from '../common/guards/actor-context.js';
 import { CurrentActor } from '../common/guards/current-actor.decorator.js';
 import { RequirePermissions } from '../common/guards/require-permissions.decorator.js';
 import { RequireRoles } from '../common/guards/require-roles.decorator.js';
+import { ForceCheckInCodeService } from '../checkin/force-check-in-code.service.js';
 import { BachelorImportService } from './bachelor-import.service.js';
 import { BachelorService } from './bachelor.service.js';
 import {
@@ -77,6 +78,7 @@ export class BachelorController {
   constructor(
     private readonly bachelors: BachelorService,
     private readonly imports: BachelorImportService,
+    private readonly forceCodes: ForceCheckInCodeService,
   ) {}
 
   @Get('search')
@@ -242,6 +244,7 @@ export class BachelorController {
     @Body() input: MoveToTemporarySessionDto,
     @CurrentActor() actor: ActorContext,
   ) {
+    this.forceCodes.requireFor(actor, input.emergencyCode, 'Chuyển vào phiên tạm');
     const { bachelor, session, hall } = await this.bachelors.moveToTemporarySession(
       studentCode,
       input.isMorning,
@@ -270,6 +273,7 @@ export class BachelorController {
     @CurrentActor() actor: ActorContext,
   ) {
     const reason = input.reason ?? 'late';
+    this.forceCodes.requireFor(actor, input.emergencyCode, 'Chuyển ca');
     const { bachelor, session, hall } = await this.bachelors.transferStudent(
       input.studentCode,
       input.newSessionId,

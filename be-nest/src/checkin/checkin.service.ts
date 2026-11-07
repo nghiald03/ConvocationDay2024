@@ -96,6 +96,8 @@ export class CheckInService {
     status: boolean,
     scope: CheckInRoomScope,
     cancellationConfirmation?: string,
+    /** Gọi ngay trước khi ghi một lượt check-in trễ; ném lỗi để chặn (nhân viên check-in chưa nhập mã khẩn cấp). */
+    authorizeLate: () => void = () => {},
   ) {
     // Chỉ báo thay đổi khi thật sự có ghi; quét lại người đã check-in thì không ghi gì.
     let wrote = false;
@@ -152,6 +154,7 @@ export class CheckInService {
         }
         // Quét lại người đã check-in không được đẩy ghế của họ xuống thêm lần nữa.
         if (bachelor.checkIn) return { bachelor, late: false, movedToEnd: false };
+        authorizeLate();
 
         // Đến trễ khi phiên đã đóng: LED đang chiếu cách đủ xa thì giữ ghế, không thì xuống cuối phiên.
         const current = findCurrent(ledRows);
@@ -244,7 +247,8 @@ export class CheckInService {
   }
 
   /**
-   * Check-in bất chấp phiên mở/khóa, giữ nguyên ghế; chỉ khi LED còn cách đủ xa.
+   * Check-in bất chấp phiên đang mở hay đã khóa, giữ nguyên ghế; chỉ khi LED còn cách đủ xa.
+   * Phiên chưa mở lần nào (status null) vẫn bị từ chối như check-in thường.
    * Mã khẩn cấp được ForceCheckInCodeService kiểm tra trước khi gọi hàm này.
    * Luôn ghi nhận là trễ (attendanceStatus 2) để báo cáo phân biệt với check-in đúng giờ.
    */
@@ -260,6 +264,18 @@ export class CheckInService {
       const hallId = found.hallId;
       const sessionId = found.sessionId;
       const sameSession = and(eq(bachelors.hallId, hallId), eq(bachelors.sessionId, sessionId));
+
+      // Phiên chưa mở lần nào (status null) thì không ai được check-in, kể cả force: chưa có gì để tính trễ.
+      // Khóa dòng check-in trước hàng đợi LED, cùng thứ tự với checkInBachelor.
+      const [checkIn] = await transaction
+        .select()
+        .from(checkIns)
+        .where(and(eq(checkIns.hallId, hallId), eq(checkIns.sessionId, sessionId)))
+        .limit(1)
+        .for('update');
+      if (!checkIn || checkIn.status === null) {
+        throw new BadRequestException('Phiên này chưa được mở, vui lòng đến đúng phiên của bạn.');
+      }
 
       // Khóa danh sách LED theo đúng thứ tự LedService dùng, rồi mới khóa người cần force, để tránh deadlock.
       const ledRows = await loadLedQueue(transaction, hallId, sessionId, { forUpdate: true });

@@ -2,6 +2,8 @@ export type CheckInBachelorInput = {
   studentCode: string;
   status: boolean;
   cancellationConfirmation?: string;
+  /** Mã khẩn cấp; nhân viên check-in cần khi phiên đã khóa (check-in trễ). */
+  emergencyCode?: string;
 };
 
 export type CheckInResult = {

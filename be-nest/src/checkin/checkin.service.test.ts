@@ -522,13 +522,17 @@ describe('force check-in', () => {
 
     function createForceService(options: {
       target?: Row;
+      /** Dòng check-in của (side, phiên); mặc định phiên đã khóa. null: chưa có dòng. */
+      checkIn?: Row | null;
       ledRows?: Row[];
       ordered?: number[];
     }) {
       const updates: Row[] = [];
       let queries = 0;
+      const checkIn = options.checkIn === undefined ? { id: 1, status: false } : options.checkIn;
       const results = [
         [options.target ?? target],
+        checkIn ? [checkIn] : [],
         options.ledRows ?? [],
         [options.target ?? target],
         (options.ordered ?? []).map((id) => ({ id })),
@@ -561,18 +565,29 @@ describe('force check-in', () => {
 
     const current = (id: number) => ({ id, bachelorStatus: 'Current' });
 
-    test('đủ khoảng cách: check-in tính trễ, giữ nguyên ghế, bỏ qua trạng thái phiên', async () => {
-      const ordered = [...ids(20), 100];
-      const { service, updates } = createForceService({ ledRows: [current(5)], ordered });
+    test('đủ khoảng cách: check-in tính trễ, giữ nguyên ghế, dù phiên đang mở hay đã khóa', async () => {
+      for (const status of [false, true]) {
+        const ordered = [...ids(20), 100];
+        const { service, updates } = createForceService({ checkIn: { id: 1, status }, ledRows: [current(5)], ordered });
 
-      const result = await service.forceCheckIn('sv100', allRooms);
+        const result = await service.forceCheckIn('sv100', allRooms);
 
-      // late=false: ghế không bị dời xuống cuối nên giao diện không hiện thông báo đổi ghế.
-      expect(result.late).toBe(false);
-      expect(updates).toHaveLength(1);
-      expect(updates[0]).toMatchObject({ checkIn: true, status: true, attendanceStatus: 2 });
-      expect(updates[0]).not.toHaveProperty('chair');
-      expect(updates[0]).not.toHaveProperty('sessionId');
+        // late=false: ghế không bị dời xuống cuối nên giao diện không hiện thông báo đổi ghế.
+        expect(result.late).toBe(false);
+        expect(updates).toHaveLength(1);
+        expect(updates[0]).toMatchObject({ checkIn: true, status: true, attendanceStatus: 2 });
+        expect(updates[0]).not.toHaveProperty('chair');
+        expect(updates[0]).not.toHaveProperty('sessionId');
+      }
+    });
+
+    test('phiên chưa mở lần nào (status null hoặc chưa có dòng check-in) thì từ chối, không ghi trễ', async () => {
+      for (const checkIn of [{ id: 1, status: null }, null]) {
+        const { service, updates } = createForceService({ checkIn, ledRows: [current(5)], ordered: [...ids(20), 100] });
+
+        expect(await rejectionMessage(service.forceCheckIn('SV100', allRooms))).toContain('chưa được mở');
+        expect(updates).toHaveLength(0);
+      }
     });
 
     test('chưa đủ 15 người thì báo lỗi và không ghi', async () => {
@@ -730,5 +745,49 @@ describe('CheckInService.previewCheckIn', () => {
 
     const missing = createPreviewService({});
     expect(await rejectionMessage(missing.service.previewCheckIn('SV999', allRooms))).toContain('Không tìm thấy');
+  });
+});
+
+
+describe('check-in trễ cần được cho phép (mã khẩn cấp với nhân viên check-in)', () => {
+  const deny = () => {
+    throw new Error('cần mã khẩn cấp');
+  };
+
+  test('phiên đã khóa: bị chặn thì không ghi gì và không báo thay đổi', async () => {
+    const { service, updates, changes } = createService({
+      bachelor: lateBachelor,
+      checkIn: { id: 1, status: false },
+      otherChairs: ['1'],
+    });
+
+    expect(await rejectionMessage(service.checkInBachelor('SV007', true, allRooms, undefined, deny))).toContain('mã');
+    expect(updates).toHaveLength(0);
+    expect(changes).toHaveLength(0);
+  });
+
+  test('phiên đang mở hoặc đã check-in rồi thì không hỏi mã', async () => {
+    const open = createService({ bachelor: lateBachelor, checkIn: { id: 1, status: true } });
+    expect((await open.service.checkInBachelor('SV007', true, allRooms, undefined, deny)).late).toBe(false);
+
+    const again = createService({ bachelor: { ...lateBachelor, checkIn: true }, checkIn: { id: 1, status: false } });
+    expect((await again.service.checkInBachelor('SV007', true, allRooms, undefined, deny)).late).toBe(false);
+  });
+
+  test('được cho phép thì check-in trễ như bình thường', async () => {
+    let asked = 0;
+    const { service, updates } = createService({
+      bachelor: lateBachelor,
+      checkIn: { id: 1, status: false },
+      otherChairs: ['1'],
+    });
+
+    const result = await service.checkInBachelor('SV007', true, allRooms, undefined, () => {
+      asked += 1;
+    });
+
+    expect(asked).toBe(1);
+    expect(result.late).toBe(true);
+    expect(updates[0]).toMatchObject({ attendanceStatus: 2 });
   });
 });

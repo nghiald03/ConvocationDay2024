@@ -78,6 +78,16 @@ export class LedController {
     };
   }
 
+  /** Phiên đang chiếu LED của mỗi side, cho màn theo dõi tiến độ. */
+  @Get('Active')
+  async active() {
+    return {
+      status: 200,
+      message: 'Lấy phiên đang chiếu LED thành công.',
+      data: await this.led.active(),
+    };
+  }
+
   @Get('GetQueue')
   async queue(@Query() query: LedWindowQuery) {
     return {

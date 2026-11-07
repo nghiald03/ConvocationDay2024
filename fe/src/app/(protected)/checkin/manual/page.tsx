@@ -47,6 +47,8 @@ import { canCheckInRoom } from '@/features/check-in/model/check-in-room';
 import { checkInRoomsQueryOptions } from '@/features/check-in/queries/check-in-rooms-query-options';
 import { describeCheckInPreview } from '@/features/check-in/model/describe-check-in-preview';
 import { showLateCheckInNotice } from '@/features/check-in/ui/show-late-check-in-notice';
+import { createEmergencyCodeInput, EMERGENCY_CODE_HINT } from '@/features/check-in/ui/emergency-code-input';
+import type { CheckInBachelorInput } from '@/features/check-in/model/check-in';
 import { moveBachelorToTemporarySession } from '@/features/bachelor/api/move-bachelor-to-temporary-session';
 import {
   transferBachelorSession,
@@ -179,6 +181,8 @@ export default function ManualCheckinPage() {
   const showForceCode = canViewForceCode(useSession()?.roles);
   // Cùng nhóm MN/CL được xem mã force mới được chuyển ca theo yêu cầu BTC.
   const canTransferForOrganizer = showForceCode;
+  // Nhân viên check-in (không giữ mã) phải nhập mã khẩn cấp khi check-in trễ hoặc chuyển ca.
+  const needsEmergencyCode = !showForceCode;
 
   const DEFAULT_PAGE_SIZE = 20;
   const [pageIndex, setPageIndex] = useState(1);
@@ -264,7 +268,7 @@ export default function ManualCheckinPage() {
 
   // ---- Checkin
   const checkinAction = useMutation({
-    mutationFn: async (payload: { studentCode: string; status: boolean }) => {
+    mutationFn: async (payload: CheckInBachelorInput) => {
       return checkInBachelor(payload);
     },
     onSuccess: (_, vars) => {
@@ -290,7 +294,7 @@ export default function ManualCheckinPage() {
       }
 
       // Side đích mặc định là side cũ; đổi side thì nạp lại danh sách phiên của side đó.
-      const field = (label: string, control: HTMLSelectElement) => {
+      const field = (label: string, control: HTMLSelectElement | HTMLInputElement) => {
         const wrapper = document.createElement('label');
         wrapper.style.display = 'block';
         wrapper.style.textAlign = 'left';
@@ -362,15 +366,24 @@ export default function ManualCheckinPage() {
         content.appendChild(field('Lý do', reasonSelect));
       content.appendChild(field('Side', hallSelect));
       content.appendChild(field('Phiên mới', select));
+      const codeInput = createEmergencyCodeInput();
+      if (needsEmergencyCode) content.appendChild(field('Mã khẩn cấp', codeInput));
 
       const confirm = await swal({
         title: 'Chuyển ca',
-        text: `Chuyển ca cho ${row.fullName}. Ghế được xếp tự động ngay sau người cuối cùng của phiên mới trong side đã chọn.`,
+        text: `Chuyển ca cho ${row.fullName}. Ghế được xếp tự động ngay sau người cuối cùng của phiên mới trong side đã chọn.${
+          needsEmergencyCode ? `\n\nChuyển ca cần mã khẩn cấp. ${EMERGENCY_CODE_HINT}` : ''
+        }`,
         content: content as any,
         buttons: ['Hủy', 'Chuyển'],
       });
 
       if (!confirm) return;
+      const emergencyCode = codeInput.value.trim();
+      if (needsEmergencyCode && !emergencyCode) {
+        toast.error('Chưa nhập mã khẩn cấp nên chưa chuyển ca.');
+        return;
+      }
 
       const newSessionId = Number(select.value);
       if (!newSessionId) {
@@ -389,6 +402,7 @@ export default function ManualCheckinPage() {
           reason: canTransferForOrganizer
             ? (reasonSelect.value as TransferReason)
             : 'late',
+          ...(needsEmergencyCode ? { emergencyCode } : {}),
         }),
         {
           loading: 'Đang chuyển phiên...',
@@ -409,7 +423,7 @@ export default function ManualCheckinPage() {
 
       queryClient.invalidateQueries({ queryKey: bachelorKeys.lists() });
     },
-    [queryClient, canTransferForOrganizer, hallList],
+    [queryClient, canTransferForOrganizer, needsEmergencyCode, hallList],
   );
 
   const handleCheckin = useCallback(
@@ -423,25 +437,41 @@ export default function ManualCheckinPage() {
       confirmationInput.autocomplete = 'off';
 
       // Xem trước kết quả thật ngay trước khi hỏi: phiên có thể vừa bị khóa, LED có thể vừa chuyển người.
-      const dialog = nextStatus
-        ? describeCheckInPreview(
-            await getCheckInPreview(studentCode).catch(() => null),
-            row.fullName
-          )
+      const preview = nextStatus
+        ? await getCheckInPreview(studentCode).catch(() => null)
         : null;
+      const dialog = nextStatus ? describeCheckInPreview(preview, row.fullName) : null;
+      // Check-in trễ (phiên đã khóa) cần mã khẩn cấp với nhân viên check-in.
+      const lateNeedsCode =
+        nextStatus &&
+        needsEmergencyCode &&
+        (preview?.outcome === 'late-keep-seat' || preview?.outcome === 'late-move-to-end');
+      const codeInput = createEmergencyCodeInput();
 
       const confirm = await swal({
         title: nextStatus ? 'Checkin' : 'Hủy checkin',
         text: dialog
-          ? dialog.text
+          ? `${dialog.text}${lateNeedsCode ? `\n\nCheck-in trễ cần mã khẩn cấp. ${EMERGENCY_CODE_HINT}` : ''}`
           : `Nhập đúng MSSV ${studentCode} để xác nhận hủy checkin cho ${row.fullName}.`,
         icon: dialog?.icon ?? 'warning',
-        content: nextStatus ? undefined : (confirmationInput as any),
+        content: nextStatus
+          ? lateNeedsCode
+            ? (codeInput as any)
+            : undefined
+          : (confirmationInput as any),
         buttons: nextStatus ? ['Không', 'Checkin'] : ['Không', 'Hủy checkin'],
         dangerMode: !nextStatus || dialog?.danger === true,
       });
 
       if (!confirm) return;
+      const emergencyCode = codeInput.value.trim();
+      if (lateNeedsCode && !emergencyCode) {
+        toast.error('Chưa nhập mã khẩn cấp nên chưa check-in.', {
+          position: 'top-right',
+          duration: 4000,
+        });
+        return;
+      }
 
       if (
         !nextStatus &&
@@ -462,9 +492,10 @@ export default function ManualCheckinPage() {
       setProcessingIds((prev) => new Set(prev).add(studentCode));
 
       try {
-        const nData = {
+        const nData: CheckInBachelorInput = {
           studentCode,
           status: nextStatus,
+          ...(lateNeedsCode ? { emergencyCode } : {}),
           ...(nextStatus
             ? {}
             : { cancellationConfirmation: confirmationInput.value.trim() }),
@@ -504,7 +535,7 @@ export default function ManualCheckinPage() {
         });
       }
     },
-    [checkinAction],
+    [checkinAction, needsEmergencyCode],
   );
 
   // Force check-in: bỏ qua phiên mở/khóa, server kiểm tra mã khẩn cấp và khoảng cách với LED.
@@ -518,19 +549,11 @@ export default function ManualCheckinPage() {
         });
         return;
       }
-      const codeInput = document.createElement('input');
-      codeInput.className = 'swal-content__input';
-      codeInput.autocomplete = 'off';
-      codeInput.autocapitalize = 'characters';
-      codeInput.spellcheck = false;
-      codeInput.maxLength = 4;
-      codeInput.placeholder = 'Mã 4 ký tự';
-      codeInput.style.textTransform = 'uppercase';
-      codeInput.style.letterSpacing = '0.3em';
+      const codeInput = createEmergencyCodeInput();
 
       const confirm = await swal({
         title: 'Force check-in',
-        text: `Check-in khẩn cấp cho ${row.fullName} (${studentCode}) bất kể phiên đang mở hay khóa.\n\nHỏi Check-in Lead hoặc Manager để lấy mã 4 ký tự (đổi sau mỗi 5 phút).`,
+        text: `Check-in khẩn cấp cho ${row.fullName} (${studentCode}) bất kể phiên đang mở hay khóa.\n\n${EMERGENCY_CODE_HINT}`,
         icon: 'warning',
         content: codeInput as any,
         buttons: ['Không', 'Force check-in'],

@@ -7,18 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { getBachelors } from '@/features/bachelor/api/get-bachelors';
-import { sessionQueryOptions } from '@/features/session/queries/session-query-options';
+import { readUrlParam, SessionButtons } from '@/features/led/ui/session-buttons';
 import { fallbackInterval } from '@/lib/realtime/realtime-status';
 import { Be_Vietnam_Pro } from 'next/font/google';
 import { SeatingMap } from '@/features/led/ui/seating-map/seating-map';
@@ -77,11 +68,12 @@ export default function SeatBoardPage() {
   const [screenSize, setScreenSize] = useState<ScreenSize>(SCREEN_SIZES[0]!);
   const [viewport, setViewport] = useState({ width: 1280, height: 768 });
   const screenRef = useRef<HTMLDivElement>(null);
-  const { data: sessions = [] } = useQuery(sessionQueryOptions);
 
+  // URL (`?session=8&side=Right`) đi trước lựa chọn đã nhớ, để cấu hình sẵn browser source của OBS.
   useEffect(() => {
-    setSessionId(readStored(STORAGE_KEY));
-    if (readStored(SIDE_STORAGE_KEY) === 'Right') setSide('Right');
+    setSessionId(readUrlParam('session') ?? readStored(STORAGE_KEY));
+    const storedSide = readUrlParam('side') ?? readStored(SIDE_STORAGE_KEY);
+    if (storedSide.toLowerCase() === 'right') setSide('Right');
   }, []);
   useEffect(() => {
     const onChange = () => {
@@ -192,29 +184,11 @@ export default function SeatBoardPage() {
 
           <div className='grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-end'>
             <div className='space-y-2'>
-              <Label htmlFor='seat-board-session' className='text-sm font-medium'>
+              <Label id='seat-board-session-label' className='text-sm font-medium'>
                 Phiên
               </Label>
-              <Select value={sessionId} onValueChange={selectSession}>
-                <SelectTrigger
-                  id='seat-board-session'
-                  className='h-11 w-full border-2 hover:border-orange-400 focus:ring-orange-500'
-                  aria-label='Chọn phiên'
-                >
-                  <SelectValue placeholder='Chọn phiên…' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Phiên</SelectLabel>
-                    {sessions.map((session) => (
-                      <SelectItem key={session.sessionId} value={String(session.sessionId)}>
-                        Phiên {session.session1 ?? session.sessionId}
-                        {session.description ? ` · ${session.description}` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              {/* Nút thay cho dropdown: browser source của OBS không hiện danh sách bật ra của dropdown. */}
+              <SessionButtons value={sessionId} onChange={selectSession} labelledBy='seat-board-session-label' />
             </div>
 
             <div className='space-y-2'>
@@ -267,6 +241,7 @@ export default function SeatBoardPage() {
           </div>
           <p className='text-xs text-muted-foreground'>
             Khi đang toàn màn hình: phím ← chuyển sang bên trái, phím → chuyển sang bên phải, Esc để thoát.
+            Trong OBS có thể cấu hình sẵn qua URL, ví dụ <code>/led/seat-board?session=8&amp;side=Right</code>.
           </p>
         </CardContent>
       </Card>

@@ -113,6 +113,14 @@ export function getMenuList(pathname: string): Group[] {
           submenus: [],
         },
         {
+          id: "ledProgress",
+          href: "/led/progress",
+          label: "Tiến độ chiếu LED",
+          active: pathname.includes("/led/progress"),
+          icon: "mdi:progress-clock",
+          submenus: [],
+        },
+        {
           id: "seatLive",
           href: "/led/seat-live",
           label: "Sơ đồ ghế trực tiếp",
