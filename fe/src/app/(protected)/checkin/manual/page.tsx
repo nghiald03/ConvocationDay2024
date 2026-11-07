@@ -73,8 +73,11 @@ import { useSession } from '@/features/auth/queries/session-provider';
 import { canViewForceCode } from '@/features/check-in/model/force-code';
 import { ForceCodeBadge } from '@/features/check-in/ui/force-code-badge';
 
-/** Hiện cột "Chuyển phiên" trong bảng check-in. Đang ẩn theo yêu cầu vận hành. */
-const SHOW_TRANSFER_COLUMN = false;
+/**
+ * Hiện nút "Chuyển phiên" trong bảng check-in. Nhân viên check-in phải nhập mã khẩn cấp khi chuyển ca
+ * (server kiểm tra), Check-in Lead và Manager thì không.
+ */
+const SHOW_TRANSFER_COLUMN = true;
 
 function sessionLabel(sessionNum: number | null | undefined) {
   if (sessionNum === 100) return 'Session bù sáng';
@@ -742,7 +745,6 @@ export default function ManualCheckinPage() {
           />
         ),
       },
-      // Cột "Chuyển phiên" đang ẩn (SHOW_TRANSFER_COLUMN = false); đặt true để hiện lại.
       ...(SHOW_TRANSFER_COLUMN
         ? [
             {
